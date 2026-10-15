@@ -17,14 +17,13 @@ export async function ProjectResources({
   primaryBdm: boolean;
 }) {
   const { client, profile } = await requireWorkspace();
-  const lifecycle = await client
-    .from("projects")
-    .select("is_cancelled")
-    .eq("id", project)
-    .single();
+  const [lifecycle, r, slots] = await Promise.all([
+    client.from("projects").select("is_cancelled").eq("id", project).single(),
+    client.rpc("project_resources", { p_project: project }),
+    client.rpc("get_attachment_slots", { p_project: project }),
+  ]);
   checkDatabase(lifecycle.error);
   const cancelled = lifecycle.data?.is_cancelled ?? true;
-  const r = await client.rpc("project_resources", { p_project: project });
   checkDatabase(r.error);
   const details = r.data;
   const attached = await client
@@ -44,9 +43,6 @@ export async function ProjectResources({
         .limit(500)
     : { data: [], error: null };
   checkDatabase(versions.error);
-  const slots = await client.rpc("get_attachment_slots", {
-    p_project: project,
-  });
   checkDatabase(slots.error);
   return (
     <>

@@ -41,45 +41,47 @@ export default async function LeadDetail({
   checkDatabase(record.error);
   if (!record.data) notFound();
   const lead = leadSchema.parse(record.data);
-  const [submissions, reviews, origin] = await Promise.all([
-    client
-      .from("lead_submissions")
-      .select("*")
-      .eq("lead_id", id)
-      .order("number", { ascending: false })
-      .limit(50),
-    client
-      .from("lead_reviews")
-      .select("*")
-      .eq("lead_id", id)
-      .order("reviewed_at", { ascending: false })
-      .limit(50),
-    client
-      .from("project_origins")
-      .select("project_id")
-      .eq("lead_id", id)
-      .maybeSingle(),
-  ]);
-  for (const r of [submissions, reviews, origin]) checkDatabase(r.error);
-  let people: Person[] = [];
-  if (mayReview(profile.role) && lead.status === "Submitted") {
-    const r = await client.rpc("list_assignable_people");
+  const storageEnabled = process.env.ONE_ODC_ATTACHMENTS_ENABLED === "true";
+  const [submissions, reviews, origin, peopleResult, attached, slots] =
+    await Promise.all([
+      client
+        .from("lead_submissions")
+        .select("*")
+        .eq("lead_id", id)
+        .order("number", { ascending: false })
+        .limit(50),
+      client
+        .from("lead_reviews")
+        .select("*")
+        .eq("lead_id", id)
+        .order("reviewed_at", { ascending: false })
+        .limit(50),
+      client
+        .from("project_origins")
+        .select("project_id")
+        .eq("lead_id", id)
+        .maybeSingle(),
+      mayReview(profile.role) && lead.status === "Submitted"
+        ? client.rpc("list_assignable_people")
+        : { data: null, error: null },
+      storageEnabled
+        ? client
+            .from("attachments")
+            .select("id,archived_at")
+            .eq("lead_id", id)
+            .order("created_at")
+        : { data: [], error: null },
+      storageEnabled && process.env.ONE_ODC_RESOURCES_ENABLED === "true"
+        ? client.rpc("get_attachment_slots", { p_lead: id })
+        : { data: undefined, error: null },
+    ]);
+  for (const r of [submissions, reviews, origin, peopleResult, attached, slots])
     checkDatabase(r.error);
-    people = r.data ?? [];
-  }
+  const people: Person[] = peopleResult.data ?? [];
   const editable =
     profile.role === "bdm" &&
     lead.bdm_id === profile.id &&
     ["Draft", "Returned for Clarification"].includes(lead.status);
-  const storageEnabled = process.env.ONE_ODC_ATTACHMENTS_ENABLED === "true";
-  const attached = storageEnabled
-    ? await client
-        .from("attachments")
-        .select("id,archived_at")
-        .eq("lead_id", id)
-        .order("created_at")
-    : { data: [], error: null };
-  checkDatabase(attached.error);
   const versions = attached.data?.length
     ? await client
         .from("attachment_versions")
@@ -92,11 +94,6 @@ export default async function LeadDetail({
         .limit(100)
     : { data: [], error: null };
   checkDatabase(versions.error);
-  const slots =
-    storageEnabled && process.env.ONE_ODC_RESOURCES_ENABLED === "true"
-      ? await client.rpc("get_attachment_slots", { p_lead: id })
-      : { data: undefined, error: null };
-  checkDatabase(slots.error);
   return (
     <>
       <PageIntro

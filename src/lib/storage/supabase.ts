@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { Upload } from "tus-js-client";
+import type { Upload } from "tus-js-client";
 import {
   ATTACHMENT_BUCKET,
   resumableEndpoint,
@@ -61,6 +61,12 @@ export function supabaseStorageProvider(
           running = true;
           const current = ++generation;
           try {
+            // Loaded on first upload so download-only screens skip the tus bundle.
+            const { Upload } = await import("tus-js-client");
+            if (current !== generation)
+              throw new Error(
+                "Upload paused. Resume with the same reservation and file.",
+              );
             await new Promise<void>((resolve, reject) => {
               cancel = () =>
                 reject(

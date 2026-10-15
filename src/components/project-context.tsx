@@ -1,4 +1,8 @@
-import { requireWorkspace } from "@/lib/workspace-session";
+import {
+  requireWorkspace,
+  projectMonitoringSummary,
+  projectTeam,
+} from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import {
   projectMetrics,
@@ -14,16 +18,16 @@ export async function ProjectContext({ project }: { project: Project }) {
     project.commercial_status !== "Closed"
   )
     return null;
-  const r =
+  const [r, team] = await Promise.all([
     process.env.ONE_ODC_MONITORING_ENABLED === "true"
-      ? await client.rpc("monitoring_summary", { p_projects: [project.id] })
-      : { data: [], error: null };
+      ? projectMonitoringSummary(project.id)
+      : { data: [], error: null },
+    profile.role !== "operations_admin"
+      ? projectTeam(project.id)
+      : { data: [], error: null },
+  ]);
   checkDatabase(r.error);
   const m = (r.data as Monitoring[])[0];
-  const team =
-    profile.role !== "operations_admin"
-      ? await client.rpc("project_team", { p_project: project.id })
-      : { data: [], error: null };
   checkDatabase(team.error);
   const members = (team.data ?? []) as Member[];
   let brand: string | null = null;

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireWorkspace } from "@/lib/workspace-session";
+import { requireWorkspace, projectTeam } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import { formatTime, type Member } from "@/lib/phase1";
 import type { TimelineEvent } from "@/lib/monitoring";
@@ -15,7 +15,7 @@ export async function ProjectRecentActivity({ project }: { project: string }) {
       p_space: null,
       p_offset: 0,
     }),
-    client.rpc("project_team", { p_project: project }),
+    projectTeam(project),
   ]);
   checkDatabase(r.error);
   checkDatabase(team.error);

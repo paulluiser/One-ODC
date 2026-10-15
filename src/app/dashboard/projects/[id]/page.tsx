@@ -11,13 +11,14 @@ import { ProjectSpaces } from "@/components/project-spaces";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { requireWorkspace } from "@/lib/workspace-session";
+import { requireWorkspace, projectTeam } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import { roleLabels, formatTime, type Member, type Person } from "@/lib/phase1";
 import { PageIntro } from "@/components/live-data";
 import { projectColumns, projectSchema } from "@/lib/project-workspace";
 import { AssignmentForm } from "@/components/workflow-forms";
 import { ProjectResources } from "@/components/project-resources";
+import { Section } from "@/components/workspace-skeleton";
 export default async function ProjectDetail({
   params,
   searchParams,
@@ -51,7 +52,9 @@ export default async function ProjectDetail({
           title={project.name}
           description={`${project.reference} · ${project.commercial_status === "Closed" ? "Operations workspace" : "Limited pipeline preview"}`}
         />
-        <ProjectContext project={project} />
+        <Section>
+          <ProjectContext project={project} />
+        </Section>
         {financeEnabled && project.commercial_status === "Closed" && (
           <ProjectSectionNavigation label="Operations workspace">
             <Link
@@ -101,16 +104,24 @@ export default async function ProjectDetail({
           </ProjectSectionNavigation>
         )}
         {handoffEnabled && project.commercial_status === "Closed" && (
-          <ProjectHandoff project={id} />
+          <Section>
+            <ProjectHandoff project={id} />
+          </Section>
         )}
         {installationTab && project.commercial_status === "Closed" ? (
-          <ProjectInstallations project={id} />
+          <Section>
+            <ProjectInstallations project={id} />
+          </Section>
         ) : logisticsTab && project.commercial_status === "Closed" ? (
-          <ProjectLogistics project={id} />
+          <Section>
+            <ProjectLogistics project={id} />
+          </Section>
         ) : financeEnabled &&
           project.commercial_status === "Closed" &&
           query.tab === "finance" ? (
-          <ProjectFinancials project={id} />
+          <Section>
+            <ProjectFinancials project={id} />
+          </Section>
         ) : (
           <section className="surface live-form">
             <h2>
@@ -149,11 +160,13 @@ export default async function ProjectDetail({
           !(financeEnabled && query.tab === "finance") &&
           process.env.ONE_ODC_MONITORING_ENABLED === "true" &&
           project.commercial_status === "Closed" && (
-            <ProjectMonitoring
-              project={id}
-              manager={false}
-              filters={await searchParams}
-            />
+            <Section>
+              <ProjectMonitoring
+                project={id}
+                manager={false}
+                filters={await searchParams}
+              />
+            </Section>
           )}
       </>
     );
@@ -239,9 +252,13 @@ export default async function ProjectDetail({
           title={project.name}
           description={`${project.reference} · ${project.commercial_status}`}
         />
-        <ProjectContext project={project} />
+        <Section>
+          <ProjectContext project={project} />
+        </Section>
         {navigation}
-        <ProjectInstallations project={id} />
+        <Section>
+          <ProjectInstallations project={id} />
+        </Section>
       </>
     );
   if (logisticsTab)
@@ -251,9 +268,13 @@ export default async function ProjectDetail({
           title={project.name}
           description={`${project.reference} · ${project.commercial_status}`}
         />
-        <ProjectContext project={project} />
+        <Section>
+          <ProjectContext project={project} />
+        </Section>
         {navigation}
-        <ProjectLogistics project={id} />
+        <Section>
+          <ProjectLogistics project={id} />
+        </Section>
       </>
     );
   if (financeTab)
@@ -263,9 +284,13 @@ export default async function ProjectDetail({
           title={project.name}
           description={`${project.reference} · ${project.commercial_status}`}
         />
-        <ProjectContext project={project} />
+        <Section>
+          <ProjectContext project={project} />
+        </Section>
         {navigation}
-        <ProjectFinancials project={id} />
+        <Section>
+          <ProjectFinancials project={id} />
+        </Section>
       </>
     );
   if (quotationTab)
@@ -275,27 +300,35 @@ export default async function ProjectDetail({
           title={project.name}
           description={`${project.reference} · ${project.commercial_status}`}
         />
-        <ProjectContext project={project} />
+        <Section>
+          <ProjectContext project={project} />
+        </Section>
         {navigation}
-        <ProjectQuotation
-          project={id}
-          selected={typeof query.space === "string" ? query.space : undefined}
-          version={
-            typeof query.version === "string" ? query.version : undefined
-          }
-          compare={
-            typeof query.compare === "string" ? query.compare : undefined
-          }
-        />
+        <Section>
+          <ProjectQuotation
+            project={id}
+            selected={typeof query.space === "string" ? query.space : undefined}
+            version={
+              typeof query.version === "string" ? query.version : undefined
+            }
+            compare={
+              typeof query.compare === "string" ? query.compare : undefined
+            }
+          />
+        </Section>
       </>
     );
-  const [origin, teamResult, history] = await Promise.all([
+  const editable =
+    profile.role === "system_administrator" ||
+    (profile.role === "lead_designer" &&
+      project.lead_designer_id === profile.id);
+  const [origin, teamResult, history, assignable] = await Promise.all([
     client
       .from("project_origins")
       .select("lead_id")
       .eq("project_id", id)
       .maybeSingle(),
-    client.rpc("project_team", { p_project: id }),
+    projectTeam(id),
     client
       .from("project_assignment_events")
       .select(
@@ -304,19 +337,12 @@ export default async function ProjectDetail({
       .eq("project_id", id)
       .order("occurred_at", { ascending: false })
       .limit(50),
+    editable ? client.rpc("list_assignable_people") : { data: [], error: null },
   ]);
-  for (const x of [origin, teamResult, history]) checkDatabase(x.error);
+  for (const x of [origin, teamResult, history, assignable])
+    checkDatabase(x.error);
   const team = (teamResult.data ?? []) as Member[];
-  const editable =
-    profile.role === "system_administrator" ||
-    (profile.role === "lead_designer" &&
-      project.lead_designer_id === profile.id);
-  let people: Person[] = [];
-  if (editable) {
-    const p = await client.rpc("list_assignable_people");
-    checkDatabase(p.error);
-    people = p.data ?? [];
-  }
+  const people: Person[] = assignable.data ?? [];
   return (
     <>
       <PageIntro
@@ -337,12 +363,16 @@ export default async function ProjectDetail({
           </Link>
         )}
       </PageIntro>
-      <ProjectContext project={project} />
+      <Section>
+        <ProjectContext project={project} />
+      </Section>
       {navigation}
       {handoffEnabled && (
         <details className="surface workspace-disclosure">
           <summary>Commercial closure and operations handoff</summary>
-          <ProjectHandoff project={id} />
+          <Section>
+            <ProjectHandoff project={id} />
+          </Section>
         </details>
       )}
       <section
@@ -381,28 +411,34 @@ export default async function ProjectDetail({
         <Link href="/dashboard/projects">← Project directory</Link>
       </section>
       {process.env.ONE_ODC_MONITORING_ENABLED === "true" && (
-        <ProjectRecentActivity project={id} />
+        <Section>
+          <ProjectRecentActivity project={id} />
+        </Section>
       )}
       {process.env.ONE_ODC_SPACES_ENABLED === "true" && (
-        <ProjectSpaces
-          project={id}
-          manager={editable}
-          people={
-            editable
-              ? people.filter((p) =>
-                  team.some(
-                    (m) =>
-                      m.user_id === p.id &&
-                      ["designer", "lead_designer"].includes(m.membership_role),
-                  ),
-                )
-              : team.map((m) => ({
-                  id: m.user_id,
-                  display_name: m.display_name,
-                  role: m.membership_role,
-                }))
-          }
-        />
+        <Section>
+          <ProjectSpaces
+            project={id}
+            manager={editable}
+            people={
+              editable
+                ? people.filter((p) =>
+                    team.some(
+                      (m) =>
+                        m.user_id === p.id &&
+                        ["designer", "lead_designer"].includes(
+                          m.membership_role,
+                        ),
+                    ),
+                  )
+                : team.map((m) => ({
+                    id: m.user_id,
+                    display_name: m.display_name,
+                    role: m.membership_role,
+                  }))
+            }
+          />
+        </Section>
       )}
       <section className="surface live-form project-roster">
         <h2>Project team</h2>
@@ -423,16 +459,18 @@ export default async function ProjectDetail({
         </ul>
       </section>
       {process.env.ONE_ODC_RESOURCES_ENABLED === "true" && (
-        <ProjectResources
-          project={id}
-          manager={editable}
-          primaryBdm={team.some(
-            (m) =>
-              m.user_id === profile.id &&
-              m.membership_role === "bdm" &&
-              m.is_primary,
-          )}
-        />
+        <Section>
+          <ProjectResources
+            project={id}
+            manager={editable}
+            primaryBdm={team.some(
+              (m) =>
+                m.user_id === profile.id &&
+                m.membership_role === "bdm" &&
+                m.is_primary,
+            )}
+          />
+        </Section>
       )}
       {editable && (
         <details className="surface workspace-disclosure">
@@ -449,12 +487,14 @@ export default async function ProjectDetail({
           )}
         >
           <summary>Activities and project controls</summary>
-          <ProjectMonitoring
-            nested
-            project={id}
-            manager={editable}
-            filters={await searchParams}
-          />
+          <Section>
+            <ProjectMonitoring
+              nested
+              project={id}
+              manager={editable}
+              filters={await searchParams}
+            />
+          </Section>
         </details>
       )}
       <details className="surface live-form project-audit">

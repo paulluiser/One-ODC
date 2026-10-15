@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { RecordStatus } from "./record-table";
 import { progressLabel } from "@/lib/monitoring";
-import { requireWorkspace } from "@/lib/workspace-session";
+import {
+  requireWorkspace,
+  projectMonitoringSummary,
+} from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import { formatTime } from "@/lib/phase1";
 import type { Installation, Readiness } from "@/lib/installations";
@@ -45,7 +48,7 @@ export async function ProjectInstallations({ project }: { project: string }) {
         .order("version"),
       client.rpc("operational_readiness", { p_project: project }),
       client.rpc("get_commercial_handoff", { p_project: project }),
-      client.rpc("monitoring_summary", { p_projects: [project] }),
+      projectMonitoringSummary(project),
     ]);
   for (const r of [
     spaces,

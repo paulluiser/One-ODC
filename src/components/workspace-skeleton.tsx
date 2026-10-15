@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 const names = {
   workspace: "workspace",
   dashboard: "dashboard",
@@ -66,5 +67,21 @@ export function WorkspaceSkeleton({
         </div>
       </div>
     </section>
+  );
+}
+// Streams one async section without blocking its siblings.
+export function Section({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="surface section-skeleton" aria-busy="true">
+          <span className="skeleton-line skeleton-subtitle" />
+          <span className="skeleton-line" />
+          <span className="skeleton-line" />
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
   );
 }

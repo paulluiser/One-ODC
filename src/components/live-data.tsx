@@ -17,7 +17,6 @@ export function PageIntro({
   return (
     <div className="page-intro">
       <div>
-        <span className="eyebrow">ONE ODC · LIVE WORKSPACE</span>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -93,7 +92,13 @@ export function ProjectTable({
               <th>Commercial stage</th>
               <th>Expected handoff</th>
               <th>Created</th>
-              {monitoring && <th>Design progress / monitoring</th>}
+              {monitoring && (
+                <>
+                  <th>Design progress</th>
+                  <th>State</th>
+                  <th>Deadline</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -118,30 +123,14 @@ export function ProjectTable({
                 </td>
                 <td>{p.expected_handoff || "Not scheduled"}</td>
                 <td>{formatTime(p.created_at)}</td>
-                {monitoring && (
-                  <td>
-                    {monitoring[p.id] ? (
-                      <>
-                        <strong className="directory-progress">
-                          {projectMetrics(monitoring[p.id]).progress}
-                        </strong>
-                        <span className="directory-detail">
-                          {process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true"
-                            ? projectWorkState(monitoring[p.id])
-                            : monitoring[p.id].state}{" "}
-                          · {projectMetrics(monitoring[p.id]).age} days ·{" "}
-                          {projectMetrics(monitoring[p.id]).risk}
-                        </span>
-                        <span className="directory-detail">
-                          Deadline:{" "}
-                          {monitoring[p.id].deadline || "Not scheduled"}
-                        </span>
-                      </>
-                    ) : (
-                      "Restricted preview"
-                    )}
-                  </td>
-                )}
+                {monitoring &&
+                  (monitoring[p.id] ? (
+                    <ProjectMonitoringCells summary={monitoring[p.id]} />
+                  ) : (
+                    <td colSpan={3} className="cell-secondary">
+                      Restricted preview
+                    </td>
+                  ))}
               </tr>
             ))}
           </tbody>
@@ -156,5 +145,41 @@ export function ProjectTable({
         assigned.
       </p>
     </div>
+  );
+}
+function ProjectMonitoringCells({ summary }: { summary: Monitoring }) {
+  const metrics = projectMetrics(summary);
+  const percent = Number.parseFloat(metrics.progress);
+  const tone =
+    metrics.risk === "Overdue"
+      ? "status-red"
+      : metrics.risk === "At Risk"
+        ? "status-amber"
+        : "status-green";
+  return (
+    <>
+      <td>
+        <span className="directory-progress">
+          <span className="directory-progress-track" aria-hidden="true">
+            <span
+              style={{
+                width: `${Number.isFinite(percent) ? percent : 0}%`,
+              }}
+            />
+          </span>
+          <b>{metrics.progress}</b>
+        </span>
+      </td>
+      <td>
+        <span className={`status ${tone}`}>{metrics.risk}</span>
+        <span className="cell-secondary">
+          {process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true"
+            ? projectWorkState(summary)
+            : summary.state}{" "}
+          · {metrics.age} days
+        </span>
+      </td>
+      <td>{summary.deadline || "Not scheduled"}</td>
+    </>
   );
 }

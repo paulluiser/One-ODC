@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { requireWorkspace } from "@/lib/workspace-session";
+import {
+  requireWorkspace,
+  projectMonitoringSummary,
+  projectTeam,
+} from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 
 import {
@@ -58,7 +62,7 @@ export async function ProjectMonitoring({
     timelineResult,
     attachmentsResult,
   ] = await Promise.all([
-    client.rpc("monitoring_summary", { p_projects: [project] }),
+    projectMonitoringSummary(project),
     client
       .from("spaces")
       .select("*")
@@ -153,7 +157,7 @@ export async function ProjectMonitoring({
   const actorOptions = [...new Set(timeline.map((t) => t.actor_id))];
   const team =
     profile.role !== "operations_admin"
-      ? await client.rpc("project_team", { p_project: project })
+      ? await projectTeam(project)
       : { data: [], error: null };
   checkDatabase(team.error);
   const actorName = (id: string) =>

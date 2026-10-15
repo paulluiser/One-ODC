@@ -17,7 +17,9 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  await client.auth.getUser();
+  // Refreshes an expired session (writing cookies above) and verifies the JWT
+  // locally; no Auth server round-trip with asymmetric signing keys.
+  await client.auth.getClaims();
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 }

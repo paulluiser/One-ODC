@@ -20,43 +20,49 @@ export async function ProjectSpaces({
   people: Person[];
 }) {
   const { client, profile } = await requireWorkspace();
-  const [rows, support, events, monitoring] = await Promise.all([
-    client
-      .from("spaces")
-      .select("*")
-      .eq("project_id", project)
-      .order("created_at")
-      .order("id"),
-    client
-      .from("space_supporters")
-      .select("space_id,user_id,assigned_at,spaces!inner(project_id)")
-      .eq("spaces.project_id", project),
-    client
-      .from("space_events")
-      .select(
-        "id,space_id,action,reason,actor_id,occurred_at,previous_value,new_value",
-      )
-      .eq("project_id", project)
-      .order("occurred_at", { ascending: false })
-      .limit(100),
-    process.env.ONE_ODC_MONITORING_ENABLED === "true"
-      ? client
-          .from("project_monitoring")
-          .select("state,timezone")
-          .eq("project_id", project)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-  ]);
-  for (const r of [rows, support, events, monitoring]) checkDatabase(r.error);
-  const completion =
-    process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true"
-      ? await client
-          .from("projects")
-          .select("is_operationally_completed,commercial_status")
-          .eq("id", project)
-          .single()
-      : { data: null, error: null };
-  checkDatabase(completion.error);
+  const [rows, support, events, monitoring, completion, activity] =
+    await Promise.all([
+      client
+        .from("spaces")
+        .select("*")
+        .eq("project_id", project)
+        .order("created_at")
+        .order("id"),
+      client
+        .from("space_supporters")
+        .select("space_id,user_id,assigned_at,spaces!inner(project_id)")
+        .eq("spaces.project_id", project),
+      client
+        .from("space_events")
+        .select(
+          "id,space_id,action,reason,actor_id,occurred_at,previous_value,new_value",
+        )
+        .eq("project_id", project)
+        .order("occurred_at", { ascending: false })
+        .limit(100),
+      process.env.ONE_ODC_MONITORING_ENABLED === "true"
+        ? client
+            .from("project_monitoring")
+            .select("state,timezone")
+            .eq("project_id", project)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true"
+        ? client
+            .from("projects")
+            .select("is_operationally_completed,commercial_status")
+            .eq("id", project)
+            .single()
+        : { data: null, error: null },
+      process.env.ONE_ODC_MONITORING_ENABLED === "true"
+        ? client
+            .from("project_activities")
+            .select("space_id,category,activity_date")
+            .eq("project_id", project)
+        : { data: [], error: null },
+    ]);
+  for (const r of [rows, support, events, monitoring, completion, activity])
+    checkDatabase(r.error);
   const cancelled =
     monitoring.data?.state === "Cancelled" ||
     completion.data?.is_operationally_completed === true;
@@ -79,14 +85,6 @@ export async function ProjectSpaces({
           .eq("project_id", project)
       : { data: [], error: null };
   checkDatabase(installations.error);
-  const activity =
-    process.env.ONE_ODC_MONITORING_ENABLED === "true"
-      ? await client
-          .from("project_activities")
-          .select("space_id,category,activity_date")
-          .eq("project_id", project)
-      : { data: [], error: null };
-  checkDatabase(activity.error);
   const timezone = monitoring.data?.timezone || "Asia/Manila",
     now = new Date().toISOString();
   return (

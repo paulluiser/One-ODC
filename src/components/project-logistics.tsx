@@ -2,7 +2,10 @@ import Link from "next/link";
 import { RecordStatus } from "./record-table";
 import { logisticsStatuses } from "@/lib/logistics";
 import { randomUUID } from "node:crypto";
-import { requireWorkspace } from "@/lib/workspace-session";
+import {
+  requireWorkspace,
+  projectMonitoringSummary,
+} from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import { formatTime } from "@/lib/phase1";
 import type { Supplier, Logistics, LogisticsEvent } from "@/lib/logistics";
@@ -53,7 +56,7 @@ export async function ProjectLogistics({ project }: { project: string }) {
       .eq("project_id", project)
       .order("occurred_at"),
     client.rpc("get_commercial_handoff", { p_project: project }),
-    client.rpc("monitoring_summary", { p_projects: [project] }),
+    projectMonitoringSummary(project),
   ]);
   for (const r of [records, history, handoff, monitoring])
     checkDatabase(r.error);

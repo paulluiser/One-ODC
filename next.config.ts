@@ -3,6 +3,9 @@ const config: NextConfig = {
   devIndicators: false,
   turbopack: { root: process.cwd() },
   poweredByHeader: false,
+  // Revisited dashboard pages render from the client router cache for 30 s.
+  // Server actions' revalidatePath still invalidates it after the user's own saves.
+  experimental: { staleTimes: { dynamic: 30 } },
   async headers() {
     return [
       {
