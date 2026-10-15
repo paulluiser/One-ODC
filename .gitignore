@@ -1,0 +1,20 @@
+node_modules/
+.next/
+out/
+coverage/
+test-results/
+playwright-report/
+.env*
+!.env.example
+.vercel/
+*.tsbuildinfo
+.DS_Store
+artifacts/qa/
+
+# Reproducible package assets copied by postinstall.
+public/optimization/vendor/
+
+# Local staging identities, fixture records and browser evidence.
+artifacts/verification/
+supabase/.temp/
+supabase/.branches/

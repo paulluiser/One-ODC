@@ -1,0 +1,9 @@
+node_modules
+.next
+package-lock.json
+public/brand
+public/branding/fonts
+artifacts
+playwright-report
+test-results
+next-env.d.ts
