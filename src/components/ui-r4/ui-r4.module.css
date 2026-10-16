@@ -1,14 +1,32 @@
-.accessActions {
+.workspace .accessActions {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 12px;
 }
-.accessActions > button:not(:first-child) {
+.accessActions > button {
+  flex-shrink: 0;
+}
+.accessActions .accessIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 42px;
   height: 42px;
   padding: 0;
-  flex-shrink: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--brand-muted);
+  cursor: pointer;
+}
+.accessActions .accessIcon:hover {
+  color: var(--brand-primary);
+}
+.accessActions .accessIcon:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
 }
 .accessHistory {
   display: grid;

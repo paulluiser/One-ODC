@@ -11,11 +11,13 @@ export function ContextPanel({
   guardUnsaved = false,
   blockPending = false,
   primary = false,
+  triggerClassName,
 }: {
   panelClassName?: string;
   guardUnsaved?: boolean;
   blockPending?: boolean;
   primary?: boolean;
+  triggerClassName?: string;
   triggerLabel?: ReactNode;
   resetOnClose?: boolean;
   title: string;
@@ -54,7 +56,10 @@ export function ContextPanel({
       <Dialog.Trigger asChild>
         <button
           type="button"
-          className={`button ${primary ? "button-primary" : "button-outline"}`}
+          className={
+            triggerClassName ??
+            `button ${primary ? "button-primary" : "button-outline"}`
+          }
         >
           {triggerLabel ?? title}
         </button>

@@ -52,6 +52,7 @@ export function AccessTools({
     <>
       <ContextPanel
         title="Administrative history"
+        triggerClassName={styles.accessIcon}
         description="Invitation requests and account-access changes, newest first. Each entry preserves who performed the action and when."
         triggerLabel={
           <>
@@ -143,6 +144,7 @@ export function AccessTools({
       </ContextPanel>
       <ContextPanel
         title="Roles & access"
+        triggerClassName={styles.accessIcon}
         description="Give each colleague the access they need. Project assignments and commercial stage also determine what they can see."
         triggerLabel={
           <>
