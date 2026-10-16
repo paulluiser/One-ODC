@@ -218,6 +218,7 @@ export function UserDirectory({
       description="Manage invitation-only access and existing team roles."
       action={
         <div className={styles.accessActions}>
+          <AccessTools history={history} count={historyCount} />
           <OperationEditor
             title="Invite a team member"
             enabled
@@ -225,7 +226,6 @@ export function UserDirectory({
           >
             <InvitationForm configured={configured} rebuild />
           </OperationEditor>
-          <AccessTools history={history} count={historyCount} />
         </div>
       }
     >
