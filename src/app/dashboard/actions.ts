@@ -255,7 +255,14 @@ export async function inviteUser(
   if (auditError) return { error: workflowError(auditError.message) };
   const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(
     v.email,
-    { data: { full_name: name, first_name: v.first_name, last_name: v.last_name }, redirectTo: `${appUrl}/auth/confirm` },
+    {
+      data: {
+        full_name: name,
+        first_name: v.first_name,
+        last_name: v.last_name,
+      },
+      redirectTo: `${appUrl}/auth/confirm`,
+    },
   );
   if (error || !invited.user)
     return {

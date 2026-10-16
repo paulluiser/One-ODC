@@ -8,7 +8,12 @@ import { PageIntro } from "@/components/live-data";
 export default async function Users({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; role?: string; status?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    role?: string;
+    status?: string;
+  }>;
 }) {
   const { client } = await requireRole(["system_administrator"]);
   const p = await searchParams;
@@ -17,8 +22,10 @@ export default async function Users({
     Math.max(1, Number.parseInt(p.page ?? "1", 10) || 1),
   );
   const query = (p.q ?? "").trim();
-  const role = p.role && roleLabels[p.role as keyof typeof roleLabels] ? p.role : "";
-  const status = p.status === "active" || p.status === "inactive" ? p.status : "";
+  const role =
+    p.role && roleLabels[p.role as keyof typeof roleLabels] ? p.role : "";
+  const status =
+    p.status === "active" || p.status === "inactive" ? p.status : "";
   let profilesQuery = client
     .from("profiles")
     .select("id,display_name,role,active", { count: "exact" });

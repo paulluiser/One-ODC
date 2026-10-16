@@ -24,8 +24,15 @@ import { formatTime, type Profile } from "../../lib/phase1";
 import { Panel, SectionHeading, StatTile, Empty } from "./primitives";
 import styles from "./ui-r0.module.css";
 import r1 from "./ui-r1.module.css";
+import { ContextPanel } from "../context-panel";
 function greeting(profile: Profile, at: string) {
-  const hour = new Date(at).getHours();
+  const hour = Number(
+    new Intl.DateTimeFormat("en", {
+      timeZone: "Asia/Manila",
+      hour: "numeric",
+      hourCycle: "h23",
+    }).format(new Date(at)),
+  );
   const part = hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
   const firstName = profile.display_name.trim().split(/\s+/)[0] || "there";
   return `${part}, ${firstName}`;
@@ -109,8 +116,8 @@ export function RebuildRoleDashboard({
       )}
       <section className={styles.welcome} aria-label="Welcome">
         <div>
-          <span className={styles.eyebrow}>{greeting(profile, data.as_of)}</span>
-          <h2>{intro[0]}</h2>
+          <span className={styles.eyebrow}>{intro[0]}</span>
+          <h2>{greeting(profile, data.as_of)}</h2>
           <p>{intro[1]}</p>
         </div>
         <Link href={intro[3]} className={styles.primaryAction}>
@@ -186,18 +193,16 @@ export function RebuildRoleDashboard({
           {data.actions.length ? (
             records(data.actions.slice(0, 3))
           ) : (
-            <Empty
-              title="You’re all caught up"
-              description="New items will appear when work needs your attention."
-            />
+            <Empty title="All clear" description="No action needed." />
           )}
           {data.actions.length > 3 && (
-            <details className={styles.moreQueue}>
-              <summary>
-                Show {data.actions.length - 3} more attention items
-              </summary>
+            <ContextPanel
+              title="Action required"
+              description="More items from your authorized attention queue."
+              triggerLabel={`View ${data.actions.length - 3} more`}
+            >
               {records(data.actions.slice(3))}
-            </details>
+            </ContextPanel>
           )}
           <div className={styles.panelFooter}>
             <Link href={intro[3]}>
@@ -219,9 +224,14 @@ export function RebuildRoleDashboard({
             }
             description="Current authorized scope"
             action={
-              <Link className={styles.textLink} href={
-                data.role === "system_administrator" ? "/dashboard/users" : "/dashboard/projects"
-              }>
+              <Link
+                className={styles.textLink}
+                href={
+                  data.role === "system_administrator"
+                    ? "/dashboard/users"
+                    : "/dashboard/projects"
+                }
+              >
                 Open full view <ArrowUpRight size={15} aria-hidden="true" />
               </Link>
             }
@@ -302,9 +312,13 @@ export function RebuildRoleDashboard({
         )}
         {data.recent.length > 5 && (
           <div className={styles.panelFooter}>
-            <Link href={data.role === "system_administrator" ? "/dashboard?view=system_activity" : "/dashboard/notifications"}>
-              View all activity <ArrowUpRight size={15} aria-hidden="true" />
-            </Link>
+            <ContextPanel
+              title="Recent activity"
+              description="Recent updates from your authorized workspace."
+              triggerLabel="View more activity"
+            >
+              {records(data.recent, true)}
+            </ContextPanel>
           </div>
         )}
       </Panel>

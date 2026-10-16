@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireWorkspace } from "@/lib/workspace-session";
-import {
-  projectSearchPattern,
-  projectDirectoryOptions,
-} from "@/lib/project-workspace";
-import {
-  recoveryMessage,
-  serializeCsv,
-  type SearchHit,
-} from "@/lib/productivity";
+import { projectSearchPattern } from "@/lib/project-workspace";
+import { recoveryMessage, type SearchHit } from "@/lib/productivity";
 import { z } from "zod";
 const uuid = z.uuid();
 const response = (data: unknown, status = 200) =>
@@ -232,110 +225,8 @@ export async function GET(request: NextRequest) {
         ),
       });
     }
-    if (action === "export") {
-      const kind = params.get("kind"),
-        headers: string[] = [],
-        rows: unknown[][] = [];
-      const page = Math.min(
-        100000,
-        Math.max(1, Number(params.get("page")) || 1),
-      );
-      if (kind === "projects") {
-        const o = projectDirectoryOptions(Object.fromEntries(params));
-        let q = client
-          .from("projects")
-          .select("name,reference,commercial_status,created_at")
-          .order(o.sort === "name" ? "name" : "created_at", {
-            ascending: o.sort === "name",
-          })
-          .order("id")
-          .range((page - 1) * 25, page * 25);
-        if (o.q)
-          q = q.ilike(
-            o.searchBy === "reference" ? "reference" : "name",
-            projectSearchPattern(o.q),
-          );
-        if (o.stage) q = q.eq("commercial_status", o.stage);
-        headers.push(
-          "Project",
-          "Reference",
-          "Commercial stage",
-          "Created (UTC)",
-        );
-        for (const p of read(await q) ?? [])
-          rows.push([p.name, p.reference, p.commercial_status, p.created_at]);
-      } else if (kind === "leads" && (manager || profile.role === "bdm")) {
-        let q = client
-          .from("leads")
-          .select("project_name,brand,status,date_needed,created_at")
-          .order("updated_at", { ascending: false })
-          .order("id")
-          .range((page - 1) * 25, page * 25);
-        if (params.get("q"))
-          q = q.ilike(
-            "project_name",
-            projectSearchPattern(params.get("q")!.slice(0, 200)),
-          );
-        const status = params.get("status") ?? (manager ? "Submitted" : "All");
-        if (status !== "All") q = q.eq("status", status);
-        headers.push("Lead", "Brand", "Status", "Date needed", "Created (UTC)");
-        for (const p of read(await q) ?? [])
-          rows.push([
-            p.project_name,
-            p.brand,
-            p.status,
-            p.date_needed,
-            p.created_at,
-          ]);
-      } else if (kind === "spaces" && project) {
-        const access = read(
-          await client
-            .from("projects")
-            .select("commercial_status")
-            .eq("id", project)
-            .maybeSingle(),
-        );
-        if (
-          !access ||
-          (profile.role === "operations_admin" &&
-            access.commercial_status !== "Closed")
-        )
-          return response({ error: recoveryMessage("ACCESS_DENIED") }, 403);
-        headers.push("Space", "Design status", "Deadline", "Cancelled");
-        for (const p of read(
-          await client
-            .from("spaces")
-            .select("name,status,deadline,cancelled_at")
-            .eq("project_id", project)
-            .order("created_at")
-            .order("id")
-            .range((page - 1) * 100, page * 100 - 1),
-        ) ?? [])
-          rows.push([
-            p.name,
-            p.status,
-            p.deadline,
-            p.cancelled_at ? "Yes" : "No",
-          ]);
-      } else return response({ error: recoveryMessage("ACCESS_DENIED") }, 403);
-      // One extra row detects truncation; explicit page scope prevents silently incomplete exports.
-      const size = kind === "spaces" ? 100 : 25;
-      const more = rows.length > size;
-      if (more) rows.pop();
-      if (!rows.length)
-        return response(
-          { error: "No matching records to export on this page." },
-          422,
-        );
-      return new NextResponse(serializeCsv(headers, rows), {
-        headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="one-odc-${kind}-page-${page}.csv"`,
-          "Cache-Control": "private, no-store",
-          "X-Export-Scope": `Filtered page ${page}; up to ${size} records${more ? "; more pages available" : ""}`,
-        },
-      });
-    }
+    if (action === "export")
+      return response({ error: "CSV export is no longer available." }, 404);
     return response({ error: "Unknown request." }, 400);
   } catch {
     return response(

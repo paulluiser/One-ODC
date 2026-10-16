@@ -28,8 +28,15 @@ import { calendarEventSchema, todayManila } from "@/lib/calendar";
 import { formatTime, type Profile } from "@/lib/phase1";
 import { Panel, SectionHeading, StatTile, Empty } from "./primitives";
 import styles from "./ui-r0.module.css";
+import { ContextPanel } from "../context-panel";
 function greeting(profile: Profile, at: string) {
-  const hour = new Date(at).getHours();
+  const hour = Number(
+    new Intl.DateTimeFormat("en", {
+      timeZone: "Asia/Manila",
+      hour: "numeric",
+      hourCycle: "h23",
+    }).format(new Date(at)),
+  );
   const part = hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
   const firstName = profile.display_name.trim().split(/\s+/)[0] || "there";
   return `${part}, ${firstName}`;
@@ -226,16 +233,14 @@ export async function LeadDashboard({
               ))}
             </ul>
           ) : (
-            <Empty
-              title="You’re all caught up"
-              description="New review items will appear here as work moves forward."
-            />
+            <Empty title="All clear" description="No reviews pending." />
           )}
           {data.actions.length > 3 && (
-            <details className={styles.moreQueue}>
-              <summary>
-                Show {data.actions.length - 3} more attention items
-              </summary>
+            <ContextPanel
+              title="Action required"
+              description="More items from your authorized attention queue."
+              triggerLabel={`View ${data.actions.length - 3} more`}
+            >
               <ul className={styles.attentionList}>
                 {data.actions.slice(3).map((r) => (
                   <li key={r.id}>
@@ -246,7 +251,7 @@ export async function LeadDashboard({
                   </li>
                 ))}
               </ul>
-            </details>
+            </ContextPanel>
           )}
           <div className={styles.panelFooter}>
             <Link href={dashboardUrl("attention_spaces")}>
@@ -418,7 +423,27 @@ export async function LeadDashboard({
               description="Relevant project activity will appear here."
             />
           )}
-          {data.recent.length > 5 && <div className={styles.panelFooter}><Link href="/dashboard/notifications">View all activity <ArrowUpRight size={15} aria-hidden="true" /></Link></div>}
+          {data.recent.length > 5 && (
+            <ContextPanel
+              title="Recent activity"
+              description="Recent updates from your authorized workspace."
+              triggerLabel="View more activity"
+            >
+              <ul className={styles.activityList}>
+                {data.recent.map((r) => (
+                  <li key={r.id}>
+                    <div>
+                      <strong>{r.label}</strong>
+                      {r.detail && <p>{r.detail}</p>}
+                      <small>
+                        {r.at ? formatTime(r.at) : "Recorded activity"}
+                      </small>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </ContextPanel>
+          )}
         </Panel>
         <Panel label="Upcoming dates">
           <SectionHeading

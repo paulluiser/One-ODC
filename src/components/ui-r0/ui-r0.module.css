@@ -815,7 +815,21 @@
   margin-bottom: 3px;
 }
 .empty {
-  padding: 25px 0;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  background: var(--r-soft);
+  border-radius: 14px;
+}
+.empty > svg {
+  color: var(--r-primary);
+  padding: 10px;
+  box-sizing: content-box;
+  border-radius: 50%;
+  background: var(--r-surface);
 }
 .empty h3 {
   font-size: 14px;
