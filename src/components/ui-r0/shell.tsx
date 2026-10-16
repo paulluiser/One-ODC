@@ -1,9 +1,5 @@
 "use client";
-import {
-  GlobalSearch,
-  WorkspaceHelp,
-  ProjectShortcuts,
-} from "../productivity/header";
+import { GlobalSearch } from "../productivity/header";
 import { ProjectTools } from "../productivity/project-tools";
 import { UnsavedChangesGuard } from "../productivity/unsaved-guard";
 import {
@@ -163,10 +159,6 @@ export function RebuildShell({
         })}
       </nav>
       <div className={styles.railFoot}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <WorkspaceHelp profile={profile} className={styles.iconButton} />
-          <ProjectShortcuts className={styles.iconButton} />
-        </div>
         <div className={styles.brandRule} />
         <p>
           Every space.

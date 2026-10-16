@@ -1,6 +1,9 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
+vi.mock("../../src/app/dashboard/users/history-actions", () => ({
+  loadAccessHistory: vi.fn(),
+}));
 vi.mock("../../src/components/logistics-form", () => ({
   LogisticsForm: () => null,
 }));
@@ -106,5 +109,7 @@ it("admin presents only fetched profiles and reports unavailable invitation conf
   expect(h).toContain("Team &lt;script&gt;");
   expect(h).toContain("Inactive");
   expect(h).toContain("Invitations are unavailable");
-  expect(h).toContain("Recent administrative history");
+  expect(h).toContain("Administrative history");
+  expect(h).toContain("Role and access guidance");
+  expect(h).not.toContain("Latest 50 access and invitation events");
 });

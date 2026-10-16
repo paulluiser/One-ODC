@@ -1,3 +1,126 @@
+.accessActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.accessActions > button:not(:first-child) {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.accessHistory {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+.accessMeta {
+  color: var(--brand-muted);
+  font-size: 13px;
+}
+.accessEvents {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.accessEvents > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--brand-border);
+}
+.accessEvents > li > div {
+  min-width: 0;
+  flex: 1;
+}
+.accessEvents strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.accessEvents time {
+  display: block;
+  font-size: 12px;
+  color: var(--brand-muted);
+  margin-top: 4px;
+}
+.accessEvents details {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--brand-muted);
+}
+.accessEvents summary {
+  cursor: pointer;
+}
+.accessEvents dl {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+.accessEvents dd {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.accessEventIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: var(--brand-soft);
+  color: var(--brand-primary);
+}
+.accessPagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.accessEmpty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 32px 16px;
+  color: var(--brand-muted);
+}
+.roleGuide {
+  display: grid;
+  gap: 6px;
+  margin: 24px 0;
+}
+.roleGuide dt {
+  font-size: 14px;
+  font-weight: 600;
+}
+.roleGuide dd {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--brand-muted);
+  margin: 0 0 14px;
+}
+.accessNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+}
+.accessNote > svg {
+  flex-shrink: 0;
+  color: var(--brand-primary);
+  margin-top: 2px;
+}
+.accessNote p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.accessNote strong {
+  display: block;
+  margin-bottom: 4px;
+}
 .workspace {
   display: grid;
   gap: 20px;

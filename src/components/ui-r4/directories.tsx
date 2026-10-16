@@ -12,6 +12,7 @@ import {
   OperationSummary,
 } from "./primitives";
 import styles from "./ui-r4.module.css";
+import { AccessTools } from "./access-tools";
 type SupplierEvent = {
   id: string;
   supplier_id: string;
@@ -190,6 +191,7 @@ export function UserDirectory({
   page,
   configured,
   history,
+  historyCount = history.length,
   query = "",
   roleFilter = "",
   statusFilter = "",
@@ -198,6 +200,7 @@ export function UserDirectory({
   count: number;
   page: number;
   configured: boolean;
+  historyCount?: number;
   history: {
     id: string;
     entity_id: string;
@@ -214,13 +217,16 @@ export function UserDirectory({
       title="User management"
       description="Manage invitation-only access and existing team roles."
       action={
-        <OperationEditor
-          title="Invite a team member"
-          enabled
-          description="Invite a colleague using the existing provisioning workflow."
-        >
-          <InvitationForm configured={configured} rebuild />
-        </OperationEditor>
+        <div className={styles.accessActions}>
+          <OperationEditor
+            title="Invite a team member"
+            enabled
+            description="Invite a colleague using the existing provisioning workflow."
+          >
+            <InvitationForm configured={configured} rebuild />
+          </OperationEditor>
+          <AccessTools history={history} count={historyCount} />
+        </div>
       }
     >
       <section className="surface live-form">
@@ -323,41 +329,6 @@ export function UserDirectory({
           )}
         </nav>
       </section>
-      <details className="surface live-form">
-        <OperationSummary>Recent administrative history</OperationSummary>
-        <p>
-          Latest 50 access and invitation events. Full system activity remains
-          available from the dashboard.
-        </p>
-        <ol className={styles.history}>
-          {history.map((e) => (
-            <li key={e.id}>
-              <strong>
-                {e.action.replaceAll("user.", "").replaceAll("_", " ")}
-              </strong>
-              <small>{formatTime(e.occurred_at)}</small>
-              <details>
-                <OperationSummary>Account and actor reference</OperationSummary>
-                <p>
-                  Account {e.entity_id} · Actor {e.actor_id}
-                </p>
-              </details>
-            </li>
-          ))}
-        </ol>
-        {!history.length && <p>No access or invitation events recorded.</p>}
-      </details>
-      <details className="surface live-form">
-        <OperationSummary>Role and access guidance</OperationSummary>
-        <p>
-          Role assignments use the existing One ODC permission model.
-          Deactivation removes workspace access; existing records and audit
-          history remain preserved.
-        </p>
-        <Link href="/dashboard?view=system_activity">
-          View authorized system activity
-        </Link>
-      </details>
     </OperationsFrame>
   );
 }

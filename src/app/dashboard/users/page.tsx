@@ -5,6 +5,7 @@ import { checkDatabase } from "@/lib/live-data";
 import { profileSchema, roleLabels } from "@/lib/phase1";
 import { InvitationForm, UserAccessForm } from "@/components/workflow-forms";
 import { PageIntro } from "@/components/live-data";
+import { loadAccessHistory } from "./history-actions";
 export default async function Users({
   searchParams,
 }: {
@@ -38,14 +39,8 @@ export default async function Users({
   checkDatabase(error);
   const profiles = profileSchema.array().parse(data ?? []);
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
-    const audit = await client
-      .from("audit_events")
-      .select("id,entity_id,action,actor_id,occurred_at")
-      .eq("entity_type", "profile")
-      .in("action", ["user.access_changed", "user.invitation_requested"])
-      .order("occurred_at", { ascending: false })
-      .limit(50);
-    checkDatabase(audit.error);
+    const audit = await loadAccessHistory(1);
+    if (audit.error) throw new Error(audit.error);
     return (
       <UserDirectory
         profiles={profiles}
@@ -57,7 +52,8 @@ export default async function Users({
         configured={
           !!process.env.SUPABASE_SECRET_KEY && !!process.env.NEXT_PUBLIC_APP_URL
         }
-        history={audit.data ?? []}
+        history={audit.events ?? []}
+        historyCount={audit.count ?? 0}
       />
     );
   }
