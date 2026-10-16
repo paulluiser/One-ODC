@@ -6,8 +6,10 @@
 }
 .accessActions > button {
   flex-shrink: 0;
+  order: 2;
 }
 .accessActions .accessIcon {
+  order: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;

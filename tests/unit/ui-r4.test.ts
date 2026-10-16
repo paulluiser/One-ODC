@@ -111,5 +111,11 @@ it("admin presents only fetched profiles and reports unavailable invitation conf
   expect(h).toContain("Invitations are unavailable");
   expect(h).toContain("Administrative history");
   expect(h).toContain("Role and access guidance");
+  expect(h.indexOf("Administrative history")).toBeLessThan(
+    h.indexOf("Role and access guidance"),
+  );
+  expect(h.indexOf("Role and access guidance")).toBeLessThan(
+    h.indexOf("Invite a team member"),
+  );
   expect(h).not.toContain("Latest 50 access and invitation events");
 });
