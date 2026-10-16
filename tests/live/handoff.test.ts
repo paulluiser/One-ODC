@@ -72,10 +72,15 @@ it("4A staging: real closure, concurrent transitions, Ops redaction/activation, 
     p_ops: [],
     p_lead_designer: null,
   });
-  const close = (actor = "BDM", version = 1, reason = "", confirm = true) =>
+  const close = (
+    actor = "BDM",
+    version = 1,
+    reason = "Client agreed price",
+    confirm = true,
+  ) =>
     clients[actor].rpc("close_project_sale", {
       p_project: project,
-      p_expected_stage: "For Quotation",
+      p_expected_stage: "Under Negotiation",
       p_sale_version: version,
       p_primary_ops: ids.OPS,
       p_confirm: confirm,
@@ -91,7 +96,9 @@ it("4A staging: real closure, concurrent transitions, Ops redaction/activation, 
     p_expected_version: 0,
     p_reason: "",
   });
-  expect((await close()).error?.message).toContain("OPERATIONS_ADMIN_REQUIRED");
+  expect((await close()).error?.message).toContain(
+    "INVALID_COMMERCIAL_TRANSITION",
+  );
   const assignments = (ops: string[]) =>
     rpc("LEAD", "assign_project_personnel", {
       p_project: project,
@@ -126,7 +133,21 @@ it("4A staging: real closure, concurrent transitions, Ops redaction/activation, 
     (await clients.OPS.rpc("get_project_financials", { p_project: project }))
       .error?.message,
   ).toContain("ACCESS_DENIED");
-  for (const actor of ["DESIGNER", "OPS", "OTHER_BDM", "UNASSIGNED"])
+  await rpc("LEAD", "transition_commercial_stage", {
+    p_project: project,
+    p_expected_stage: "For Quotation",
+    p_target: "Under Negotiation",
+    p_reason: "Release to BDM",
+    p_confirm: true,
+  });
+  for (const actor of [
+    "DESIGNER",
+    "OPS",
+    "OTHER_BDM",
+    "UNASSIGNED",
+    "LEAD",
+    "ADMIN",
+  ])
     expect((await close(actor)).error?.message).toContain("ACCESS_DENIED");
   expect((await close("BDM", 1, "", false)).error?.message).toContain(
     "CONFIRMATION_REQUIRED",
@@ -139,6 +160,17 @@ it("4A staging: real closure, concurrent transitions, Ops redaction/activation, 
   expect(race.find((r) => r.error)?.error?.message).toContain(
     "SALE_ALREADY_CLOSED",
   );
+  expect((await get()).status).toBe("Awaiting Handoff");
+  expect(
+    (await clients.OPS.rpc("get_commercial_handoff", { p_project: project }))
+      .error?.message,
+  ).toContain("ACCESS_DENIED");
+  await rpc("LEAD", "handoff_closed_project", {
+    p_project: project,
+    p_primary_ops: ids.OPS,
+    p_reason: "Lead Operations assignment",
+    p_confirm: true,
+  });
   const initial = await get();
   expect(initial.status).toBe("Pending Acknowledgment");
   expect(initial.age_days).toBe(0);
@@ -289,7 +321,7 @@ it("4A staging: real closure, concurrent transitions, Ops redaction/activation, 
     ).data,
   ).toEqual([{ status: "Not Started" }]);
 });
-it("4A staging: System Administrator closure requires reason and retains audited override metadata", async () => {
+it("4A staging: System Administrator cannot close deals; BDM closure has no administrative override", async () => {
   const lead = randomUUID();
   await rpc("BDM", "save_lead", {
     p_id: lead,
@@ -325,7 +357,7 @@ it("4A staging: System Administrator closure requires reason and retains audited
   });
   const args = {
     p_project: project,
-    p_expected_stage: "For Quotation",
+    p_expected_stage: "Under Negotiation",
     p_sale_version: 1,
     p_primary_ops: ids.OPS,
     p_confirm: true,
@@ -333,15 +365,22 @@ it("4A staging: System Administrator closure requires reason and retains audited
   };
   expect(
     (await clients.ADMIN.rpc("close_project_sale", args)).error?.message,
-  ).toContain("REASON_REQUIRED");
-  await rpc("ADMIN", "close_project_sale", {
+  ).toContain("ACCESS_DENIED");
+  await rpc("LEAD", "transition_commercial_stage", {
+    p_project: project,
+    p_expected_stage: "For Quotation",
+    p_target: "Under Negotiation",
+    p_reason: "Release to BDM",
+    p_confirm: true,
+  });
+  await rpc("BDM", "close_project_sale", {
     ...args,
-    p_reason: "Documented authorized administrative closure",
+    p_reason: "Client confirmed the agreed price",
   });
   const h = await rpc("ADMIN", "get_commercial_handoff", {
     p_project: project,
   });
-  expect(h.closure.administrative_override).toBe(true);
+  expect(h.closure.administrative_override).toBe(false);
   expect(h.closure.sale_amount).toBe("0.00");
   expect(
     (
@@ -350,5 +389,5 @@ it("4A staging: System Administrator closure requires reason and retains audited
         .eq("project_id", project)
         .eq("action", "commercial.closed")
     ).data?.[0].new_value.administrative_override,
-  ).toBe(true);
+  ).toBe(false);
 });

@@ -1,3 +1,5 @@
+import { projectIsLost } from "@/lib/workspace-session";
+import { DisclosureSummary } from "./ui-r2/primitives";
 import { requireWorkspace } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import { SavedResources } from "./resource-links";
@@ -17,13 +19,14 @@ export async function ProjectResources({
   primaryBdm: boolean;
 }) {
   const { client, profile } = await requireWorkspace();
+  const lost = await projectIsLost(project);
   const [lifecycle, r, slots] = await Promise.all([
     client.from("projects").select("is_cancelled").eq("id", project).single(),
     client.rpc("project_resources", { p_project: project }),
     client.rpc("get_attachment_slots", { p_project: project }),
   ]);
   checkDatabase(lifecycle.error);
-  const cancelled = lifecycle.data?.is_cancelled ?? true;
+  const cancelled = lost || (lifecycle.data?.is_cancelled ?? true);
   checkDatabase(r.error);
   const details = r.data;
   const attached = await client
@@ -55,7 +58,7 @@ export async function ProjectResources({
       </section>
       {!cancelled && (manager || primaryBdm) && (
         <details className="surface workspace-disclosure">
-          <summary>Edit Notes and resources</summary>
+          <DisclosureSummary>Edit Notes and resources</DisclosureSummary>
           <ProjectResourceForm
             project={project}
             version={details.version}
@@ -65,7 +68,7 @@ export async function ProjectResources({
         </details>
       )}
       <details className="surface workspace-disclosure">
-        <summary>Project files and versions</summary>
+        <DisclosureSummary>Project files and versions</DisclosureSummary>
         <LeadAttachments
           leadId=""
           projectId={project}

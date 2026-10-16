@@ -4,6 +4,7 @@ package-lock.json
 public/brand
 public/branding/fonts
 artifacts
+ui-review
 playwright-report
 test-results
 next-env.d.ts

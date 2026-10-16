@@ -45,7 +45,11 @@ afterAll(async () => {
     await c.auth.signOut({ scope: "local" });
 });
 import type { Financials } from "../../src/lib/finance";
-import { readFileSync } from "node:fs";
+import {
+  stagingProject,
+  installationSetup,
+  financeSupportFixture,
+} from "../helpers/staging";
 it("staging: independent exact finance, payment corrections/voids, concurrent requests, role redaction and RLS", async () => {
   const lead = randomUUID();
   await rpc("BDM", "save_lead", {
@@ -325,12 +329,14 @@ it("staging: independent exact finance, payment corrections/voids, concurrent re
     (await val("ADMIN", "Sale", "100.20", 1, project, "")).error?.message,
   ).toContain("REASON_REQUIRED");
   expect((await val("ADMIN", "Sale", "100.20", 1)).error).toBeNull();
-  const closed = JSON.parse(
-    readFileSync(
-      "artifacts/verification/monitoring-closed-fixture.json",
-      "utf8",
-    ),
-  ).id;
+  const closedFixture = await stagingProject(
+    "UI-R3 finance API",
+    ids.DESIGNER,
+    ids.OPS,
+  );
+  await installationSetup(closedFixture.id, ids.DESIGNER, ids.OPS);
+  await financeSupportFixture(closedFixture.id);
+  const closed = closedFixture.id;
   const ops = await get("OPS", closed);
   expect(ops).not.toHaveProperty("sale");
   expect(ops).not.toHaveProperty("approved_quotation");

@@ -1,13 +1,16 @@
+import { OneODCLogo } from "@/components/one-odc-logo";
 import { Brand } from "@/components/brand";
 import { LoginForm } from "@/components/login-form";
 import { ThemeSelect } from "@/components/theme-select";
+import { LoginAppearance } from "@/components/ui-r0/login-appearance";
 import { supabaseConfig } from "@/lib/env";
 export const dynamic = "force-dynamic";
 export default function LoginPage() {
+  const rebuilt = process.env.ONE_ODC_UI_R0_ENABLED === "true";
   return (
-    <main className="login-page">
+    <main className="login-page" data-ui-rebuild-login={rebuilt || undefined}>
       <section className="login-story">
-        <Brand />
+        {rebuilt ? <OneODCLogo theme="dark" /> : <Brand />}
         <div className="architectural-art" aria-hidden="true">
           <div className="arch arch-one" />
           <div className="arch arch-two" />
@@ -33,7 +36,7 @@ export default function LoginPage() {
       </section>
       <section className="login-panel">
         <div className="login-theme">
-          <ThemeSelect />
+          {rebuilt ? <LoginAppearance /> : <ThemeSelect />}
         </div>
         <div className="login-content">
           <span className="eyebrow">WELCOME TO ONE ODC</span>

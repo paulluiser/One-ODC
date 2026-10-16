@@ -1,4 +1,5 @@
 "use client";
+import r3 from "./ui-r3/ui-r3.module.css";
 import { PendingIndicator } from "./operation-feedback";
 import { FormPending } from "./form-pending";
 import { useActionState, useEffect, useId, useRef, useState } from "react";
@@ -17,7 +18,9 @@ export function InstallationForm({
   readiness,
   manager = false,
   held = false,
+  rebuild = false,
 }: {
+  rebuild?: boolean;
   project: string;
   space?: string;
   installation?: Installation;
@@ -43,6 +46,7 @@ export function InstallationForm({
       action={action}
       className="live-form"
       aria-label={label}
+      aria-busy={pending}
       onReset={(e) => e.preventDefault()}
     >
       <input type="hidden" name="project" value={project} />
@@ -133,7 +137,7 @@ export function InstallationForm({
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />
           <Dialog.Content
-            className="detail-dialog"
+            className={`detail-dialog ${rebuild ? r3.dialog : ""}`}
             onCloseAutoFocus={(event) => {
               const heading = document.getElementById(
                 "operational-readiness-title",

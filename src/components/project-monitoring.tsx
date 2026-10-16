@@ -1,3 +1,5 @@
+import { projectIsLost } from "@/lib/workspace-session";
+import { DisclosureSummary } from "./ui-r2/primitives";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -38,6 +40,7 @@ export async function ProjectMonitoring({
   filters?: Record<string, string | string[] | undefined>;
 }) {
   const { client, profile } = await requireWorkspace();
+  const lost = await projectIsLost(project);
   const val = (key: string) =>
     typeof filters[key] === "string" ? String(filters[key]) : "";
   const date = (key: string) =>
@@ -153,7 +156,7 @@ export async function ProjectMonitoring({
         ["Client Coordination", "General Update"].includes(c),
       )
     : allowedCategories;
-  const mayRecord = profile.role !== "bdm";
+  const mayRecord = !lost && profile.role !== "bdm";
   const actorOptions = [...new Set(timeline.map((t) => t.actor_id))];
   const team =
     profile.role !== "operations_admin"
@@ -166,15 +169,12 @@ export async function ProjectMonitoring({
       : (team.data ?? []).find(
           (p: { user_id: string; display_name: string }) => p.user_id === id,
         )?.display_name || `User ${id.slice(0, 8)}`;
-  return (
-    <section
-      className="surface live-form project-monitoring"
-      id={nested ? undefined : "project-activities"}
-      aria-labelledby="monitoring-title"
-    >
-      <h2 id="monitoring-title">Project monitoring</h2>
+  const measures = (
+    <>
       <details className="monitoring-measures">
-        <summary>Progress, aging and deadline details</summary>
+        <DisclosureSummary>
+          Progress, aging and deadline details
+        </DisclosureSummary>
         <dl className="record-details">
           <div>
             <dt>Work state</dt>
@@ -242,7 +242,9 @@ export async function ProjectMonitoring({
       </p>
       {spaces.length > 0 && (
         <details>
-          <summary>Space aging and deadline indicators</summary>
+          <DisclosureSummary>
+            Space aging and deadline indicators
+          </DisclosureSummary>
           {spaces.map((s) => {
             const end =
               s.cancelled_at || s.cycle_completed_at || m.cancelled_at || now;
@@ -304,7 +306,9 @@ export async function ProjectMonitoring({
         </details>
       )}
       <details>
-        <summary>Operational cycle and hold history</summary>
+        <DisclosureSummary>
+          Operational cycle and hold history
+        </DisclosureSummary>
         {m.cycles.map((c) => (
           <p key={c.number}>
             Cycle {c.number}: {formatTime(c.started_at)} →{" "}
@@ -319,32 +323,38 @@ export async function ProjectMonitoring({
           </p>
         ))}
       </details>
-      {manager && m.state !== "Cancelled" && (
-        <details>
-          <summary>Project controls and deadline revisions</summary>
-          <ProjectControl m={m} />
-          <ProjectDeadlineForm m={m} />
-          <CoordinatorForm project={project} />
-        </details>
-      )}
-      {mayRecord && m.state !== "Cancelled" && (
-        <details>
-          <summary>Record project activity</summary>
-          <ActivityForm
-            project={project}
-            id={randomUUID()}
-            spaces={m.space_refs
-              .filter((s) => s.editable)
-              .map((s) => ({
-                id: s.id,
-                name: `${s.name} · ${s.id.slice(0, 8)}`,
-              }))}
-            coordinators={coordinators.filter((c) => c.active)}
-            attachments={attachments}
-            categories={categories}
-          />
-        </details>
-      )}
+    </>
+  );
+  const controls = !lost && manager && m.state !== "Cancelled" && (
+    <details>
+      <DisclosureSummary>
+        Project controls and deadline revisions
+      </DisclosureSummary>
+      <ProjectControl m={m} />
+      <ProjectDeadlineForm m={m} />
+      <CoordinatorForm project={project} />
+    </details>
+  );
+  const record = mayRecord && m.state !== "Cancelled" && (
+    <details>
+      <DisclosureSummary>Record project activity</DisclosureSummary>
+      <ActivityForm
+        project={project}
+        id={randomUUID()}
+        spaces={m.space_refs
+          .filter((s) => s.editable)
+          .map((s) => ({
+            id: s.id,
+            name: `${s.name} · ${s.id.slice(0, 8)}`,
+          }))}
+        coordinators={coordinators.filter((c) => c.active)}
+        attachments={attachments}
+        categories={categories}
+      />
+    </details>
+  );
+  const timelineSection = (
+    <>
       <h3>Project timeline</h3>
       <form
         method="get"
@@ -435,7 +445,7 @@ export async function ProjectMonitoring({
                 : ""}
             </p>
             <details>
-              <summary>Event identifiers</summary>
+              <DisclosureSummary>Event identifiers</DisclosureSummary>
               <p>
                 Actor: {t.actor_id} · Event: {t.id}
                 {t.space_id ? ` · Space: ${t.space_id}` : ""}
@@ -460,14 +470,20 @@ export async function ProjectMonitoring({
           </a>
         )}
       </nav>
+    </>
+  );
+  const corrections = (
+    <>
       <details>
-        <summary>Manual activity corrections (latest 50 activities)</summary>
+        <DisclosureSummary>
+          Manual activity corrections (latest 50 activities)
+        </DisclosureSummary>
         {!activities.length && <p>No manual activities recorded.</p>}
         {activities.map((a) => (
           <details className="history-entry" key={a.id}>
-            <summary>
+            <DisclosureSummary>
               {a.category} · {a.activity_date} · Version {a.version}
-            </summary>
+            </DisclosureSummary>
             <p className="activity-description">{a.description}</p>
             <p>
               Tagged Site Coordinator:{" "}
@@ -499,7 +515,9 @@ export async function ProjectMonitoring({
                 />
               )}
             <details>
-              <summary>Authorized correction history</summary>
+              <DisclosureSummary>
+                Authorized correction history
+              </DisclosureSummary>
               {versionsResult.data
                 ?.filter((v) => v.activity_id === a.id)
                 .map((v) => (
@@ -517,6 +535,36 @@ export async function ProjectMonitoring({
           </details>
         ))}
       </details>
+    </>
+  );
+  return (
+    <section
+      className="surface live-form project-monitoring"
+      id={nested ? undefined : "project-activities"}
+      aria-labelledby="monitoring-title"
+    >
+      <h2 id="monitoring-title">
+        {process.env.ONE_ODC_UI_R0_ENABLED === "true"
+          ? "Activities and history"
+          : "Project monitoring"}
+      </h2>
+      {process.env.ONE_ODC_UI_R0_ENABLED === "true" ? (
+        <>
+          {record}
+          {timelineSection}
+          {controls}
+          {measures}
+          {corrections}
+        </>
+      ) : (
+        <>
+          {measures}
+          {controls}
+          {record}
+          {timelineSection}
+          {corrections}
+        </>
+      )}
     </section>
   );
 }

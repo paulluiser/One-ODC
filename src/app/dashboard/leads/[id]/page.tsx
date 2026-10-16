@@ -1,3 +1,10 @@
+import r2 from "@/components/ui-r2/ui-r2.module.css";
+import {
+  DisclosureSummary,
+  Scope,
+  Heading,
+  Status,
+} from "@/components/ui-r2/primitives";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -94,88 +101,83 @@ export default async function LeadDetail({
         .limit(100)
     : { data: [], error: null };
   checkDatabase(versions.error);
-  return (
+  const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
+  const brief = editable ? (
+    <LeadForm
+      rebuild={rebuild}
+      resourcesEnabled={process.env.ONE_ODC_RESOURCES_ENABLED === "true"}
+      id={id}
+      lead={lead}
+      bdmName={profile.display_name}
+    />
+  ) : (
+    <section className="surface live-form lead-brief">
+      <h2>Request details</h2>
+      <dl className="record-details">
+        <div>
+          <dt>Primary BDM account</dt>
+          <dd>
+            {lead.bdm_id === profile.id
+              ? profile.display_name
+              : people.find((person) => person.id === lead.bdm_id)
+                  ?.display_name || "Originating BDM"}
+            <details className="record-identifiers">
+              <DisclosureSummary>Account reference</DisclosureSummary>
+              {lead.bdm_id}
+            </details>
+          </dd>
+        </div>
+        <div>
+          <dt>Address</dt>
+          <dd>{lead.address}</dd>
+        </div>
+        <div>
+          <dt>Brand</dt>
+          <dd>{lead.brand || "Not specified"}</dd>
+        </div>
+        <div>
+          <dt>Estimated Cabinetries</dt>
+          <dd>{lead.cabinetry_count ?? "Not specified"}</dd>
+        </div>
+        <div>
+          <dt>Date Needed</dt>
+          <dd>{lead.date_needed || "Not specified"}</dd>
+        </div>
+        <div>
+          <dt>Notes</dt>
+          <dd style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            {lead.notes || "No notes"}
+          </dd>
+        </div>
+      </dl>
+      {process.env.ONE_ODC_RESOURCES_ENABLED === "true" && (
+        <SavedResources links={lead.resource_links} />
+      )}
+      <AttachmentList files={lead.attachment_metadata} />
+      {lead.attachment_metadata.length > 0 && (
+        <p className="field-hint">
+          Metadata only. These files have not been uploaded.
+        </p>
+      )}
+    </section>
+  );
+  const files = storageEnabled && (
+    <LeadAttachments
+      leadId={id}
+      slots={slots.data}
+      editable={editable}
+      userId={profile.id}
+      attachments={(attached.data ?? []) as StoredAttachment[]}
+      versions={(versions.data ?? []) as StoredVersion[]}
+    />
+  );
+  const review = mayReview(profile.role) && lead.status === "Submitted" && (
+    <ReviewForm lead={lead} people={people} profile={profile} />
+  );
+  const history = (
     <>
-      <PageIntro
-        title={lead.project_name || "Untitled draft"}
-        description={`${lead.reference} · ${lead.status} · ${leadAge(lead) === null ? "Not submitted" : `${leadAge(lead)} calendar days`}`}
-      >
-        {origin.data && (
-          <Link
-            className="button button-outline"
-            href={`/dashboard/projects/${origin.data.project_id}`}
-          >
-            Open Project →
-          </Link>
-        )}
-      </PageIntro>
-      <p className="live-updated">
-        Last saved {formatTime(lead.updated_at)} · Revision {lead.version}
-      </p>
-      {editable ? (
-        <LeadForm
-          resourcesEnabled={process.env.ONE_ODC_RESOURCES_ENABLED === "true"}
-          id={id}
-          lead={lead}
-          bdmName={profile.display_name}
-        />
-      ) : (
-        <section className="surface live-form">
-          <h2>Request details</h2>
-          <dl className="record-details">
-            <div>
-              <dt>Primary BDM account</dt>
-              <dd>{lead.bdm_id}</dd>
-            </div>
-            <div>
-              <dt>Address</dt>
-              <dd>{lead.address}</dd>
-            </div>
-            <div>
-              <dt>Brand</dt>
-              <dd>{lead.brand || "Not specified"}</dd>
-            </div>
-            <div>
-              <dt>Number of Cabinetries</dt>
-              <dd>{lead.cabinetry_count ?? "Not specified"}</dd>
-            </div>
-            <div>
-              <dt>Date Needed</dt>
-              <dd>{lead.date_needed || "Not specified"}</dd>
-            </div>
-            <div>
-              <dt>Notes</dt>
-              <dd style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-                {lead.notes || "No notes"}
-              </dd>
-            </div>
-          </dl>
-          {process.env.ONE_ODC_RESOURCES_ENABLED === "true" && (
-            <SavedResources links={lead.resource_links} />
-          )}
-          <AttachmentList files={lead.attachment_metadata} />
-          {lead.attachment_metadata.length > 0 && (
-            <p className="field-hint">
-              Metadata only. These files have not been uploaded.
-            </p>
-          )}
-        </section>
-      )}
-      {mayReview(profile.role) && lead.status === "Submitted" && (
-        <ReviewForm lead={lead} people={people} profile={profile} />
-      )}
-      {storageEnabled && (
-        <LeadAttachments
-          leadId={id}
-          slots={slots.data}
-          editable={editable}
-          userId={profile.id}
-          attachments={(attached.data ?? []) as StoredAttachment[]}
-          versions={(versions.data ?? []) as StoredVersion[]}
-        />
-      )}
       <details className="surface live-form lead-history">
-        <summary>Submission history</summary>
+        <DisclosureSummary>Submission history</DisclosureSummary>
         <h2>Submission history</h2>
         <p className="field-hint">
           Complete snapshots are preserved. Showing the latest 50 submissions.
@@ -183,9 +185,9 @@ export default async function LeadDetail({
         {(submissions.data as Submission[]).length ? (
           (submissions.data as Submission[]).map((s) => (
             <details className="history-entry" key={s.id}>
-              <summary>
+              <DisclosureSummary>
                 Submission {s.number} · {formatTime(s.submitted_at)}
-              </summary>
+              </DisclosureSummary>
               <dl className="record-details">
                 <div>
                   <dt>Project</dt>
@@ -231,7 +233,7 @@ export default async function LeadDetail({
         )}
       </details>
       <details className="surface live-form lead-history">
-        <summary>Review history</summary>
+        <DisclosureSummary>Review history</DisclosureSummary>
         <h2>Review history</h2>
         {(reviews.data as Review[]).length ? (
           (reviews.data as Review[]).map((r) => (
@@ -247,6 +249,72 @@ export default async function LeadDetail({
           <p className="field-hint">No review decisions yet.</p>
         )}
       </details>
+    </>
+  );
+  if (rebuild)
+    return (
+      <Scope>
+        <Heading
+          title={lead.project_name || "Untitled draft"}
+          description={`${lead.reference} · Saved ${formatTime(lead.updated_at)} · Revision ${lead.version}`}
+          action={
+            origin.data && (
+              <Link
+                className="button button-outline"
+                href={`/dashboard/projects/${origin.data.project_id}`}
+              >
+                Open Project
+              </Link>
+            )
+          }
+        />
+        <div>
+          <Status>{lead.status}</Status>{" "}
+          <span className="field-hint">
+            {leadAge(lead) === null
+              ? "Not submitted"
+              : `${leadAge(lead)} calendar days since submission`}
+          </span>
+        </div>
+        {editable ? (
+          <>
+            {brief}
+            {files}
+          </>
+        ) : (
+          <div className={r2.leadGrid}>
+            <div>{brief}</div>
+            <div>
+              {review}
+              {files}
+            </div>
+          </div>
+        )}
+        <div className={r2.workspaceAside}>{history}</div>
+      </Scope>
+    );
+  return (
+    <>
+      <PageIntro
+        title={lead.project_name || "Untitled draft"}
+        description={`${lead.reference} · ${lead.status} · ${leadAge(lead) === null ? "Not submitted" : `${leadAge(lead)} calendar days`}`}
+      >
+        {origin.data && (
+          <Link
+            className="button button-outline"
+            href={`/dashboard/projects/${origin.data.project_id}`}
+          >
+            Open Project →
+          </Link>
+        )}
+      </PageIntro>
+      <p className="live-updated">
+        Last saved {formatTime(lead.updated_at)} · Revision {lead.version}
+      </p>
+      {brief}
+      {files}
+      {review}
+      {history}
     </>
   );
 }

@@ -43,7 +43,7 @@ export const projects: Project[] = [
     spaces: 5,
     deadline: "2026-10-15",
     risk: "At Risk",
-    commercial: "Negotiation",
+    commercial: "Under Negotiation",
     installation: "Not Scheduled",
   },
   {

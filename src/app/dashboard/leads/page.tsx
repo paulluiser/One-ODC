@@ -1,3 +1,4 @@
+import { LeadDirectory } from "@/components/ui-r2/directories";
 import Link from "next/link";
 import { requireRole } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
@@ -40,6 +41,17 @@ export default async function Leads({
   const leads = leadSchema.array().parse(data ?? []);
   const url = (number: number) =>
     `/dashboard/leads?${new URLSearchParams({ q, status: status || "All", page: String(number) })}`;
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    return (
+      <LeadDirectory
+        leads={leads}
+        q={q}
+        status={status}
+        page={page}
+        count={count ?? 0}
+        bdm={profile.role === "bdm"}
+      />
+    );
   return (
     <>
       <PageIntro

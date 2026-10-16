@@ -79,3 +79,7 @@ export async function operationalJourney(): Promise<{
   );
   return JSON.parse(stdout);
 }
+
+export async function financeSupportFixture(project: string): Promise<void> {
+  await fixture("finance-support-fixture", project);
+}

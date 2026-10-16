@@ -1,9 +1,16 @@
+import { CompositionStartup } from "./composition-startup";
 import { Brand } from "./brand";
 export function StartupState({
-  message = "Checking workspace access…",
+  message,
+  modern = false,
 }: {
   message?: string;
+  modern?: boolean;
 }) {
+  const copy =
+    message ??
+    (modern ? "Preparing your workspace" : "Checking workspace access…");
+  if (modern) return <CompositionStartup message={copy} />;
   return (
     <main className="startup-state" aria-busy="true">
       <div className="startup-blueprint" aria-hidden="true">
@@ -17,7 +24,7 @@ export function StartupState({
           Every space. <span>One vision.</span>
         </h1>
         <p role="status" aria-live="polite">
-          {message}
+          {copy}
         </p>
         <span className="startup-indicator" aria-hidden="true" />
       </div>

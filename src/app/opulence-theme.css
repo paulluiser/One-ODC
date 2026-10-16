@@ -1,0 +1,257 @@
+/* Supplied Opulence identity. Scoped to the rebuilt application; legacy stays unchanged. */
+html[data-one-odc-brand="opulence"] {
+  color-scheme: light;
+  --brand-gold: #d6a23f;
+  --brand-canvas: #f8f7f3;
+  --brand-surface: #ffffff;
+  --brand-soft: #f2f0ea;
+  --brand-sunken: #eae6dc;
+  --brand-text: #242321;
+  --brand-muted: #6d665c;
+  --brand-border: #e8e4da;
+  --brand-input: #918576;
+  --brand-primary: #cfa044;
+  --brand-primary-hover: #c2963c;
+  --brand-on-primary: #242321;
+  --brand-primary-border: #90691f;
+  --brand-selected: #f6ecd5;
+  --brand-link: #795514;
+  --brand-focus: #87601a;
+  --brand-lilac: #f0ecef;
+  --brand-peach: #f8eee5;
+  --brand-green: #edf4ee;
+  --brand-success: #276347;
+  --brand-success-soft: #edf5ef;
+  --brand-warning: #8a5115;
+  --brand-warning-soft: #fff0d7;
+  --brand-destructive: #a6332d;
+  --brand-destructive-soft: #fbece9;
+  --brand-info: #285d95;
+  --brand-info-soft: #eaf1f9;
+  --brand-chart-1: #94681a;
+  --brand-chart-2: #527b63;
+  --brand-chart-3: #4e719e;
+  --brand-chart-4: #876491;
+  --brand-chart-5: #a56132;
+  --brand-story: #242321;
+  --brand-story-text: #f4f0e8;
+  --brand-story-muted: #c9c1b3;
+  --brand-shadow: #24232116;
+  --background: var(--brand-canvas);
+  --foreground: var(--brand-text);
+  --surface: var(--brand-surface);
+  --surface-muted: var(--brand-soft);
+  --surface-sunken: var(--brand-sunken);
+  --muted: var(--brand-muted);
+  --muted-foreground: var(--brand-muted);
+  --primary: var(--brand-primary);
+  --primary-hover: var(--brand-primary-hover);
+  --primary-foreground: var(--brand-on-primary);
+  --primary-soft: var(--brand-selected);
+  --secondary: var(--brand-soft);
+  --secondary-foreground: var(--brand-text);
+  --accent: var(--brand-selected);
+  --accent-foreground: var(--brand-link);
+  --card: var(--brand-surface);
+  --card-foreground: var(--brand-text);
+  --popover: var(--brand-surface);
+  --popover-foreground: var(--brand-text);
+  --border: var(--brand-border);
+  --border-strong: var(--brand-input);
+  --input: var(--brand-input);
+  --ring: var(--brand-focus);
+  --focus: var(--brand-focus);
+  --destructive: var(--brand-destructive);
+  --destructive-foreground: #ffffff;
+  --danger: var(--brand-destructive);
+  --red: var(--brand-destructive);
+  --green: var(--brand-success);
+  --success: var(--brand-success);
+  --warning: var(--brand-warning);
+  --info: var(--brand-info);
+  --sidebar: var(--brand-surface);
+  --sidebar-foreground: var(--brand-text);
+  --sidebar-primary: var(--brand-link);
+  --sidebar-accent: var(--brand-selected);
+  --sidebar-accent-foreground: var(--brand-link);
+  --sidebar-border: var(--brand-border);
+  --sidebar-ring: var(--brand-focus);
+  --chart-1: var(--brand-chart-1);
+  --chart-2: var(--brand-chart-2);
+  --chart-3: var(--brand-chart-3);
+  --chart-4: var(--brand-chart-4);
+  --chart-5: var(--brand-chart-5);
+  --navy: var(--brand-story);
+  --navy-raised: var(--brand-sunken);
+}
+html[data-one-odc-brand="opulence"].dark {
+  color-scheme: dark;
+  --brand-canvas: #141518;
+  --brand-surface: #202124;
+  --brand-soft: #292a2d;
+  --brand-sunken: #191a1d;
+  --brand-text: #f4f0e8;
+  --brand-muted: #b7b0a4;
+  --brand-border: #363532;
+  --brand-input: #827b70;
+  --brand-primary: #dab56c;
+  --brand-primary-hover: #e5c383;
+  --brand-on-primary: #242321;
+  --brand-primary-border: #dab56c;
+  --brand-selected: #393122;
+  --brand-link: #e1bc74;
+  --brand-focus: #e1bc74;
+  --brand-lilac: #302b31;
+  --brand-peach: #382e27;
+  --brand-green: #25322a;
+  --brand-success: #a4d7b6;
+  --brand-success-soft: #20372b;
+  --brand-warning: #f4cb8e;
+  --brand-warning-soft: #413523;
+  --brand-destructive: #f2aaa4;
+  --brand-destructive-soft: #452a2a;
+  --destructive-foreground: #242321;
+  --brand-info: #b6d2f4;
+  --brand-info-soft: #243449;
+  --brand-chart-1: #dab56c;
+  --brand-chart-2: #91bea1;
+  --brand-chart-3: #98b9e1;
+  --brand-chart-4: #c4a1cd;
+  --brand-chart-5: #e3ac84;
+  --brand-story: #191a1d;
+  --brand-shadow: #00000038;
+}
+html[data-one-odc-brand="opulence"] ::selection {
+  background: var(--brand-selected);
+  color: var(--brand-text);
+}
+html[data-one-odc-brand="opulence"] .button-primary,
+html[data-one-odc-brand="opulence"] .login-button {
+  background: var(--brand-primary);
+  color: var(--brand-on-primary);
+  border-color: var(--brand-primary-border);
+  box-shadow: inset 0 0 0 1px var(--brand-primary-border);
+}
+html[data-one-odc-brand="opulence"] .button-primary:hover:not(:disabled),
+html[data-one-odc-brand="opulence"] .login-button:hover:not(:disabled) {
+  background: var(--brand-primary-hover);
+}
+html[data-one-odc-brand="opulence"]
+  :is(
+    .text-link,
+    .field-hint a,
+    .live-form a:not(.button):not(.project-name),
+    .workspace-panel > a,
+    .list-controls > a,
+    .recent-project-activity > a,
+    .calendar-agenda a,
+    .button-outline[aria-current="page"]
+  ) {
+  color: var(--brand-link);
+}
+html[data-one-odc-brand="opulence"]
+  body
+  :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border-color: var(--brand-input);
+  color: var(--brand-text);
+  background-color: var(--brand-surface);
+}
+html[data-one-odc-brand="opulence"]
+  :is(input[type="checkbox"], input[type="radio"], progress) {
+  accent-color: var(--brand-primary-border);
+}
+html[data-one-odc-brand="opulence"] :is(.form-error, .field-error) {
+  color: var(--brand-destructive);
+}
+html[data-one-odc-brand="opulence"] .form-success {
+  color: var(--brand-success);
+}
+html[data-one-odc-brand="opulence"] :is(.login-story, .startup-state) {
+  background: var(--brand-story);
+  color: var(--brand-story-text);
+}
+html[data-one-odc-brand="opulence"]
+  :is(.story-copy p, .story-footer, .startup-content p) {
+  color: var(--brand-story-muted);
+}
+html[data-one-odc-brand="opulence"]
+  :is(.story-copy > .eyebrow, .story-copy h1 span, .startup-content h1 span) {
+  color: var(--brand-primary);
+}
+html[data-one-odc-brand="opulence"] .startup-indicator {
+  background: var(--brand-primary);
+}
+html[data-one-odc-brand="opulence"] :is(.arch, .startup-blueprint i) {
+  border-color: color-mix(in srgb, var(--brand-gold) 28%, transparent);
+}
+html[data-one-odc-brand="opulence"] .login-content .eyebrow {
+  color: var(--brand-muted);
+}
+html[data-one-odc-brand="opulence"]
+  :is(.login-panel, .password-page, .state-page) {
+  background: var(--brand-surface);
+  color: var(--brand-text);
+}
+html[data-one-odc-brand="opulence"]
+  :is(.calendar-month-nav, .calendar-views, .calendar-filters)
+  a[aria-current] {
+  color: var(--brand-link);
+}
+html[data-one-odc-brand="opulence"]
+  :is(.calendar-day[aria-current], .calendar-day.is-today) {
+  color: var(--brand-on-primary);
+}
+html[data-one-odc-brand="opulence"]
+  .calendar-day[aria-current="date"]
+  .calendar-day-number {
+  color: var(--brand-on-primary);
+}
+html[data-one-odc-brand="opulence"] .calendar-day.selected {
+  box-shadow: inset 0 0 0 2px var(--brand-primary-border);
+}
+html[data-one-odc-brand="opulence"] .calendar-day-event {
+  border-left-color: var(--brand-primary-border);
+}
+html[data-one-odc-brand="opulence"] .startup-blueprint {
+  opacity: 0.25;
+}
+/* Preserve the existing semantic aliases used by shared status/feedback components. */
+html[data-one-odc-brand="opulence"] {
+  --gold: var(--brand-gold);
+  --sand: var(--brand-sunken);
+  --green-bg: var(--brand-success-soft);
+  --amber: var(--brand-warning);
+  --amber-bg: var(--brand-warning-soft);
+  --red-bg: var(--brand-destructive-soft);
+}
+html[data-one-odc-brand="opulence"] .login-content a {
+  color: var(--brand-link);
+}
+html[data-one-odc-brand="opulence"] :is(input, textarea)::placeholder {
+  color: var(--brand-muted);
+  opacity: 1;
+}
+html[data-one-odc-brand="opulence"] .button-outline {
+  border-color: var(--brand-input);
+}
+html[data-one-odc-brand="opulence"] button[data-destructive="true"],
+html[data-one-odc-brand="opulence"]
+  button[data-destructive="true"]:hover:not(:disabled) {
+  background: var(--brand-destructive);
+  color: var(--destructive-foreground);
+  border-color: var(--brand-destructive);
+  box-shadow: none;
+}
+
+html[data-one-odc-brand="opulence"] ::selection {
+  background: var(--brand-selected);
+  color: var(--brand-text);
+}
+html[data-one-odc-brand="opulence"]
+  :is(.live-field, .login-form)
+  :is(input, select, textarea):focus-visible {
+  border-color: var(--brand-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-focus) 24%, transparent);
+  outline: 2px solid var(--brand-focus);
+  outline-offset: 2px;
+}

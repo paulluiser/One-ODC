@@ -1,0 +1,12 @@
+{
+  "source": "one-odc-brand-assets.zip",
+  "sourceSha256": "cbedf0029019a27b55b0223960f3b170b5be1105389033767dea5c01f70931d8",
+  "assets": {
+    "one-odc-favicon.svg": "b342b46e4a98e6c16169f3458c24d2cd1d49ec369c966653a448c0146144f0c1",
+    "one-odc-icon-dark.svg": "0405e8af6c840409a50d52faf8f689f279e0f3fc100c6303745f2194a10568c5",
+    "one-odc-icon-light.svg": "d8ccee12bb024375fc8f85862a7cea2194f2e7c1fa4d8ce41ea1b203a3bf81a5",
+    "one-odc-icon-transparent.svg": "146cd7adc02f5da670b77817071bed5ff2300ccf65e9b06b2c893f5b4fd12dda",
+    "one-odc-logo-dark.svg": "41d2d866510e82398734d4380a2c065d223a651c710006a9352d33b90b26ea33",
+    "one-odc-logo-light.svg": "4102979a7e4d18239578b012fcba662122d521063eab2830ce138aaae8471eeb"
+  }
+}

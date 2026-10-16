@@ -4622,7 +4622,7 @@ td {
   border-color: transparent;
 }
 .live-status[data-status="Returned for Clarification"],
-.live-status[data-status="Negotiation"] {
+.live-status[data-status="Under Negotiation"] {
   color: var(--amber);
   background: var(--amber-bg);
   border-color: transparent;

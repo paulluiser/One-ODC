@@ -1,4 +1,5 @@
 "use client";
+import r3 from "./ui-r3/ui-r3.module.css";
 import { PendingIndicator } from "./operation-feedback";
 import { FormPending } from "./form-pending";
 import { useActionState, useId, useState } from "react";
@@ -18,7 +19,9 @@ export function LogisticsForm({
   record,
   manager = false,
   held = false,
+  rebuild = false,
 }: {
+  rebuild?: boolean;
   id: string;
   project?: string;
   suppliers?: Supplier[];
@@ -60,7 +63,10 @@ export function LogisticsForm({
     multiline = false,
   ) => (
     <div className="live-field">
-      <label htmlFor={`${fid}-${name}`}>{title}</label>
+      <label htmlFor={`${fid}-${name}`}>
+        {title}
+        {required ? " *" : ""}
+      </label>
       {multiline ? (
         <textarea
           id={`${fid}-${name}`}
@@ -85,6 +91,7 @@ export function LogisticsForm({
       id={fid}
       action={action}
       aria-label={label}
+      aria-busy={pending}
       className="live-form"
       onReset={(e) => e.preventDefault()}
     >
@@ -235,7 +242,7 @@ export function LogisticsForm({
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />
           <Dialog.Content
-            className="detail-dialog"
+            className={`detail-dialog ${rebuild ? r3.dialog : ""}`}
             onEscapeKeyDown={(e) => {
               if (pending) e.preventDefault();
             }}

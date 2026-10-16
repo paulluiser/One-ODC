@@ -1,7 +1,8 @@
+import { UserDirectory } from "@/components/ui-r4/directories";
 import Link from "next/link";
 import { requireRole } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
-import { profileSchema } from "@/lib/phase1";
+import { profileSchema, roleLabels } from "@/lib/phase1";
 import { InvitationForm, UserAccessForm } from "@/components/workflow-forms";
 import { PageIntro } from "@/components/live-data";
 export default async function Users({
@@ -22,20 +23,66 @@ export default async function Users({
     .range((page - 1) * 25, page * 25 - 1);
   checkDatabase(error);
   const profiles = profileSchema.array().parse(data ?? []);
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
+    const audit = await client
+      .from("audit_events")
+      .select("id,entity_id,action,actor_id,occurred_at")
+      .eq("entity_type", "profile")
+      .in("action", ["user.access_changed", "user.invitation_requested"])
+      .order("occurred_at", { ascending: false })
+      .limit(50);
+    checkDatabase(audit.error);
+    return (
+      <UserDirectory
+        profiles={profiles}
+        count={count ?? 0}
+        page={page}
+        configured={
+          !!process.env.SUPABASE_SECRET_KEY && !!process.env.NEXT_PUBLIC_APP_URL
+        }
+        history={audit.data ?? []}
+      />
+    );
+  }
   return (
     <>
       <PageIntro
         title="User management"
         description="Invite colleagues, assign roles, and activate or deactivate access. Every change is audited."
       />
-      <InvitationForm
-        configured={
-          !!process.env.SUPABASE_SECRET_KEY && !!process.env.NEXT_PUBLIC_APP_URL
-        }
-      />
-      {profiles.map((p) => (
-        <UserAccessForm key={p.id} profile={p} />
-      ))}
+      <details className="surface workspace-disclosure">
+        <summary>Invite a team member</summary>
+        <InvitationForm
+          configured={
+            !!process.env.SUPABASE_SECRET_KEY &&
+            !!process.env.NEXT_PUBLIC_APP_URL
+          }
+        />
+      </details>
+      <section className="surface account-directory" aria-label="Team accounts">
+        <div className="section-heading">
+          <h2>Team accounts</h2>
+          <span className="section-kicker">{count ?? 0} accounts</span>
+        </div>
+        {profiles.map((p) => (
+          <details className="account-row" key={p.id}>
+            <summary>
+              <span>
+                <strong>{p.display_name}</strong>
+                <small>{roleLabels[p.role]}</small>
+              </span>
+              <span
+                className="record-status"
+                data-status={p.active ? "Active" : "Inactive"}
+              >
+                {p.active ? "Active" : "Inactive"}
+              </span>
+              <span className="account-edit-label">Manage access</span>
+            </summary>
+            <UserAccessForm profile={p} />
+          </details>
+        ))}
+      </section>
       <div className="pagination">
         <span>
           {count ?? 0} accounts · Page {page}

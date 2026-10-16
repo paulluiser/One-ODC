@@ -5,6 +5,7 @@ const names = {
   projects: "project directory",
   project: "project details",
   analytics: "analytics",
+  calendar: "calendar",
   leads: "leads",
   lead: "lead details",
   suppliers: "suppliers",
@@ -70,15 +71,23 @@ export function WorkspaceSkeleton({
   );
 }
 // Streams one async section without blocking its siblings.
-export function Section({ children }: { children: React.ReactNode }) {
+export function Section({
+  children,
+  fallback,
+}: {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}) {
   return (
     <Suspense
       fallback={
-        <div className="surface section-skeleton" aria-busy="true">
-          <span className="skeleton-line skeleton-subtitle" />
-          <span className="skeleton-line" />
-          <span className="skeleton-line" />
-        </div>
+        fallback ?? (
+          <div className="surface section-skeleton" aria-busy="true">
+            <span className="skeleton-line skeleton-subtitle" />
+            <span className="skeleton-line" />
+            <span className="skeleton-line" />
+          </div>
+        )
       }
     >
       {children}

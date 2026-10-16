@@ -332,13 +332,26 @@ try {
     p_confirm: true,
     p_reason: "",
   });
-  await call("BDM", "close_project_sale", {
+  await call("LEAD", "transition_commercial_stage", {
     p_project: project,
     p_expected_stage: "For Quotation",
+    p_target: "Under Negotiation",
+    p_reason: "Release to BDM",
+    p_confirm: true,
+  });
+  await call("BDM", "close_project_sale", {
+    p_project: project,
+    p_expected_stage: "Under Negotiation",
     p_sale_version: 1,
     p_primary_ops: ids.OPS,
     p_confirm: true,
-    p_reason: "",
+    p_reason: "Client confirmed the agreed price",
+  });
+  await call("LEAD", "handoff_closed_project", {
+    p_project: project,
+    p_primary_ops: ids.OPS,
+    p_reason: "Lead-approved Operations handoff",
+    p_confirm: true,
   });
   assert.equal(
     (await rows("LEAD", "spaces", "id", space))[0].status,

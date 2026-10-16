@@ -5,6 +5,7 @@ import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "./globals.css";
 import "./design-system.css";
+import "./opulence-theme.css";
 import { ThemeProvider } from "@/components/theme-provider";
 export const metadata: Metadata = {
   title: {
@@ -14,13 +15,24 @@ export const metadata: Metadata = {
   description:
     "Every space. One vision. The project workspace for Opulence Design Concept.",
   robots: { index: false, follow: false },
-  icons: { icon: "/brand/one-odc-icon.svg" },
+  icons: {
+    icon:
+      process.env.ONE_ODC_UI_R0_ENABLED === "true"
+        ? "/brand/opulence/one-odc-favicon.svg"
+        : "/brand/one-odc-icon.svg",
+  },
 };
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-one-odc-brand={
+        process.env.ONE_ODC_UI_R0_ENABLED === "true" ? "opulence" : undefined
+      }
+    >
       <body>
         <ThemeProvider>{children}</ThemeProvider>
       </body>

@@ -48,6 +48,7 @@ test("5B analytics filters, chart drilldowns, all five roles, refresh, responsiv
       await expect(
         cards.getByText("Current authorized Sale", { exact: true }),
       ).toHaveCount(0);
+    await page.locator(".analytics-filter-disclosure > summary").click();
     if (actor === "OPS")
       await expect(page.getByLabel("Brand", { exact: true })).toBeDisabled();
     await page

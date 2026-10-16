@@ -1,0 +1,489 @@
+.workspace {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.headerLine,
+.sectionHeader,
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.headerLine > div,
+.sectionHeader > div {
+  min-width: 0;
+}
+.quoteHeader h2 {
+  margin-top: 6px;
+}
+.eyebrow {
+  color: var(--r-link);
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  font-weight: 600;
+}
+.badges,
+.badges > span,
+.actions,
+.rowActions,
+.recordActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.badges {
+  margin-top: 12px;
+}
+.badges > span {
+  font-size: 12px;
+  color: var(--r-muted);
+}
+.total {
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+.total > strong {
+  font-size: 30px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.total > span,
+.total > small,
+.spaceTotal > span,
+.muted,
+.history small {
+  color: var(--r-muted);
+  font-size: 12px;
+}
+.toolbar {
+  border-top: 1px solid var(--r-line);
+  padding-top: 16px;
+  align-items: end;
+}
+.versionPicker {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.versionPicker label {
+  flex-basis: 100%;
+  color: var(--r-muted);
+  font-size: 12px;
+}
+.versionPicker select {
+  max-width: 100%;
+}
+.notice {
+  border-left: 3px solid var(--r-link);
+  background: var(--r-soft);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+.itemization {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.spaceTotal {
+  display: grid;
+  gap: 4px;
+  margin-left: auto;
+  text-align: right;
+}
+.spaceTotal strong {
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.moneyTable,
+.ledger,
+.editTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.moneyTable :is(th, td),
+.ledger :is(th, td),
+.editTable :is(th, td) {
+  padding: 12px;
+  border-bottom: 1px solid var(--r-line);
+  vertical-align: top;
+}
+.moneyTable thead,
+.ledger thead,
+.editTable thead {
+  color: var(--r-muted);
+  background: var(--r-soft);
+}
+.moneyTable th,
+.ledger th,
+.editTable th {
+  font-weight: 500;
+}
+.moneyTable :is(th, td):not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.moneyTable td:first-child {
+  min-width: 220px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.editTable {
+  min-width: 780px;
+}
+.editTable td:first-child {
+  min-width: 280px;
+  width: 40%;
+}
+.editTable textarea {
+  min-height: 76px;
+}
+.editTable td:nth-child(2) {
+  min-width: 100px;
+}
+.editTable td:nth-child(3) {
+  min-width: 140px;
+}
+.editTable input {
+  text-align: right;
+  width: 100%;
+}
+.rowActions {
+  flex-wrap: nowrap;
+}
+.rowActions :global(.button) {
+  padding: 8px;
+  min-width: 36px;
+}
+.historyGrid,
+.values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.values:empty {
+  display: none;
+}
+.value {
+  align-content: start;
+}
+.amount {
+  font-size: 26px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.history {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+.history > li {
+  display: grid;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--r-line);
+  overflow-wrap: anywhere;
+}
+.history a[aria-current="page"] {
+  font-weight: 600;
+}
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.summaryGrid > div,
+.ledgerSummary > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.summaryGrid > div {
+  padding: 16px;
+  background: var(--r-soft);
+  border-radius: 12px;
+}
+.summaryGrid span,
+.summaryGrid small,
+.ledgerSummary span {
+  color: var(--r-muted);
+  font-size: 12px;
+}
+.summaryGrid strong,
+.ledgerSummary strong {
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ledgerSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 48px;
+}
+.ledger :is(th, td):nth-child(3) {
+  text-align: right;
+}
+.ledger td:last-child {
+  min-width: 230px;
+  width: 33%;
+}
+.ledger td:nth-child(2) {
+  min-width: 180px;
+  overflow-wrap: anywhere;
+}
+.ledger th:first-child {
+  min-width: 140px;
+}
+.ledger :global(h3) {
+  font-size: 13px;
+}
+.ledger :global(details) {
+  margin-top: 8px;
+}
+.ledger tr[data-voided="true"] {
+  color: var(--r-muted);
+}
+.recordActions :global(.button) {
+  font-size: 12px;
+  padding: 8px 10px;
+}
+.empty {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  color: var(--r-muted);
+}
+.loading {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--r-surface);
+}
+.loading > div {
+  height: 72px;
+  border-radius: 10px;
+  background: var(--r-soft);
+  animation: pulse 1.4s ease-in-out infinite alternate;
+}
+@keyframes pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+.dialog {
+  --r-surface: var(--brand-surface);
+  --r-text: var(--brand-text);
+  --r-muted: var(--brand-muted);
+  --r-line: var(--brand-border);
+  --r-soft: var(--brand-soft);
+  --r-link: var(--brand-link);
+  background: var(--r-surface);
+  color: var(--r-text);
+  border: 1px solid var(--r-line);
+  border-radius: 16px;
+  padding: 24px;
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.5;
+}
+:global(.dark) .dialog {
+  --r-surface: var(--brand-surface);
+  --r-text: var(--brand-text);
+  --r-muted: var(--brand-muted);
+  --r-line: var(--brand-border);
+  --r-soft: var(--brand-soft);
+  --r-link: var(--brand-link);
+}
+.dialog :global(.live-form),
+.dialog :global(fieldset) {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 0;
+  min-width: 0;
+}
+.dialog :global(.live-form-grid) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dialog :global(.live-field) {
+  display: grid;
+  gap: 6px;
+  color: var(--r-text);
+}
+.dialog :global(.span-all) {
+  grid-column: 1/-1;
+}
+.dialog :is(input, textarea, select) {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: var(--r-text);
+  background: var(--r-surface);
+  border: 1px solid var(--r-line);
+  border-radius: 8px;
+  font: inherit;
+}
+.dialog textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.dialog :global(.button) {
+  min-height: 42px;
+  padding: 10px 16px;
+  font-size: 13px;
+  border-radius: 10px;
+  white-space: normal;
+}
+.dialog :global(.button-outline) {
+  color: var(--r-text);
+  background: var(--r-surface);
+  border: 1px solid var(--r-line);
+}
+.dialog :global(.button-primary) {
+  color: var(--brand-on-primary);
+  background: var(--brand-primary);
+  box-shadow: inset 0 0 0 1px var(--brand-primary-border);
+}
+.dialog :global(.context-panel-heading) {
+  gap: 16px;
+  align-items: center;
+}
+.dialog :global(.context-panel-heading) h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+.dialog > p {
+  color: var(--r-muted);
+}
+.dialog :focus-visible {
+  outline: 2px solid var(--r-link);
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .historyGrid,
+  .values {
+    grid-template-columns: 1fr;
+  }
+  .total {
+    text-align: left;
+    flex-basis: 100%;
+  }
+  .total > strong {
+    font-size: 26px;
+  }
+  .versionPicker {
+    width: 100%;
+  }
+  .versionPicker select {
+    flex: 1;
+    min-width: 0;
+  }
+  .spaceTotal {
+    margin-left: 0;
+  }
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+  .dialog {
+    padding: 20px;
+  }
+  .dialog :global(.live-form-grid) {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading > div {
+    animation: none;
+  }
+}
+
+.workspace :global(.financial-metrics) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  background: var(--r-soft);
+}
+.workspace :global(.financial-metrics) > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.workspace :global(.financial-metrics) strong {
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.workspace :global(.quotation-comparison) :is(th, td) {
+  padding: 12px;
+  border-bottom: 1px solid var(--r-line);
+}
+.workspace :global(.quotation-comparison) td:not(:first-child) {
+  font-variant-numeric: tabular-nums;
+}
+
+.versionPicker {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  width: min(100%, 480px);
+}
+.versionPicker label {
+  grid-column: 1/-1;
+}
+.workspace > :global(.surface),
+.itemization > :global(.surface),
+.values > :global(.surface) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.workspace :global(.table-scroll) {
+  max-width: 100%;
+  overflow-x: auto;
+}
+@media (max-width: 450px) {
+  .versionPicker {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.historyGrid {
+  align-items: start;
+}
+.workspace :global(.live-form).editorForm,
+.workspace .actions :global(.live-form) {
+  padding: 0;
+  margin: 0;
+}
+.workspace .editorForm .editor {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.editor > :global(.button) {
+  justify-self: start;
+}

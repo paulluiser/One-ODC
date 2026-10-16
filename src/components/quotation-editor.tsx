@@ -1,4 +1,7 @@
 "use client";
+import { ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import styles from "./ui-r3/ui-r3.module.css";
+import { RecordTable } from "./record-table";
 import { useActionState, useEffect, useId, useState } from "react";
 import { mutateQuotation } from "@/app/dashboard/projects/quotation-actions";
 import {
@@ -37,7 +40,9 @@ export function CreateQuotation({
 export function QuotationSpaceEditor({
   quotation,
   space,
+  rebuild = false,
 }: {
+  rebuild?: boolean;
   quotation: Quotation;
   space: QuotationSpace;
 }) {
@@ -102,7 +107,7 @@ export function QuotationSpaceEditor({
   return (
     <form
       action={action}
-      className="live-form"
+      className={`live-form ${rebuild ? styles.editorForm : ""}`}
       onReset={(e) => e.preventDefault()}
       aria-label={`Edit quotation: ${space.name}`}
     >
@@ -111,89 +116,216 @@ export function QuotationSpaceEditor({
       <input type="hidden" name="space" value={space.id} />
       <input type="hidden" name="version" value={quotation.edit_version} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
-      <fieldset disabled={pending}>
+      <fieldset
+        disabled={pending}
+        className={rebuild ? styles.editor : undefined}
+      >
         <legend className="field-hint">Items for {space.name}</legend>
-        {items.map((item, index) => (
-          <div className="quotation-edit-row" key={item.id}>
-            <div className="live-form-grid">
-              <label
-                className="live-field span-all"
-                htmlFor={`${prefix}-${item.id}-description`}
-              >
-                Item {index + 1} description
-                <textarea
-                  id={`${prefix}-${item.id}-description`}
-                  value={item.description}
-                  maxLength={2000}
-                  required
-                  onChange={(e) => edit(index, "description", e.target.value)}
-                />
-              </label>
-              <label
-                className="live-field"
-                htmlFor={`${prefix}-${item.id}-quantity`}
-              >
-                Quantity
-                <input
-                  id={`${prefix}-${item.id}-quantity`}
-                  inputMode="decimal"
-                  value={item.quantity}
-                  required
-                  pattern="(0|[1-9][0-9]{0,8})([.][0-9]{1,3})?"
-                  onChange={(e) => edit(index, "quantity", e.target.value)}
-                />
-              </label>
-              <label
-                className="live-field"
-                htmlFor={`${prefix}-${item.id}-price`}
-              >
-                Unit price (PHP)
-                <input
-                  id={`${prefix}-${item.id}-price`}
-                  inputMode="decimal"
-                  value={item.unit_price}
-                  required
-                  pattern="(0|[1-9][0-9]{0,11})([.][0-9]{1,2})?"
-                  onChange={(e) => edit(index, "unit_price", e.target.value)}
-                />
-              </label>
-            </div>
-            <p>
-              Line amount:{" "}
-              {amounts[index] === null
-                ? "Check quantity and price"
-                : formatCentavos(amounts[index]!)}
-            </p>
-            <div className="quotation-controls">
-              <button
-                type="button"
-                className="button button-outline"
-                disabled={index === 0}
-                onClick={() => move(index, -1)}
-                aria-label={`Move item ${index + 1} up`}
-              >
-                ↑ Move up
-              </button>
-              <button
-                type="button"
-                className="button button-outline"
-                disabled={index === items.length - 1}
-                onClick={() => move(index, 1)}
-                aria-label={`Move item ${index + 1} down`}
-              >
-                ↓ Move down
-              </button>
-              <button
-                type="button"
-                className="button button-outline"
-                onClick={() => setItems(items.filter((i) => i.id !== item.id))}
-                aria-label={`Remove item ${index + 1}`}
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        ))}
+        {rebuild ? (
+          <RecordTable label={`Editable items for ${space.name}`}>
+            <table className={`live-table ${styles.editTable}`}>
+              <caption className="sr-only">
+                Quotation items for {space.name}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Description</th>
+                  <th scope="col">Quantity</th>
+                  <th scope="col">Unit price (PHP)</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Order / remove</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, index) => (
+                  <tr key={item.id}>
+                    <td>
+                      <label
+                        className="sr-only"
+                        htmlFor={`${prefix}-${item.id}-description`}
+                      >
+                        Item {index + 1} description
+                      </label>
+                      <textarea
+                        id={`${prefix}-${item.id}-description`}
+                        value={item.description}
+                        maxLength={2000}
+                        required
+                        onChange={(e) =>
+                          edit(index, "description", e.target.value)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <label
+                        className="sr-only"
+                        htmlFor={`${prefix}-${item.id}-quantity`}
+                      >
+                        Quantity for item {index + 1}
+                      </label>
+                      <input
+                        id={`${prefix}-${item.id}-quantity`}
+                        inputMode="decimal"
+                        value={item.quantity}
+                        required
+                        pattern="(0|[1-9][0-9]{0,8})([.][0-9]{1,3})?"
+                        onChange={(e) =>
+                          edit(index, "quantity", e.target.value)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <label
+                        className="sr-only"
+                        htmlFor={`${prefix}-${item.id}-price`}
+                      >
+                        Unit price for item {index + 1} (PHP)
+                      </label>
+                      <input
+                        id={`${prefix}-${item.id}-price`}
+                        inputMode="decimal"
+                        value={item.unit_price}
+                        required
+                        pattern="(0|[1-9][0-9]{0,11})([.][0-9]{1,2})?"
+                        onChange={(e) =>
+                          edit(index, "unit_price", e.target.value)
+                        }
+                      />
+                    </td>
+                    <td className={styles.number}>
+                      {amounts[index] === null
+                        ? "Check inputs"
+                        : formatCentavos(amounts[index]!)}
+                    </td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        <button
+                          type="button"
+                          className="button button-outline"
+                          disabled={index === 0}
+                          onClick={() => move(index, -1)}
+                          aria-label={`Move item ${index + 1} up`}
+                        >
+                          <ArrowUp size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-outline"
+                          disabled={index === items.length - 1}
+                          onClick={() => move(index, 1)}
+                          aria-label={`Move item ${index + 1} down`}
+                        >
+                          <ArrowDown size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-outline"
+                          onClick={() =>
+                            setItems(items.filter((i) => i.id !== item.id))
+                          }
+                          aria-label={`Remove item ${index + 1}`}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </RecordTable>
+        ) : (
+          <>
+            {" "}
+            {items.map((item, index) => (
+              <div className="quotation-edit-row" key={item.id}>
+                <div className="live-form-grid">
+                  <label
+                    className="live-field span-all"
+                    htmlFor={`${prefix}-${item.id}-description`}
+                  >
+                    Item {index + 1} description
+                    <textarea
+                      id={`${prefix}-${item.id}-description`}
+                      value={item.description}
+                      maxLength={2000}
+                      required
+                      onChange={(e) =>
+                        edit(index, "description", e.target.value)
+                      }
+                    />
+                  </label>
+                  <label
+                    className="live-field"
+                    htmlFor={`${prefix}-${item.id}-quantity`}
+                  >
+                    Quantity
+                    <input
+                      id={`${prefix}-${item.id}-quantity`}
+                      inputMode="decimal"
+                      value={item.quantity}
+                      required
+                      pattern="(0|[1-9][0-9]{0,8})([.][0-9]{1,3})?"
+                      onChange={(e) => edit(index, "quantity", e.target.value)}
+                    />
+                  </label>
+                  <label
+                    className="live-field"
+                    htmlFor={`${prefix}-${item.id}-price`}
+                  >
+                    Unit price (PHP)
+                    <input
+                      id={`${prefix}-${item.id}-price`}
+                      inputMode="decimal"
+                      value={item.unit_price}
+                      required
+                      pattern="(0|[1-9][0-9]{0,11})([.][0-9]{1,2})?"
+                      onChange={(e) =>
+                        edit(index, "unit_price", e.target.value)
+                      }
+                    />
+                  </label>
+                </div>
+                <p>
+                  Line amount:{" "}
+                  {amounts[index] === null
+                    ? "Check quantity and price"
+                    : formatCentavos(amounts[index]!)}
+                </p>
+                <div className="quotation-controls">
+                  <button
+                    type="button"
+                    className="button button-outline"
+                    disabled={index === 0}
+                    onClick={() => move(index, -1)}
+                    aria-label={`Move item ${index + 1} up`}
+                  >
+                    ↑ Move up
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-outline"
+                    disabled={index === items.length - 1}
+                    onClick={() => move(index, 1)}
+                    aria-label={`Move item ${index + 1} down`}
+                  >
+                    ↓ Move down
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-outline"
+                    onClick={() =>
+                      setItems(items.filter((i) => i.id !== item.id))
+                    }
+                    aria-label={`Remove item ${index + 1}`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
         {!items.length && <p>No items in this space.</p>}
         <button
           type="button"

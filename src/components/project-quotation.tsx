@@ -1,3 +1,5 @@
+import { projectIsLost } from "@/lib/workspace-session";
+import { QuotationWorkspace } from "./ui-r3/quotation";
 import Link from "next/link";
 import { z } from "zod";
 import { formatTime } from "@/lib/phase1";
@@ -23,13 +25,14 @@ export async function ProjectQuotation({
   compare?: string;
 }) {
   const { client, profile } = await requireWorkspace();
+  const lost = await projectIsLost(project);
   const [r, control, listed] = await Promise.all([
     client.rpc("get_project_quotation", { p_project: project }),
     client.from("projects").select("is_cancelled").eq("id", project).single(),
     client.rpc("list_quotation_versions", { p_project: project }),
   ]);
   for (const result of [r, control, listed]) checkDatabase(result.error);
-  const cancelled = control.data?.is_cancelled === true;
+  const cancelled = lost || control.data?.is_cancelled === true;
   const versions = (listed.data ?? []) as QuotationVersionSummary[];
   let quotation = r.data as Quotation | null;
   if (version) {
@@ -53,6 +56,14 @@ export async function ProjectQuotation({
     checkDatabase(specific.error);
     quotation = specific.data as Quotation;
   }
+  if (lost && quotation)
+    quotation = {
+      ...quotation,
+      can_submit: false,
+      can_review: false,
+      can_create_draft: false,
+      spaces: quotation.spaces.map((s) => ({ ...s, editable: false })),
+    };
   let comparison: Quotation | null = null;
   if (
     compare &&
@@ -67,6 +78,19 @@ export async function ProjectQuotation({
     checkDatabase(c.error);
     comparison = c.data as Quotation;
   }
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    return (
+      <QuotationWorkspace
+        project={project}
+        quotation={quotation}
+        versions={versions}
+        comparison={comparison}
+        selected={selected}
+        compare={compare}
+        cancelled={cancelled}
+        role={profile.role}
+      />
+    );
   if (!quotation)
     return (
       <section className="surface live-form">

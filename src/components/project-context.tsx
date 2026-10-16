@@ -62,7 +62,15 @@ export async function ProjectContext({ project }: { project: Project }) {
       )}
       <div>
         <span>Lifecycle</span>
-        <strong>{m ? projectWorkState(m) : project.commercial_status}</strong>
+        <strong>
+          {project.commercial_status === "Lost"
+            ? "Lost · Read-only"
+            : project.awaiting_handoff
+              ? "Awaiting Handoff"
+              : m
+                ? projectWorkState(m)
+                : project.commercial_status}
+        </strong>
       </div>
       <div>
         <span>Project deadline</span>

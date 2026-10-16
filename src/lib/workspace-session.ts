@@ -41,3 +41,15 @@ export const projectMonitoringSummary = cache(async (project: string) =>
     p_projects: [project],
   }),
 );
+
+export const projectIsLost = cache(async (project: string) => {
+  const { client } = await requireWorkspace();
+  const r = await client
+    .from("projects")
+    .select("commercial_status")
+    .eq("id", project)
+    .single();
+  if (r.error)
+    throw new Error("Project status could not be verified. Please reload.");
+  return r.data.commercial_status === "Lost";
+});

@@ -1,0 +1,362 @@
+.workspace {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.workspace :global(.surface) {
+  margin: 0;
+}
+.workspace :global(.operations-record-grid) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.workspace :global(.operations-record) {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+.workspace :global(.operations-record) > h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+}
+.workspace :global(.live-form) {
+  min-width: 0;
+}
+.workspace :global(.installation-workspace),
+.workspace :global(.logistics-workspace) {
+  background: transparent;
+  padding: 0;
+  border: 0;
+  gap: 20px;
+}
+.workspace :global(.installation-progress-summary) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--r-surface);
+  border: 1px solid var(--r-line);
+  border-radius: 16px;
+  padding: 20px;
+}
+.workspace :global(.installation-progress-summary) > div {
+  display: grid;
+  gap: 8px;
+}
+.workspace :global(.installation-progress-summary) strong {
+  font-size: 28px;
+  font-weight: 500;
+}
+.workspace :global(.readiness-checklist) {
+  display: grid;
+  gap: 16px;
+  background: var(--r-surface);
+  border: 1px solid var(--r-line);
+  padding: 20px;
+  border-radius: 16px;
+}
+.workspace :global(.readiness-blockers) {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.workspace :global(.readiness-blockers) > li {
+  padding: 12px;
+  background: var(--r-soft);
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.workspace :global(.table-scroll) {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.directory {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 660px;
+  font-size: 13px;
+}
+.directory :is(td, th) {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--r-line);
+  text-align: left;
+  vertical-align: top;
+}
+.directory th {
+  font-size: 12px;
+  font-weight: 500;
+}
+.directory thead {
+  background: var(--r-soft);
+  color: var(--r-muted);
+}
+.directory small {
+  display: block;
+  margin-top: 5px;
+  color: var(--r-muted);
+  font-weight: 400;
+}
+.directory td:last-child {
+  min-width: 220px;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+.filters > label {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 160px;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.history {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+}
+.history li {
+  display: grid;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--r-line);
+}
+.collapsed,
+.expanded {
+  display: none;
+}
+:is(.workspace, .dialog) summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 48px;
+  cursor: pointer;
+  list-style: none;
+}
+:is(.workspace, .dialog) summary::-webkit-details-marker {
+  display: none;
+}
+:is(.workspace, .dialog) summary > span {
+  flex: 1;
+  min-width: 0;
+}
+:is(.workspace, .dialog) summary > .collapsed {
+  display: block;
+  flex-shrink: 0;
+}
+:is(.workspace, .dialog) details[open] > summary > .collapsed {
+  display: none;
+}
+:is(.workspace, .dialog) details[open] > summary > .expanded {
+  display: block;
+  flex-shrink: 0;
+}
+.workspace details {
+  border-top: 1px solid var(--r-line);
+  padding-top: 4px;
+}
+.workspace details > :not(summary) {
+  margin-top: 12px;
+}
+.tracker {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.tracker ol {
+  display: flex;
+  gap: 8px;
+  width: max-content;
+  min-width: 100%;
+  list-style: none;
+  padding: 0 0 8px;
+}
+.tracker li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--r-line);
+  border-radius: 10px;
+  color: var(--r-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.tracker li > span {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--r-line);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+.tracker li[aria-current="step"] {
+  color: var(--r-link);
+  background: var(--r-soft);
+  border-color: var(--r-link);
+}
+.tracker small {
+  color: var(--r-muted);
+  font-size: 11px;
+}
+.dialog :global(.live-form) {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.dialog :global(.button) {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+.dialog input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+}
+.dialog :global(.live-form-grid) {
+  display: grid;
+  gap: 16px;
+}
+.dialog :global(.history-json) {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.loading {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  color: var(--r-text, #18263d);
+  background: var(--r-surface, #fff);
+  border-radius: 16px;
+}
+.loading > div {
+  height: 64px;
+  border-radius: 10px;
+  background: var(--r-soft, #f4f6fb);
+}
+@media (max-width: 700px) {
+  .workspace :global(.operations-record),
+  .workspace :global(.readiness-checklist) {
+    padding: 16px;
+  }
+  .filters {
+    align-items: stretch;
+  }
+}
+.checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.checklist > section {
+  border: 1px solid var(--r-line);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+.checklist h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 6px;
+}
+.checklist h4 span,
+.checklist p {
+  font-size: 12px;
+  color: var(--r-muted);
+  font-weight: 400;
+}
+.checklist ul {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+.checklist li {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+@media (max-width: 700px) {
+  .checklist {
+    grid-template-columns: 1fr;
+  }
+}
+.workspace :global(.handoff-summary) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 20px;
+}
+.workspace :global(.handoff-summary) > :is(h2, details, form) {
+  grid-column: 1/-1;
+}
+.workspace :global(.handoff-summary) > p {
+  font-size: 12px;
+}
+.workspace :global(.logistics-workspace) > :global(.button),
+.workspace :global(.operations-record) > :global(.button),
+.workspace :global(.readiness-checklist) > :global(.button) {
+  justify-self: start;
+  width: auto;
+}
+@media (min-width: 1100px) {
+  .workspace :global(.installation-workspace) {
+    grid-template-columns: minmax(0, 1.55fr) minmax(250px, 0.7fr);
+    align-items: start;
+  }
+  .workspace :global(.installation-workspace) > h2 {
+    grid-column: 1/-1;
+  }
+  .workspace :global(.installation-progress-summary) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .workspace :global(.installation-guidance) {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .workspace :global(.readiness-checklist) {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+  }
+  .workspace
+    :global(.installation-workspace)
+    > :global(.operations-record-grid) {
+    grid-column: 1/-1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .workspace
+    :global(.installation-workspace)
+    > details:not(:global(.installation-guidance)) {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 700px) {
+  .workspace :global(.handoff-summary) {
+    grid-template-columns: 1fr;
+  }
+}

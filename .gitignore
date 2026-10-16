@@ -1,4 +1,5 @@
 node_modules/
+node_modules
 .next/
 out/
 coverage/
@@ -16,5 +17,6 @@ public/optimization/vendor/
 
 # Local staging identities, fixture records and browser evidence.
 artifacts/verification/
+ui-review/
 supabase/.temp/
 supabase/.branches/

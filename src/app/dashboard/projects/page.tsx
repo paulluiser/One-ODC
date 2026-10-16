@@ -1,3 +1,4 @@
+import { ProjectDirectory } from "@/components/ui-r2/directories";
 import type { Monitoring } from "@/lib/monitoring";
 import { requireWorkspace } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
@@ -18,7 +19,8 @@ export default async function Projects({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { client, profile } = await requireWorkspace();
-  const options = projectDirectoryOptions(await searchParams);
+  const parameters = await searchParams;
+  const options = projectDirectoryOptions(parameters);
   let query = client
     .from("projects")
     .select(projectColumns, { count: "exact" });
@@ -42,6 +44,30 @@ export default async function Projects({
     checkDatabase(summaries.error);
     monitoring = Object.fromEntries(
       (summaries.data as Monitoring[]).map((m) => [m.project_id, m]),
+    );
+  }
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
+    // One authenticated, RLS-protected lookup for names; no team/design reads for Ops previews.
+    const names =
+      profile.role !== "operations_admin" && projects.length
+        ? await client
+            .from("profiles")
+            .select("id,display_name")
+            .in("id", [...new Set(projects.map((p) => p.lead_designer_id))])
+        : { data: [], error: null };
+    checkDatabase(names.error);
+    return (
+      <ProjectDirectory
+        view={parameters.view === "list" ? "list" : "grid"}
+        projects={projects}
+        options={options}
+        count={count ?? 0}
+        monitoring={monitoring}
+        ops={profile.role === "operations_admin"}
+        leads={Object.fromEntries(
+          (names.data ?? []).map((p) => [p.id, p.display_name]),
+        )}
+      />
     );
   }
   const filtered = !!options.q || !!options.stage;

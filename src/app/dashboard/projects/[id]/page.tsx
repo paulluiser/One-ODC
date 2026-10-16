@@ -1,3 +1,17 @@
+import { ProjectCommercialWorkflow } from "@/components/project-commercial-workflow";
+import {
+  OperationsFrame,
+  OperationsLoading,
+} from "@/components/ui-r4/primitives";
+import { CommercialFrame, CommercialLoading } from "@/components/ui-r3/frame";
+import { Suspense, Fragment } from "react";
+import r2 from "@/components/ui-r2/ui-r2.module.css";
+import {
+  DisclosureSummary,
+  Disclosure,
+  Scope,
+  Heading,
+} from "@/components/ui-r2/primitives";
 import { ProjectSectionNavigation } from "@/components/project-section-navigation";
 import { ProjectRecentActivity } from "@/components/project-recent-activity";
 import { ProjectContext } from "@/components/project-context";
@@ -19,7 +33,7 @@ import { projectColumns, projectSchema } from "@/lib/project-workspace";
 import { AssignmentForm } from "@/components/workflow-forms";
 import { ProjectResources } from "@/components/project-resources";
 import { Section } from "@/components/workspace-skeleton";
-export default async function ProjectDetail({
+async function ProjectDetail({
   params,
   searchParams,
 }: {
@@ -45,9 +59,11 @@ export default async function ProjectDetail({
   const logisticsTab = logisticsEnabled && query.tab === "logistics";
   const handoffEnabled = process.env.ONE_ODC_HANDOFF_ENABLED === "true";
   const financeEnabled = process.env.ONE_ODC_FINANCE_ENABLED === "true";
+  const OpsFrame =
+    process.env.ONE_ODC_UI_R0_ENABLED === "true" ? OperationsFrame : Fragment;
   if (profile.role === "operations_admin")
     return (
-      <>
+      <OpsFrame>
         <PageIntro
           title={project.name}
           description={`${project.reference} · ${project.commercial_status === "Closed" ? "Operations workspace" : "Limited pipeline preview"}`}
@@ -103,17 +119,34 @@ export default async function ProjectDetail({
             </Link>
           </ProjectSectionNavigation>
         )}
-        {handoffEnabled && project.commercial_status === "Closed" && (
-          <Section>
-            <ProjectHandoff project={id} />
-          </Section>
-        )}
+        {handoffEnabled &&
+          project.commercial_status === "Closed" &&
+          !(
+            process.env.ONE_ODC_UI_R0_ENABLED === "true" &&
+            query.tab === "finance"
+          ) && (
+            <Section>
+              <ProjectHandoff project={id} />
+            </Section>
+          )}
         {installationTab && project.commercial_status === "Closed" ? (
-          <Section>
+          <Section
+            fallback={
+              process.env.ONE_ODC_UI_R0_ENABLED === "true" ? (
+                <OperationsLoading destination="installation and operational readiness" />
+              ) : undefined
+            }
+          >
             <ProjectInstallations project={id} />
           </Section>
         ) : logisticsTab && project.commercial_status === "Closed" ? (
-          <Section>
+          <Section
+            fallback={
+              process.env.ONE_ODC_UI_R0_ENABLED === "true" ? (
+                <OperationsLoading destination="supplier and logistics" />
+              ) : undefined
+            }
+          >
             <ProjectLogistics project={id} />
           </Section>
         ) : financeEnabled &&
@@ -138,7 +171,7 @@ export default async function ProjectDetail({
                 <dt>Lead Designer account</dt>
                 <dd>
                   <details className="technical-reference">
-                    <summary>Account reference</summary>
+                    <DisclosureSummary>Account reference</DisclosureSummary>
                     <code>{project.lead_designer_id}</code>
                   </details>
                 </dd>
@@ -168,7 +201,7 @@ export default async function ProjectDetail({
               />
             </Section>
           )}
-      </>
+      </OpsFrame>
     );
   const quotationEnabled = process.env.ONE_ODC_QUOTATIONS_ENABLED === "true";
   const quotationTab = quotationEnabled && query.tab === "quotation";
@@ -245,6 +278,36 @@ export default async function ProjectDetail({
       )}
     </ProjectSectionNavigation>
   );
+  if (
+    process.env.ONE_ODC_UI_R0_ENABLED === "true" &&
+    (installationTab || logisticsTab)
+  )
+    return (
+      <CommercialFrame
+        title={project.name}
+        description={`${project.reference} · ${project.commercial_status}`}
+        navigation={navigation}
+      >
+        <Suspense
+          fallback={
+            <OperationsLoading
+              destination={
+                installationTab
+                  ? "installation and readiness"
+                  : "supplier and logistics"
+              }
+            />
+          }
+        >
+          <ProjectHandoff project={id} />
+          {installationTab ? (
+            <ProjectInstallations project={id} />
+          ) : (
+            <ProjectLogistics project={id} />
+          )}
+        </Suspense>
+      </CommercialFrame>
+    );
   if (installationTab)
     return (
       <>
@@ -276,6 +339,42 @@ export default async function ProjectDetail({
           <ProjectLogistics project={id} />
         </Section>
       </>
+    );
+  if (
+    process.env.ONE_ODC_UI_R0_ENABLED === "true" &&
+    (financeTab || quotationTab)
+  )
+    return (
+      <CommercialFrame
+        title={project.name}
+        description={`${project.reference} · ${project.commercial_status}`}
+        navigation={navigation}
+      >
+        <Suspense
+          fallback={
+            <CommercialLoading
+              destination={financeTab ? "finance" : "quotation"}
+            />
+          }
+        >
+          {financeTab ? (
+            <ProjectFinancials project={id} />
+          ) : (
+            <ProjectQuotation
+              project={id}
+              selected={
+                typeof query.space === "string" ? query.space : undefined
+              }
+              version={
+                typeof query.version === "string" ? query.version : undefined
+              }
+              compare={
+                typeof query.compare === "string" ? query.compare : undefined
+              }
+            />
+          )}
+        </Suspense>
+      </CommercialFrame>
     );
   if (financeTab)
     return (
@@ -319,9 +418,10 @@ export default async function ProjectDetail({
       </>
     );
   const editable =
-    profile.role === "system_administrator" ||
-    (profile.role === "lead_designer" &&
-      project.lead_designer_id === profile.id);
+    project.commercial_status !== "Lost" &&
+    (profile.role === "system_administrator" ||
+      (profile.role === "lead_designer" &&
+        project.lead_designer_id === profile.id));
   const [origin, teamResult, history, assignable] = await Promise.all([
     client
       .from("project_origins")
@@ -343,17 +443,182 @@ export default async function ProjectDetail({
     checkDatabase(x.error);
   const team = (teamResult.data ?? []) as Member[];
   const people: Person[] = assignable.data ?? [];
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    return (
+      <Scope>
+        <Heading
+          title={project.name}
+          description={`${project.reference} · ${project.commercial_status}`}
+          action={
+            origin.data &&
+            profile.role !== "designer" && (
+              <Link
+                className="button button-outline"
+                href={`/dashboard/leads/${origin.data.lead_id}`}
+              >
+                Originating Lead
+              </Link>
+            )
+          }
+        />
+        <Section>
+          <ProjectContext project={project} />
+        </Section>
+        {navigation}
+        <div className={r2.workspaceGrid}>
+          <div className={r2.workspaceMain}>
+            {process.env.ONE_ODC_SPACES_ENABLED === "true" && (
+              <Section>
+                <ProjectSpaces
+                  project={id}
+                  manager={editable}
+                  people={
+                    editable
+                      ? people.filter((p) =>
+                          team.some(
+                            (m) =>
+                              m.user_id === p.id &&
+                              ["designer", "lead_designer"].includes(
+                                m.membership_role,
+                              ),
+                          ),
+                        )
+                      : team.map((m) => ({
+                          id: m.user_id,
+                          display_name: m.display_name,
+                          role: m.membership_role,
+                        }))
+                  }
+                />
+              </Section>
+            )}
+            {process.env.ONE_ODC_MONITORING_ENABLED === "true" && (
+              <section id="project-activities">
+                <Section>
+                  <ProjectMonitoring
+                    nested
+                    project={id}
+                    manager={editable}
+                    filters={query}
+                  />
+                </Section>
+              </section>
+            )}
+          </div>
+          <aside
+            className={r2.workspaceAside}
+            aria-label="Project context and actions"
+          >
+            <section className="surface live-form">
+              <h2>Project team</h2>
+              <ul className="team-list">
+                {team.map((m) => (
+                  <li key={`${m.user_id}-${m.membership_role}`}>
+                    <span>{m.display_name}</span>
+                    <b>
+                      {roleLabels[m.membership_role]}
+                      {m.is_primary ? " · Primary" : " · Supporting"}
+                    </b>
+                  </li>
+                ))}
+              </ul>
+              {editable &&
+                (!project.awaiting_handoff ||
+                  profile.role === "lead_designer") && (
+                  <Disclosure title="Manage project assignments">
+                    <AssignmentForm id={id} people={people} team={team} />
+                  </Disclosure>
+                )}
+            </section>
+            {process.env.ONE_ODC_MONITORING_ENABLED === "true" && (
+              <Section>
+                <ProjectRecentActivity project={id} />
+              </Section>
+            )}
+            <Disclosure className="surface" title="Project details">
+              <dl className="record-details">
+                <div>
+                  <dt>Created</dt>
+                  <dd>{formatTime(project.created_at)}</dd>
+                </div>
+                <div>
+                  <dt>Expected handoff</dt>
+                  <dd>{project.expected_handoff || "Not scheduled"}</dd>
+                </div>
+                <div>
+                  <dt>Your access</dt>
+                  <dd>
+                    {profile.role === "system_administrator"
+                      ? "System Administrator oversight"
+                      : team
+                          .filter((m) => m.user_id === profile.id)
+                          .map((m) => roleLabels[m.membership_role])
+                          .join(" · ") || "No current membership"}
+                  </dd>
+                </div>
+              </dl>
+              <Link href="/dashboard/projects">Project directory</Link>
+            </Disclosure>
+            {handoffEnabled && (
+              <Disclosure
+                className="surface"
+                title="Commercial closure and operations handoff"
+              >
+                <Section>
+                  <ProjectHandoff project={id} />
+                </Section>
+              </Disclosure>
+            )}
+          </aside>
+        </div>
+        <Disclosure className="surface" title="Notes, Files and Resources">
+          {process.env.ONE_ODC_RESOURCES_ENABLED === "true" && (
+            <Section>
+              <ProjectResources
+                project={id}
+                manager={editable}
+                primaryBdm={team.some(
+                  (m) =>
+                    m.user_id === profile.id &&
+                    m.membership_role === "bdm" &&
+                    m.is_primary,
+                )}
+              />
+            </Section>
+          )}
+        </Disclosure>
+        <details className="surface live-form project-audit">
+          <DisclosureSummary>Assignment history</DisclosureSummary>
+          <h2>Assignment history</h2>
+          <p className="field-hint">
+            Showing the latest 50 changes. Previous assignments remain recorded.
+          </p>
+          {history.data?.map((h) => (
+            <details className="history-entry" key={h.id}>
+              <DisclosureSummary>
+                {formatTime(h.occurred_at)} · {h.reason}
+              </DisclosureSummary>
+              <p className="field-hint">Actor: {h.actor_id}</p>
+              <h3>Previous assignments</h3>
+              <pre className="history-json">
+                {JSON.stringify(h.previous_assignments, null, 2)}
+              </pre>
+              <h3>New assignments</h3>
+              <pre className="history-json">
+                {JSON.stringify(h.new_assignments, null, 2)}
+              </pre>
+            </details>
+          ))}
+        </details>
+      </Scope>
+    );
+
   return (
     <>
       <PageIntro
         title={project.name}
         description={`${project.reference} · ${project.commercial_status}`}
       >
-        {editable && process.env.ONE_ODC_SPACES_ENABLED === "true" && (
-          <a className="button button-primary" href="#space-create">
-            Add space
-          </a>
-        )}
         {origin.data && profile.role !== "designer" && (
           <Link
             className="button button-outline"
@@ -369,52 +634,63 @@ export default async function ProjectDetail({
       {navigation}
       {handoffEnabled && (
         <details className="surface workspace-disclosure">
-          <summary>Commercial closure and operations handoff</summary>
-          <Section>
+          <DisclosureSummary>
+            Commercial closure and operations handoff
+          </DisclosureSummary>
+          <Section
+            fallback={
+              process.env.ONE_ODC_UI_R0_ENABLED === "true" ? (
+                <OperationsLoading destination="operational handoff" />
+              ) : undefined
+            }
+          >
             <ProjectHandoff project={id} />
           </Section>
         </details>
       )}
-      <section
-        className="surface live-form project-overview"
-        id="project-overview"
-      >
-        <h2>Project overview</h2>
-        <dl className="record-details">
-          <div>
-            <dt>Commercial stage</dt>
-            <dd>{project.commercial_status}</dd>
-          </div>
-          <div>
-            <dt>Expected handoff</dt>
-            <dd>{project.expected_handoff || "Not scheduled"}</dd>
-          </div>
-          <div>
-            <dt>Lead Designer</dt>
-            <dd>
-              {team.find((member) => member.membership_role === "lead_designer")
-                ?.display_name || project.lead_designer_id}
-            </dd>
-          </div>
-          <div>
-            <dt>Your project membership</dt>
-            <dd>
-              {profile.role === "system_administrator"
-                ? "System Administrator oversight"
-                : team
-                    .filter((member) => member.user_id === profile.id)
-                    .map((member) => roleLabels[member.membership_role])
-                    .join(" · ") || "No current membership"}
-            </dd>
-          </div>
-        </dl>
-        <Link href="/dashboard/projects">← Project directory</Link>
-      </section>
-      {process.env.ONE_ODC_MONITORING_ENABLED === "true" && (
-        <Section>
-          <ProjectRecentActivity project={id} />
-        </Section>
-      )}
+      <div className="project-summary-grid">
+        <section
+          className="surface live-form project-overview"
+          id="project-overview"
+        >
+          <h2>Project overview</h2>
+          <dl className="record-details">
+            <div>
+              <dt>Commercial stage</dt>
+              <dd>{project.commercial_status}</dd>
+            </div>
+            <div>
+              <dt>Expected handoff</dt>
+              <dd>{project.expected_handoff || "Not scheduled"}</dd>
+            </div>
+            <div>
+              <dt>Lead Designer</dt>
+              <dd>
+                {team.find(
+                  (member) => member.membership_role === "lead_designer",
+                )?.display_name || project.lead_designer_id}
+              </dd>
+            </div>
+            <div>
+              <dt>Your project membership</dt>
+              <dd>
+                {profile.role === "system_administrator"
+                  ? "System Administrator oversight"
+                  : team
+                      .filter((member) => member.user_id === profile.id)
+                      .map((member) => roleLabels[member.membership_role])
+                      .join(" · ") || "No current membership"}
+              </dd>
+            </div>
+          </dl>
+          <Link href="/dashboard/projects">← Project directory</Link>
+        </section>
+        {process.env.ONE_ODC_MONITORING_ENABLED === "true" && (
+          <Section>
+            <ProjectRecentActivity project={id} />
+          </Section>
+        )}
+      </div>
       {process.env.ONE_ODC_SPACES_ENABLED === "true" && (
         <Section>
           <ProjectSpaces
@@ -472,12 +748,13 @@ export default async function ProjectDetail({
           />
         </Section>
       )}
-      {editable && (
-        <details className="surface workspace-disclosure">
-          <summary>Manage project assignments</summary>
-          <AssignmentForm id={id} people={people} team={team} />
-        </details>
-      )}
+      {editable &&
+        (!project.awaiting_handoff || profile.role === "lead_designer") && (
+          <details className="surface workspace-disclosure">
+            <DisclosureSummary>Manage project assignments</DisclosureSummary>
+            <AssignmentForm id={id} people={people} team={team} />
+          </details>
+        )}
       {process.env.ONE_ODC_MONITORING_ENABLED === "true" && (
         <details
           className="surface workspace-disclosure"
@@ -486,7 +763,7 @@ export default async function ProjectDetail({
             ["category", "from", "to", "actor", "space", "offset"].includes(k),
           )}
         >
-          <summary>Activities and project controls</summary>
+          <DisclosureSummary>Activities and project controls</DisclosureSummary>
           <Section>
             <ProjectMonitoring
               nested
@@ -498,16 +775,16 @@ export default async function ProjectDetail({
         </details>
       )}
       <details className="surface live-form project-audit">
-        <summary>Assignment history</summary>
+        <DisclosureSummary>Assignment history</DisclosureSummary>
         <h2>Assignment history</h2>
         <p className="field-hint">
           Showing the latest 50 changes. Previous assignments remain recorded.
         </p>
         {history.data?.map((h) => (
           <details className="history-entry" key={h.id}>
-            <summary>
+            <DisclosureSummary>
               {formatTime(h.occurred_at)} · {h.reason}
-            </summary>
+            </DisclosureSummary>
             <p className="field-hint">Actor: {h.actor_id}</p>
             <h3>Previous assignments</h3>
             <pre className="history-json">
@@ -520,6 +797,18 @@ export default async function ProjectDetail({
           </details>
         ))}
       </details>
+    </>
+  );
+}
+
+export default async function ProjectPage(
+  props: Parameters<typeof ProjectDetail>[0],
+) {
+  const { id } = await props.params;
+  return (
+    <>
+      <ProjectCommercialWorkflow project={id} />
+      <ProjectDetail {...props} />
     </>
   );
 }

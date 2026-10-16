@@ -350,6 +350,7 @@ export function SpaceCancelForm({ space }: { space: Space }) {
               </Dialog.Close>
               <button
                 className="button button-primary"
+                data-destructive="true"
                 type="submit"
                 form={formId}
                 disabled={pending}

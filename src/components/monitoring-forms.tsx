@@ -150,6 +150,7 @@ function Form({
                 </Dialog.Close>
                 <button
                   className="button button-primary"
+                  data-destructive={intent === "Cancel" || undefined}
                   type="submit"
                   form={formId}
                   disabled={pending}
@@ -161,7 +162,11 @@ function Form({
             </Dialog.Portal>
           </Dialog.Root>
         ) : (
-          <button type="submit" className="button button-primary">
+          <button
+            type="submit"
+            className="button button-primary"
+            data-destructive={intent === "Cancel" || undefined}
+          >
             {pending ? "Saving…" : label}
           </button>
         )}

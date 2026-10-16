@@ -102,13 +102,26 @@ try {
       p_expected_version: 0,
       p_reason: "",
     });
-    await call(bdm, "close_project_sale", {
+    await call(lead, "transition_commercial_stage", {
       p_project: project,
       p_expected_stage: "For Quotation",
+      p_target: "Under Negotiation",
+      p_reason: "Release to BDM",
+      p_confirm: true,
+    });
+    await call(bdm, "close_project_sale", {
+      p_project: project,
+      p_expected_stage: "Under Negotiation",
       p_sale_version: 1,
       p_primary_ops: opsId,
       p_confirm: true,
-      p_reason: "",
+      p_reason: "Client confirmed the agreed price",
+    });
+    await call(lead, "handoff_closed_project", {
+      p_project: project,
+      p_primary_ops: opsId,
+      p_reason: "Lead-approved Operations handoff",
+      p_confirm: true,
     });
     const h = await call(ops, "get_commercial_handoff", { p_project: project });
     await call(ops, "acknowledge_handoff", {
@@ -216,6 +229,31 @@ try {
       spaces.push(id);
     }
     console.log(JSON.stringify(spaces));
+  } else if (action === "finance-support-fixture") {
+    // Seed only a dedicated synthetic fixture. Business assertions use real JWT/RLS.
+    const project = process.argv[3];
+    const key = process.env.ONE_ODC_TEST_SECRET_KEY;
+    if (!key) throw new Error("Staging fixture secret is not configured");
+    const setup = createClient(process.env.ONE_ODC_TEST_URL, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const row = await setup
+      .from("projects")
+      .select("name")
+      .eq("id", project)
+      .single();
+    if (row.error || !row.data.name.startsWith("UI-R3 finance API "))
+      throw new Error("Dedicated finance fixture required");
+    const other = await actor("OTHER_BDM");
+    const user = (await other.auth.getUser()).data.user;
+    const added = await setup.from("project_memberships").insert({
+      project_id: project,
+      user_id: user.id,
+      membership_role: "bdm",
+      is_primary: false,
+    });
+    if (added.error) throw new Error("Staging support fixture setup failed");
+    console.log(JSON.stringify({ configured: true }));
   } else if (action === "verify") {
     const project = process.argv[3];
     const lead = await actor("LEAD");

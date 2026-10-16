@@ -14,7 +14,7 @@ export type HandoffRecord = {
 };
 export type CommercialHandoff = {
   project_id: string;
-  commercial_status: "For Quotation" | "Negotiation" | "Closed";
+  commercial_status: "For Quotation" | "Under Negotiation" | "Closed" | "Lost";
   cancelled: boolean;
   closed_at: string | null;
   status: string;
@@ -43,6 +43,8 @@ export type CommercialHandoff = {
   administrative?: boolean;
 };
 export function handoffError(message: string): string {
+  if (message.includes("PROJECT_LOST"))
+    return "This project is Lost. All project records are read-only.";
   const errors: Record<string, string> = {
     SALE_REQUIRED: "Record the agreed Sale before closing.",
     OPERATIONS_ADMIN_REQUIRED:

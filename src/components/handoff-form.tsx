@@ -1,4 +1,5 @@
 "use client";
+import r3 from "./ui-r3/ui-r3.module.css";
 import { PendingIndicator } from "./operation-feedback";
 import { FormPending } from "./form-pending";
 import { useActionState, useId, useState } from "react";
@@ -10,7 +11,9 @@ import { financialAmount } from "@/lib/finance";
 export function HandoffForm({
   data,
   intent,
+  rebuild = false,
 }: {
+  rebuild?: boolean;
   data: CommercialHandoff;
   intent: "close" | "acknowledge";
 }) {
@@ -105,7 +108,7 @@ export function HandoffForm({
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />
           <Dialog.Content
-            className="detail-dialog"
+            className={`detail-dialog ${rebuild ? r3.dialog : ""}`}
             onEscapeKeyDown={(e) => {
               if (pending) e.preventDefault();
             }}

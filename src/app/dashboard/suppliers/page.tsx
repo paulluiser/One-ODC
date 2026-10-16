@@ -1,4 +1,6 @@
+import { SupplierDirectory } from "@/components/ui-r4/directories";
 import Link from "next/link";
+import { PageIntro } from "@/components/live-data";
 import { ContextPanel } from "@/components/context-panel";
 import { RecordTable, RecordStatus } from "@/components/record-table";
 import { projectSearchPattern } from "@/lib/project-workspace";
@@ -65,14 +67,31 @@ export default async function Suppliers({
         .limit(500)
     : { data: [], error: null };
   checkDatabase(events.error);
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    return (
+      <SupplierDirectory
+        suppliers={(r.data ?? []) as Supplier[]}
+        events={events.data ?? []}
+        search={search}
+        sort={sort}
+        page={page}
+        count={r.count ?? 0}
+      />
+    );
   return (
     <>
-      <section className="surface live-form">
-        <h1>Supplier Masterlist</h1>
-        <p>
-          Centralized supplier records. Inactive suppliers remain in history and
-          cannot be selected for new logistics records.
-        </p>
+      <PageIntro
+        title="Supplier Masterlist"
+        description="Manage supplier contacts and availability across your projects."
+      >
+        <ContextPanel
+          title="Add supplier"
+          description="Create a supplier record. Changes retain their audit history."
+        >
+          <LogisticsForm id={randomUUID()} />
+        </ContextPanel>
+      </PageIntro>
+      <section className="surface live-form supplier-toolbar">
         <form className="supplier-filters" action="/dashboard/suppliers">
           <label className="live-field" htmlFor="supplier-search">
             Search supplier name
@@ -112,12 +131,6 @@ export default async function Suppliers({
             </Link>
           )}
         </nav>
-        <ContextPanel
-          title="Add supplier"
-          description="Create a supplier record. Changes retain their audit history."
-        >
-          <LogisticsForm id={randomUUID()} />
-        </ContextPanel>
       </section>
       {!r.data?.length && <p className="surface">No suppliers recorded.</p>}
       {!!r.data?.length && (
@@ -143,19 +156,19 @@ export default async function Suppliers({
                         {s.brand || "No brand"}
                       </span>
                     </th>
-                    <td>
+                    <td data-label="Contact">
                       {s.contact_person || "Not provided"}
                       <span className="cell-secondary contact-copy">
                         {s.contact_details}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <RecordStatus>
                         {s.active ? "Active" : "Inactive"}
                       </RecordStatus>
                     </td>
-                    <td>{formatTime(s.updated_at)}</td>
-                    <td>
+                    <td data-label="Updated">{formatTime(s.updated_at)}</td>
+                    <td data-label="Actions">
                       <ContextPanel
                         title={`Edit supplier: ${s.name}`}
                         triggerLabel="Edit supplier"

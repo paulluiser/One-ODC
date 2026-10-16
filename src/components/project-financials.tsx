@@ -1,3 +1,6 @@
+import { projectIsLost } from "@/lib/workspace-session";
+import { AmountFields } from "./financial-fields";
+import { FinancialWorkspace } from "./ui-r3/financials";
 import Link from "next/link";
 import { RecordTable } from "./record-table";
 import { randomUUID } from "node:crypto";
@@ -8,74 +11,9 @@ import {
   financialAmount,
   type Financials,
   type FinancialValue,
-  type Payment,
   type PaymentGroup,
 } from "@/lib/finance";
 import { FinanceForm, PaymentHeading } from "./finance-form";
-function AmountFields({
-  id,
-  payment,
-  today,
-}: {
-  id: string;
-  payment?: Payment;
-  today: string;
-}) {
-  return (
-    <>
-      <label className="live-field" htmlFor={`${id}-date`}>
-        Payment date
-        <input
-          id={`${id}-date`}
-          name="payment_date"
-          type="date"
-          max={today}
-          defaultValue={payment?.payment_date ?? today}
-          required
-        />
-      </label>
-      <label className="live-field" htmlFor={`${id}-amount`}>
-        Amount (PHP)
-        <input
-          id={`${id}-amount`}
-          name="amount"
-          inputMode="decimal"
-          pattern="(0|[1-9][0-9]{0,25})([.][0-9]{1,2})?"
-          defaultValue={payment?.amount ?? ""}
-          required
-        />
-      </label>
-      <label className="live-field" htmlFor={`${id}-method`}>
-        Payment method
-        <input
-          id={`${id}-method`}
-          name="method"
-          maxLength={100}
-          defaultValue={payment?.method ?? ""}
-          required
-        />
-      </label>
-      <label className="live-field" htmlFor={`${id}-ref`}>
-        Reference (optional)
-        <input
-          id={`${id}-ref`}
-          name="reference"
-          maxLength={200}
-          defaultValue={payment?.reference ?? ""}
-        />
-      </label>
-      <label className="live-field span-all" htmlFor={`${id}-remarks`}>
-        Remarks (optional)
-        <textarea
-          id={`${id}-remarks`}
-          name="remarks"
-          maxLength={2000}
-          defaultValue={payment?.remarks ?? ""}
-        />
-      </label>
-    </>
-  );
-}
 function ValueCard({
   project,
   kind,
@@ -225,7 +163,11 @@ function PaymentSection({
             </thead>
             <tbody>
               {group.records.map((p) => (
-                <tr key={p.id} aria-label={`${title} payment ${p.id}`}>
+                <tr
+                  key={p.id}
+                  data-voided={p.voided || undefined}
+                  aria-label={`${title} payment ${p.id}`}
+                >
                   <th scope="row">
                     <PaymentHeading id={p.id} voided={p.voided}>
                       {p.payment_date}
@@ -307,10 +249,20 @@ function PaymentSection({
 }
 export async function ProjectFinancials({ project }: { project: string }) {
   const { client, profile } = await requireWorkspace();
+  const lost = await projectIsLost(project);
   const r = await client.rpc("get_project_financials", { p_project: project });
   checkDatabase(r.error);
   const f = r.data as Financials,
     admin = profile.role === "system_administrator";
+  if (lost) {
+    f.can_manage_payments = false;
+    if (f.sale) f.sale.editable = false;
+    if (f.raw) f.raw.editable = false;
+  }
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    return (
+      <FinancialWorkspace project={project} financials={f} admin={admin} />
+    );
   return (
     <>
       <section className="surface live-form financial-summary">

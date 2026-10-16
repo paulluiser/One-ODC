@@ -1,0 +1,132 @@
+.screen {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 32px 24px;
+  background: var(--brand-canvas);
+  color: var(--brand-text);
+}
+.content {
+  width: min(100%, 360px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.composition {
+  width: 240px;
+  max-width: 70vw;
+  height: auto;
+  margin-bottom: 32px;
+  overflow: visible;
+}
+.frame {
+  stroke: var(--brand-input);
+  stroke-width: 1;
+  animation: frame-in 800ms ease-out both;
+}
+.panel {
+  fill: var(--brand-soft);
+  stroke: var(--brand-input);
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: assemble 4800ms cubic-bezier(0.22, 1, 0.36, 1) infinite both;
+}
+.left {
+  --entry-x: -14px;
+  --entry-y: 8px;
+  animation-delay: 100ms;
+}
+.top {
+  --entry-x: 12px;
+  --entry-y: -12px;
+  animation-delay: 240ms;
+}
+.base {
+  --entry-x: -8px;
+  --entry-y: 14px;
+  animation-delay: 380ms;
+}
+.end {
+  --entry-x: 14px;
+  --entry-y: 10px;
+  animation-delay: 520ms;
+  fill: var(--brand-selected);
+  stroke: var(--brand-primary-border);
+}
+.join {
+  stroke: var(--brand-primary-border);
+  stroke-width: 2;
+  stroke-linecap: round;
+  animation: join-cycle 4800ms ease-in-out infinite both;
+}
+.logo {
+  animation: reveal 650ms ease-out both;
+}
+.tagline {
+  margin: 18px 0 0;
+  font-size: clamp(18px, 4vw, 22px);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+}
+.message {
+  margin: 20px 0 0;
+  color: var(--brand-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+@keyframes assemble {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(var(--entry-x), var(--entry-y)) scale(0.97);
+  }
+  24%,
+  76% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  94% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1);
+  }
+}
+@keyframes join-cycle {
+  0%,
+  32%,
+  94%,
+  100% {
+    opacity: 0;
+  }
+  43%,
+  78% {
+    opacity: 1;
+  }
+}
+@keyframes frame-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes reveal {
+  from {
+    opacity: 0.7;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .content * {
+    animation: none !important;
+    transform: none;
+    opacity: 1;
+  }
+}

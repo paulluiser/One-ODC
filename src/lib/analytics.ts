@@ -3,8 +3,9 @@ import { localDate } from "./monitoring";
 import { moneyCentavos } from "./quotations";
 export const analyticsStages = [
   "For Quotation",
-  "Negotiation",
+  "Under Negotiation",
   "Closed",
+  "Lost",
   "Completed",
   "Cancelled",
   "On Hold",

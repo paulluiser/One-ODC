@@ -5,6 +5,7 @@ export function workspaceCrumbs(path: string, tab?: string | null) {
     projects: "Projects",
     leads: "Leads",
     analytics: "Analytics",
+    calendar: "Calendar",
     suppliers: "Supplier Masterlist",
     users: "User management",
     notifications: "Notifications",

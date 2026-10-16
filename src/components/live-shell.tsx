@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
+  CalendarDays,
   RefreshCw,
   Bell,
   FolderOpen,
@@ -32,11 +33,13 @@ export function LiveShell({
   profile,
   logisticsEnabled = false,
   analyticsEnabled = false,
+  calendarEnabled = false,
   children,
 }: {
   profile: Profile;
   logisticsEnabled?: boolean;
   analyticsEnabled?: boolean;
+  calendarEnabled?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -70,6 +73,9 @@ export function LiveShell({
     { href: "/dashboard/projects", name: "Projects", icon: FolderOpen },
     ...(analyticsEnabled
       ? [{ href: "/dashboard/analytics", name: "Analytics", icon: BarChart3 }]
+      : []),
+    ...(calendarEnabled
+      ? [{ href: "/dashboard/calendar", name: "Calendar", icon: CalendarDays }]
       : []),
     { href: "/dashboard/notifications", name: "Notifications", icon: Bell },
     ...(profile.role === "system_administrator"
@@ -109,6 +115,7 @@ export function LiveShell({
               "/dashboard",
               "/dashboard/projects",
               "/dashboard/analytics",
+              "/dashboard/calendar",
             ],
           },
           {

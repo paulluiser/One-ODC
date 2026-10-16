@@ -45,6 +45,9 @@ export interface StorageProvider {
   signedDownload(
     versionId: string,
   ): Promise<{ url: string; expiresIn: number }>;
+  signedPreview(
+    versionId: string,
+  ): Promise<{ url: string; expiresIn: number; mimeType: string }>;
   archive(
     attachmentId: string,
     archived: boolean,

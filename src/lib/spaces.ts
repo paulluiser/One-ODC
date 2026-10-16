@@ -98,6 +98,8 @@ export function spaceTransitions(
   }
 }
 export function spaceError(message: string): string {
+  if (message.includes("PROJECT_LOST"))
+    return "This project is Lost. All project records are read-only.";
   for (const [key, text] of Object.entries({
     PROJECT_CANCELLED:
       "This project is cancelled. Space records are read-only.",

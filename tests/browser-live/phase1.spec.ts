@@ -69,8 +69,14 @@ test("real BDM draft attachment upload/download/archive/restore, submission and 
     .getByRole("button", { name: "Archive attachment", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Archived attachment", exact: true }),
+    page
+      .locator(".attachment-record > summary")
+      .filter({ hasText: "Archived" }),
   ).toBeVisible();
+  await page
+    .locator(".attachment-record > summary")
+    .filter({ hasText: "Archived" })
+    .click();
   await page
     .getByLabel("Archive / restore reason")
     .fill("Staging browser restore verification");
@@ -90,6 +96,9 @@ test("real BDM draft attachment upload/download/archive/restore, submission and 
   await page.goto(`/dashboard/leads/${leadId}`);
   await openWorkspacePanels(page);
   await accessible(page, "Lead review and assignment form");
+  await page
+    .getByLabel("Review decision", { exact: true })
+    .selectOption("Accepted");
   await page
     .getByLabel("Primary Designer", { exact: false })
     .selectOption(actors.find((a) => a.actor === "DESIGNER")!.id);
@@ -337,7 +346,9 @@ test("larger real browser TUS transfer recovers from an interrupted PATCH", asyn
     .getByRole("button", { name: "Archive attachment", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Archived attachment", exact: true }),
+    page
+      .locator(".attachment-record > summary")
+      .filter({ hasText: "Archived" }),
   ).toBeVisible();
   writeFileSync(
     "artifacts/verification/live-browser-resume.json",

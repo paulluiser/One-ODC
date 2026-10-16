@@ -2568,12 +2568,44 @@ async function closeSale(
   reason = "",
   confirm = true,
 ) {
-  return (
+  const who = (await db.query<{ id: string }>("select auth.uid() as id"))
+    .rows[0].id;
+  let stage =
+    (
+      await db.query<{ commercial_status: string }>(
+        "select commercial_status from public.projects where id=$1",
+        [project],
+      )
+    ).rows[0]?.commercial_status ?? "For Quotation";
+  if (who === ids.bdm && stage === "For Quotation") {
+    await actor(ids.lead);
+    await db.query(
+      "select public.transition_commercial_stage($1,'For Quotation','Under Negotiation','Ready for commercial follow-up',true)",
+      [project],
+    );
+    await actor(who);
+    stage = "Under Negotiation";
+  }
+  const result = (
     await db.query<{ id: string }>(
-      "select public.close_project_sale($1,'For Quotation',$2,$3,$4,$5) as id",
-      [project, saleVersion, primary, confirm, reason],
+      "select public.close_project_sale($1,$2::public.commercial_status,$3,$4,$5,$6) as id",
+      [
+        project,
+        stage,
+        saleVersion,
+        primary,
+        confirm,
+        reason || "Client approved the agreed price",
+      ],
     )
   ).rows[0].id;
+  await actor(ids.lead);
+  await db.query(
+    "select public.handoff_closed_project($1,$2,'Lead-approved Operations assignment and handoff',true)",
+    [project, primary],
+  );
+  await actor(who);
+  return result;
 }
 async function handoff(project: string) {
   return (
@@ -2591,25 +2623,28 @@ async function acknowledge(project: string, id: string, version = 1) {
   ]);
 }
 describe("Phase 4A commercial closure and handoff", () => {
-  it("requires Sale, explicit confirmation and an active primary Operations Admin", async () => {
+  it("requires explicit price confirmation and allows BDM closure before Operations assignment", async () => {
     await submit();
     const project = await accept(ids.designer, []);
-    await actor(ids.bdm);
-    await denied(() => closeSale(project), "SALE_REQUIRED");
-    await financialValue(project, "Sale", "0");
-    await denied(() => closeSale(project), "OPERATIONS_ADMIN_REQUIRED");
-    await actor(ids.lead);
     await db.query(
-      "select public.assign_project_personnel($1,$2,'{}',$3,'Assign Operations')",
-      [project, ids.designer, [ids.ops]],
+      "select public.transition_commercial_stage($1,'For Quotation','Under Negotiation','Ready',true)",
+      [project],
     );
     await actor(ids.bdm);
     await denied(
-      () => closeSale(project, 1, ids.ops, "", false),
+      () =>
+        db.query(
+          "select public.close_project_deal($1,'Under Negotiation','0',0,'Agreed',false)",
+          [project],
+        ),
       "CONFIRMATION_REQUIRED",
     );
-    await closeSale(project);
+    await db.query(
+      "select public.close_project_deal($1,'Under Negotiation','0',0,'Explicit no-charge agreement',true)",
+      [project],
+    );
     expect((await handoff(project)).closure?.sale_amount).toBe("0.00");
+    expect((await handoff(project)).status).toBe("Awaiting Handoff");
   });
   it("closes incomplete designs with unpaid balances without changing quote, Raw, payments or design", async () => {
     const project = await spaceProject();
@@ -2652,49 +2687,39 @@ describe("Phase 4A commercial closure and handoff", () => {
     ).toBe("Not Started");
     await denied(
       () => closeSale(project, 2, ids.ops, "Repeat admin action"),
-      "SALE_ALREADY_CLOSED",
+      "ACCESS_DENIED",
     );
   });
-  it("limits normal closure to Primary BDM and requires reasons for scoped Lead/Admin closure", async () => {
+  it("limits deal closure to the primary BDM; Lead and Admin retain no closure override", async () => {
     const project = await spaceProject();
     await actor(ids.bdm);
     await financialValue(project, "Sale", "12.34");
-    await actor(ids.designer);
-    await denied(() => closeSale(project), "ACCESS_DENIED");
-    await actor(ids.otherBdm);
-    await denied(() => closeSale(project), "ACCESS_DENIED");
-    await actor(ids.lead);
-    await denied(() => closeSale(project), "REASON_REQUIRED");
-    await closeSale(project, 1, ids.ops, "Documented administrative closure");
+    for (const who of [ids.designer, ids.otherBdm, ids.lead, ids.admin]) {
+      await actor(who);
+      await denied(
+        () => closeSale(project, 1, ids.ops, "Attempted override"),
+        "ACCESS_DENIED",
+      );
+    }
+    await actor(ids.bdm);
+    await closeSale(project);
     expect((await handoff(project)).closure?.administrative_override).toBe(
-      true,
+      false,
     );
-    await actor(ids.admin);
-    expect(
-      (
-        await db.query<{ new_value: { administrative_override: boolean } }>(
-          "select new_value from public.audit_events where project_id=$1 and action='commercial.closed'",
-          [project],
-        )
-      ).rows[0].new_value.administrative_override,
-    ).toBe(true);
   });
   it("rejects stale Sale/recipient context and freezes cancelled-project closure", async () => {
     const project = await spaceProject();
     await actor(ids.bdm);
     await financialValue(project, "Sale", "5");
     await denied(() => closeSale(project, 0), "STALE_CLOSURE_CONTEXT");
-    await denied(
-      () => closeSale(project, 1, ids.stranger),
-      "STALE_CLOSURE_CONTEXT",
-    );
+
     await actor(ids.lead);
     await db.query(
       "select public.control_project($1,1,'Cancel','Cancel acceptance fixture')",
       [project],
     );
     await actor(ids.bdm);
-    await denied(() => closeSale(project), "PROJECT_CANCELLED");
+    await denied(() => closeSale(project), "PROJECT_RESOLVED");
   });
   it("only current primary Ops acknowledges, with immutable receipt and a new pending record on reassignment", async () => {
     const project = await spaceProject();
@@ -4013,4 +4038,628 @@ it("5B completed-cycle duration uses each historical cycle timezone rather than 
   expect(a.metrics.completions.count).toBe(1);
   expect(a.metrics.completions.amount).toBe("1");
   expect(a.groups.find((g) => g.key === "completions")?.bucket).toBe("2026-03");
+});
+
+it("calendar isolates personal events, enforces optimistic writes and preserves cancellation audit", async () => {
+  const event = "90000000-0000-4000-8000-000000000001";
+  const data = {
+    title: "Site coordination",
+    date: "2026-10-15",
+    end_date: "2026-10-16",
+    time: "09:00",
+    end_time: "10:00",
+    notes: "Plain text",
+    location: "Studio",
+  };
+  await actor(ids.designer);
+  await db.query("select public.save_calendar_event($1,0,$2::jsonb,false,'')", [
+    event,
+    JSON.stringify(data),
+  ]);
+  const own = await db.query<{ events: { id: string }[] }>(
+    "select public.workspace_calendar('2026-10-01','2026-10-31') as events",
+  );
+  expect(own.rows[0].events.some((e) => e.id === event)).toBe(true);
+  await actor(ids.otherBdm);
+  expect(
+    (
+      await db.query("select * from public.calendar_events where id=$1", [
+        event,
+      ])
+    ).rows,
+  ).toHaveLength(0);
+  await db.exec("savepoint calendar_denial");
+  await expect(
+    db.query("select public.save_calendar_event($1,1,$2::jsonb,false,'Edit')", [
+      event,
+      JSON.stringify(data),
+    ]),
+  ).rejects.toThrow("ACCESS_DENIED");
+  await db.exec("rollback to savepoint calendar_denial");
+  await actor(ids.designer);
+  await db.exec("savepoint calendar_direct");
+  await expect(
+    db.query(
+      "insert into public.calendar_events(id,owner_id,title,event_date,end_date) values($1,$2,'Bypass','2026-10-15','2026-10-15')",
+      [leadId, ids.designer],
+    ),
+  ).rejects.toThrow();
+  await db.exec("rollback to savepoint calendar_direct");
+  await db.query(
+    "select public.save_calendar_event($1,1,$2::jsonb,false,'Time confirmed')",
+    [event, JSON.stringify(data)],
+  );
+  await db.exec("savepoint calendar_stale");
+  await expect(
+    db.query(
+      "select public.save_calendar_event($1,1,$2::jsonb,false,'Stale edit')",
+      [event, JSON.stringify(data)],
+    ),
+  ).rejects.toThrow("STALE_EVENT");
+  await db.exec("rollback to savepoint calendar_stale");
+  await db.query(
+    "select public.save_calendar_event($1,2,'{}'::jsonb,true,'Visit cancelled')",
+    [event],
+  );
+  const after = await db.query<{ events: { id: string }[] }>(
+    "select public.workspace_calendar('2026-10-01','2026-10-31') as events",
+  );
+  expect(after.rows[0].events.some((e) => e.id === event)).toBe(false);
+  expect(
+    (
+      await db.query(
+        "select * from public.calendar_event_history where event_id=$1",
+        [event],
+      )
+    ).rows,
+  ).toHaveLength(3);
+  await actor(ids.admin);
+  expect(
+    (
+      await db.query(
+        "select * from public.calendar_event_history where event_id=$1",
+        [event],
+      )
+    ).rows,
+  ).toHaveLength(0);
+  expect(
+    (
+      await db.query(
+        "select * from public.audit_events where entity_type='calendar_event' and entity_id=$1",
+        [event],
+      )
+    ).rows,
+  ).toHaveLength(3);
+});
+
+describe("Microfeatures PostgreSQL permissions and integrity", () => {
+  async function denied(run: () => Promise<unknown>, pattern: RegExp) {
+    await db.exec("savepoint micro_denied");
+    try {
+      await expect(run()).rejects.toThrow(pattern);
+    } finally {
+      await db.exec(
+        "rollback to savepoint micro_denied;release savepoint micro_denied",
+      );
+    }
+  }
+  it("keeps favorites personal, rechecks revoked membership and denies direct writes", async () => {
+    await submit();
+    const project = await accept(ids.designer, [ids.ops]);
+    await actor(ids.designer);
+    await db.query("select public.remember_project($1,true)", [project]);
+    await db.query("select public.remember_project($1,null)", [project]);
+    expect(
+      (await db.query("select * from public.project_shortcuts")).rows,
+    ).toHaveLength(1);
+    await denied(
+      () =>
+        db.query(
+          "insert into public.project_shortcuts(user_id,project_id) values($1,$2)",
+          [ids.designer, project],
+        ),
+      /permission denied/i,
+    );
+    await actor(ids.otherBdm);
+    expect(
+      (await db.query("select * from public.project_shortcuts")).rows,
+    ).toHaveLength(0);
+    await denied(
+      () => db.query("select public.remember_project($1,true)", [project]),
+      /ACCESS_DENIED/,
+    );
+    await db.exec("reset role");
+    await db.query(
+      "delete from public.project_memberships where project_id=$1 and user_id=$2",
+      [project, ids.designer],
+    );
+    await actor(ids.designer);
+    expect(
+      (await db.query("select * from public.project_shortcuts")).rows,
+    ).toHaveLength(0);
+  });
+  it("copies only Space names atomically, uses fresh IDs and makes repeat template applications idempotent", async () => {
+    await submit();
+    const project = await accept();
+    await actor(ids.lead);
+    const space = "40000000-0000-4000-8000-000000000099",
+      template = "50000000-0000-4000-8000-000000000099",
+      operation = "60000000-0000-4000-8000-000000000099";
+    await db.query(
+      "select public.save_space($1,$2,0,'Kitchen','2026-12-01',$3,'{}','Original structure')",
+      [space, project, ids.designer],
+    );
+    await db.query(
+      "select public.save_space_template($1,$2,'Kitchen structure')",
+      [template, project],
+    );
+    const t = (
+      await db.query<{ structure: unknown }>(
+        "select structure from public.space_structure_templates",
+      )
+    ).rows[0];
+    expect(t.structure).toEqual([{ name: "Kitchen" }]);
+    await denied(
+      () =>
+        db.query("select public.apply_space_template($1,$2,$3,$4,false)", [
+          operation,
+          template,
+          project,
+          ids.designer,
+        ]),
+      /CONFIRMATION_REQUIRED/,
+    );
+    await denied(
+      () =>
+        db.query("select public.apply_space_template($1,$2,$3,$4,true)", [
+          operation,
+          template,
+          project,
+          ids.stranger,
+        ]),
+      /INVALID_ASSIGNMENTS/,
+    );
+    for (let i = 0; i < 2; i++)
+      await db.query("select public.apply_space_template($1,$2,$3,$4,true)", [
+        operation,
+        template,
+        project,
+        ids.designer,
+      ]);
+    const s = await db.query<{
+      id: string;
+      name: string;
+      status: string;
+      deadline: string | null;
+    }>(
+      "select id,name,status,deadline from public.spaces where project_id=$1",
+      [project],
+    );
+    expect(s.rows).toHaveLength(2);
+    expect(s.rows.find((s) => s.id !== space)).toMatchObject({
+      name: "Kitchen",
+      status: "Not Started",
+      deadline: null,
+    });
+    expect(
+      (await db.query("select * from public.space_template_applications")).rows,
+    ).toHaveLength(1);
+    await actor(ids.admin);
+    expect(
+      (
+        await db.query(
+          "select * from public.audit_events where action='template.applied'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await actor(ids.designer);
+    expect(
+      (await db.query("select * from public.space_structure_templates")).rows,
+    ).toHaveLength(0);
+    await denied(
+      () =>
+        db.query("select public.apply_space_template($1,$2,$3,$4,true)", [
+          operation,
+          template,
+          project,
+          ids.designer,
+        ]),
+      /ACCESS_DENIED/,
+    );
+  });
+  it("restricts discussions/mentions, audits corrections and prevents duplicate notifications", async () => {
+    await submit();
+    const project = await accept(ids.designer, [ids.ops]);
+    await actor(ids.designer);
+    const comment = "70000000-0000-4000-8000-000000000099";
+    const save = (
+      version: number | null,
+      body: string,
+      mentions: string[],
+      reason = "",
+    ) =>
+      db.query(
+        "select public.save_project_comment($1,$2,null,$3,$4,$5::uuid[],$6)",
+        [comment, project, version, body, mentions, reason],
+      );
+    await denied(
+      () => save(0, "Invalid mention", [ids.stranger]),
+      /INVALID_MENTION/,
+    );
+    await save(0, "Text <script>stays plain</script>", [ids.lead]);
+    await denied(
+      () => save(0, "Repeated submission", [ids.lead]),
+      /VERSION_CONFLICT/,
+    );
+    await denied(
+      () => save(null, "Bypass version", [ids.lead], "Correction"),
+      /VERSION_CONFLICT/,
+    );
+    await save(1, "Corrected comment", [ids.lead], "Correct wording");
+    await actor(ids.lead);
+    expect(
+      (
+        await db.query(
+          "select * from public.notifications where message='You were mentioned in a project discussion.'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await actor(ids.admin);
+    expect(
+      (
+        await db.query(
+          "select * from public.audit_events where action='comment.corrected'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await actor(ids.bdm);
+    expect(
+      (await db.query("select * from public.project_comments")).rows,
+    ).toHaveLength(1);
+    await denied(
+      () => save(2, "Other author correction", [], "Not permitted"),
+      /ACCESS_DENIED/,
+    );
+    for (const id of [ids.ops, ids.otherBdm, ids.stranger]) {
+      await actor(id);
+      expect(
+        (await db.query("select * from public.project_comments")).rows,
+      ).toHaveLength(0);
+      expect(
+        (await db.query("select * from public.comment_people($1)", [project]))
+          .rows,
+      ).toHaveLength(0);
+      await denied(
+        () => save(2, "Restricted", [], "No access"),
+        /ACCESS_DENIED/,
+      );
+    }
+  });
+});
+
+describe("Notification inbox", () => {
+  it("marks every active role's own unread notices, preserving read timestamps and other recipients", async () => {
+    for (const who of [ids.admin, ids.lead, ids.designer, ids.bdm, ids.ops]) {
+      await db.exec("reset role");
+      await db.query(
+        "insert into public.notifications(recipient_id,message) values($1,'Inbox test'),($1,'Another update')",
+        [who],
+      );
+    }
+    for (const who of [ids.admin, ids.lead, ids.designer, ids.bdm, ids.ops]) {
+      await actor(who);
+      expect(
+        (
+          await db.query<{ count: number }>(
+            "select public.mark_all_notifications_read() as count",
+          )
+        ).rows[0].count,
+      ).toBe(2);
+      expect(
+        (
+          await db.query<{ count: number }>(
+            "select public.mark_all_notifications_read() as count",
+          )
+        ).rows[0].count,
+      ).toBe(0);
+      const rows = (
+        await db.query<{ recipient_id: string; read_at: string }>(
+          "select recipient_id,read_at from public.notifications",
+        )
+      ).rows;
+      expect(rows).toHaveLength(2);
+      expect(rows.every((n) => n.recipient_id === who && n.read_at)).toBe(true);
+    }
+    await db.exec("reset role");
+    const stamp = (
+      await db.query<{ read_at: string }>(
+        "select read_at from public.notifications where recipient_id=$1 limit 1",
+        [ids.bdm],
+      )
+    ).rows[0].read_at;
+    await actor(ids.bdm);
+    await db.query("select public.mark_all_notifications_read()");
+    expect(
+      (
+        await db.query<{ read_at: string }>(
+          "select read_at from public.notifications limit 1",
+        )
+      ).rows[0].read_at,
+    ).toEqual(stamp);
+  });
+  it("cannot mark another recipient's notices or call the bulk RPC anonymously", async () => {
+    await db.query(
+      "insert into public.notifications(recipient_id,message) values($1,'Private notice')",
+      [ids.lead],
+    );
+    await actor(ids.bdm);
+    expect(
+      (
+        await db.query<{ count: number }>(
+          "select public.mark_all_notifications_read() as count",
+        )
+      ).rows[0].count,
+    ).toBe(0);
+    await db.exec("reset role");
+    expect(
+      (
+        await db.query<{ read_at: unknown }>(
+          "select read_at from public.notifications",
+        )
+      ).rows[0].read_at,
+    ).toBeNull();
+    await db.exec("set role anon; savepoint denied");
+    await expect(
+      db.query("select public.mark_all_notifications_read()"),
+    ).rejects.toThrow("permission denied");
+    await db.exec("rollback to denied; reset role");
+    await db.query("update public.profiles set active=false where id=$1", [
+      ids.bdm,
+    ]);
+    await actor(ids.bdm);
+    await expect(
+      db.query("select public.mark_all_notifications_read()"),
+    ).rejects.toThrow();
+  });
+});
+
+describe("Revised commercial workflow", () => {
+  async function transition(
+    project: string,
+    expected: string,
+    target: string,
+    reason = "Commercial UAT decision",
+  ) {
+    return db.query(
+      "select public.transition_commercial_stage($1,$2::public.commercial_status,$3::public.commercial_status,$4,true)",
+      [project, expected, target, reason],
+    );
+  }
+  it("starts accepted projects For Quotation; only the owning Lead can send to the BDM", async () => {
+    const project = await spaceProject();
+    for (const who of [ids.bdm, ids.designer, ids.ops, ids.admin]) {
+      await actor(who);
+      await denied(
+        () => transition(project, "For Quotation", "Under Negotiation"),
+        "ACCESS_DENIED",
+      );
+    }
+    await actor(ids.lead);
+    await denied(
+      () => transition(project, "For Quotation", "Under Negotiation", ""),
+      "REASON_REQUIRED",
+    );
+    await transition(project, "For Quotation", "Under Negotiation");
+    await denied(
+      () => transition(project, "For Quotation", "Under Negotiation"),
+      "STALE_COMMERCIAL_STAGE",
+    );
+    await actor(ids.bdm);
+    expect(
+      (
+        await db.query<{ commercial_status: string }>(
+          "select commercial_status from public.projects where id=$1",
+          [project],
+        )
+      ).rows[0].commercial_status,
+    ).toBe("Under Negotiation");
+    expect(
+      (
+        await db.query(
+          "select * from public.notifications where project_id=$1 and message like '%BDM follow-up%'",
+          [project],
+        )
+      ).rows,
+    ).toHaveLength(1);
+  });
+  it("atomically closes at the BDM price, notifies Lead, and withholds Ops until Lead handoff", async () => {
+    const project = await spaceProject();
+    await actor(ids.bdm);
+    await denied(
+      () =>
+        db.query(
+          "select public.close_project_deal($1,'For Quotation','125000.15',0,'Agreed',true)",
+          [project],
+        ),
+      "INVALID_COMMERCIAL_TRANSITION",
+    );
+    await actor(ids.lead);
+    await transition(project, "For Quotation", "Under Negotiation");
+    await denied(
+      () =>
+        db.query(
+          "select public.close_project_deal($1,'Under Negotiation','125000.15',0,'Agreed',true)",
+          [project],
+        ),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.bdm);
+    await db.query(
+      "select public.close_project_deal($1,'Under Negotiation','125000.15',0,'Client confirmed the final price',true)",
+      [project],
+    );
+    const pending = await handoff(project);
+    expect(pending.status).toBe("Awaiting Handoff");
+    expect(pending.closure?.sale_amount).toBe("125000.15");
+    expect(pending.current).toBeNull();
+    await denied(
+      () =>
+        db.query("select public.handoff_closed_project($1,$2,'Handoff',true)", [
+          project,
+          ids.ops,
+        ]),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.ops);
+    expect(
+      (await db.query("select id from public.projects where id=$1", [project]))
+        .rows,
+    ).toHaveLength(0);
+    await actor(ids.lead);
+    expect(
+      (
+        await db.query(
+          "select * from public.notifications where project_id=$1 and message like '%awaiting your Operations%'",
+          [project],
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await db.query(
+      "select public.assign_project_personnel($1,$2,'{}',$3,'Team update without operational release')",
+      [project, ids.designer, [ids.ops]],
+    );
+    expect((await handoff(project)).status).toBe("Awaiting Handoff");
+    await db.query(
+      "select public.handoff_closed_project($1,$2,'Assign Operations for delivery coordination',true)",
+      [project, ids.ops],
+    );
+    await denied(
+      () =>
+        db.query("select public.handoff_closed_project($1,$2,'Repeat',true)", [
+          project,
+          ids.ops,
+        ]),
+      "INVALID_HANDOFF_STATE",
+    );
+    await actor(ids.ops);
+    const h = await handoff(project);
+    expect(h.status).toBe("Pending Acknowledgment");
+    expect(h.can_acknowledge).toBe(true);
+    await acknowledge(project, h.current!.id);
+    await actor(ids.bdm);
+    await denied(
+      () => transition(project, "Closed", "Lost"),
+      "INVALID_COMMERCIAL_TRANSITION",
+    );
+  });
+  it("permits primary BDM loss during ongoing design and freezes every project write while preserving read history", async () => {
+    const project = await spaceProject();
+    await createSpace(project);
+    await actor(ids.designer);
+    await db.query(
+      "select public.change_space_status($1,1,'In Progress','Design started','')",
+      [spaceId],
+    );
+    const reservation = (
+      await db.query<{
+        v: { id: string; object_path: string; bucket: string };
+      }>(
+        "select public.reserve_attachment(null,null,$1,'design','layout.png','image/png',10) as v",
+        [project],
+      )
+    ).rows[0].v;
+    await actor(ids.otherBdm);
+    await denied(
+      () => transition(project, "For Quotation", "Lost"),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.bdm);
+    await denied(
+      () => transition(project, "For Quotation", "Lost", ""),
+      "REASON_REQUIRED",
+    );
+    await transition(
+      project,
+      "For Quotation",
+      "Lost",
+      "Client postponed the renovation indefinitely",
+    );
+    expect(
+      (
+        await db.query<{ commercial_status: string; is_cancelled: boolean }>(
+          "select commercial_status,is_cancelled from public.projects where id=$1",
+          [project],
+        )
+      ).rows[0],
+    ).toEqual({ commercial_status: "Lost", is_cancelled: false });
+    await actor(ids.designer);
+    expect(
+      (
+        await db.query("select * from public.spaces where project_id=$1", [
+          project,
+        ])
+      ).rows,
+    ).toHaveLength(1);
+    await denied(
+      () =>
+        db.query(
+          "select public.change_space_status($1,2,'Submitted','Updated layout','')",
+          [spaceId],
+        ),
+      "PROJECT_LOST_READ_ONLY",
+    );
+    await denied(
+      () =>
+        db.query(
+          "insert into storage.objects(bucket_id,name,metadata) values($1,$2,jsonb_build_object('size',10))",
+          [reservation.bucket, reservation.object_path],
+        ),
+      "row-level security",
+    );
+    await actor(ids.lead);
+    await denied(
+      () => db.query("select public.create_quotation_draft($1)", [project]),
+      "PROJECT_LOST_READ_ONLY",
+    );
+    await denied(
+      () =>
+        db.query(
+          "select public.set_financial_value($1,'Raw','100',0,'Estimate')",
+          [project],
+        ),
+      "PROJECT_LOST_READ_ONLY",
+    );
+    await actor(ids.admin);
+    await denied(
+      () =>
+        db.query(
+          "select public.save_project_comment($1,$2,null,0,'Correction','{}','')",
+          [leadId, project],
+        ),
+      "PROJECT_LOST_READ_ONLY",
+    );
+    expect(
+      (
+        await db.query(
+          "select * from public.audit_events where project_id=$1 and action='commercial.lost'",
+          [project],
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await db.exec("reset role");
+    await denied(
+      () =>
+        db.query("update public.projects set name='Bypass' where id=$1", [
+          project,
+        ]),
+      "PROJECT_LOST_READ_ONLY",
+    );
+    await denied(
+      () =>
+        db.query("update public.spaces set name='Bypass' where project_id=$1", [
+          project,
+        ]),
+      "PROJECT_LOST_READ_ONLY",
+    );
+  });
 });

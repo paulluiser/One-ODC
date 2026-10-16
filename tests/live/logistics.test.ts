@@ -138,13 +138,26 @@ it("4B staging: supplier duplicates/inactivity, acknowledged logistics, concurre
     p_expected_version: 0,
     p_reason: "",
   });
-  await rpc("BDM", "close_project_sale", {
+  await rpc("LEAD", "transition_commercial_stage", {
     p_project: project,
     p_expected_stage: "For Quotation",
+    p_target: "Under Negotiation",
+    p_reason: "Release to BDM",
+    p_confirm: true,
+  });
+  await rpc("BDM", "close_project_sale", {
+    p_project: project,
+    p_expected_stage: "Under Negotiation",
     p_sale_version: 1,
     p_primary_ops: ids.OPS,
     p_confirm: true,
-    p_reason: "",
+    p_reason: "Client confirmed the agreed price",
+  });
+  await rpc("LEAD", "handoff_closed_project", {
+    p_project: project,
+    p_primary_ops: ids.OPS,
+    p_reason: "Lead-approved Operations handoff",
+    p_confirm: true,
   });
   expect((await save("OPS")).error?.message).toContain("HANDOFF_REQUIRED");
   const h = await rpc("OPS", "get_commercial_handoff", { p_project: project });

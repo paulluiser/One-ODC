@@ -127,6 +127,7 @@ export type Project = {
   name: string;
   lead_designer_id: string;
   commercial_status: string;
+  awaiting_handoff?: boolean;
   expected_handoff: string | null;
   created_at: string;
 };

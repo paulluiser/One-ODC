@@ -1,12 +1,55 @@
 import Link from "next/link";
+import { NotificationInbox } from "@/components/notification-inbox";
 import { requireWorkspace } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import { formatTime, type Notification } from "@/lib/phase1";
 import { PageIntro } from "@/components/live-data";
 import { markRead } from "../actions";
 import { Button } from "@/components/ui/button";
-export default async function Notifications() {
+export default async function Notifications({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; page?: string }>;
+}) {
   const { client } = await requireWorkspace();
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
+    const params = await searchParams;
+    const all = params.view === "all";
+    const page = Math.max(1, Math.min(100000, Number(params.page) || 1)) | 0;
+    let query = client
+      .from("notifications")
+      .select("id,message,created_at,read_at,lead_id,project_id", {
+        count: "exact",
+      });
+    if (!all) query = query.is("read_at", null);
+    const [notices, unread] = await Promise.all([
+      query
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range((page - 1) * 50, page * 50 - 1),
+      client
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .is("read_at", null),
+    ]);
+    checkDatabase(notices.error);
+    checkDatabase(unread.error);
+    return (
+      <>
+        <PageIntro
+          title="Notifications"
+          description="Your project, review, and assignment updates in one place."
+        />
+        <NotificationInbox
+          notices={notices.data as Notification[]}
+          unread={unread.count ?? 0}
+          all={all}
+          page={page}
+          total={notices.count ?? 0}
+        />
+      </>
+    );
+  }
   const { data, error } = await client
     .from("notifications")
     .select("*")
@@ -17,12 +60,16 @@ export default async function Notifications() {
     <>
       <PageIntro
         title="Notifications"
-        description="Persisted review and assignment updates. Refresh this page to check for new notices."
+        description="Your project, review, and assignment updates in one place."
       />
       <section className="surface live-form">
         {data?.length ? (
           (data as Notification[]).map((n) => (
-            <article className="live-notification" key={n.id}>
+            <article
+              className="live-notification"
+              data-unread={!n.read_at || undefined}
+              key={n.id}
+            >
               <div>
                 <h2>{n.message}</h2>
                 <small>
@@ -58,8 +105,8 @@ export default async function Notifications() {
           </div>
         )}
         <p className="field-hint">
-          Latest 100 notices. Realtime delivery is deferred; these records are
-          queried from PostgreSQL.
+          Showing the latest 100 notices. Use Refresh workspace to check for new
+          updates.
         </p>
       </section>
     </>

@@ -8,8 +8,10 @@ import { StartupState } from "./startup-state";
 // Custom SMTP can instead use our server-side token-hash confirmation route.
 export function InvitationLanding({
   fallback = "/login",
+  modern = false,
 }: {
   fallback?: string;
+  modern?: boolean;
 }) {
   const started = useRef(false);
   useEffect(() => {
@@ -56,10 +58,13 @@ export function InvitationLanding({
   }, [fallback]);
   return (
     <StartupState
+      modern={modern}
       message={
         fallback === "/auth/error"
           ? "Checking your invitation securely…"
-          : "Opening your workspace…"
+          : modern
+            ? "Preparing your workspace"
+            : "Opening your workspace…"
       }
     />
   );

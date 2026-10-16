@@ -1,4 +1,6 @@
 "use client";
+import { FilePreview } from "./productivity/file-preview";
+import { DisclosureSummary } from "./ui-r2/primitives";
 import {
   useEffect,
   useMemo,
@@ -23,6 +25,14 @@ import {
 import { PendingIndicator } from "./operation-feedback";
 import { FileOptimization } from "./file-optimization";
 import { Button } from "./ui/button";
+const fileSize = (bytes: number | null) =>
+  bytes == null
+    ? "Size unavailable"
+    : bytes < 1024
+      ? `${bytes} B`
+      : bytes < 1024 * 1024
+        ? `${(bytes / 1024).toFixed(1)} KiB`
+        : `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
 const subscribeReady = () => () => {};
 const clientReady = () => true;
 const serverReady = () => false;
@@ -352,8 +362,14 @@ export function LeadAttachments({
         <p className="field-hint">No files have been uploaded for this lead.</p>
       )}
       {attachments.map((a) => (
-        <article className="history-entry" key={a.id}>
-          <h3>{a.archived_at ? "Archived attachment" : "Attachment"}</h3>
+        <details className="attachment-record" key={a.id} open={!a.archived_at}>
+          <DisclosureSummary>
+            {versions.find((v) => v.attachment_id === a.id)?.original_name ||
+              "Attachment"}
+            <span className="record-status">
+              {a.archived_at ? "Archived" : "Active"}
+            </span>
+          </DisclosureSummary>
           {versions
             .filter((v) => v.attachment_id === a.id)
             .map((v) => (
@@ -361,8 +377,8 @@ export function LeadAttachments({
                 <p>
                   {v.original_name} ·{" "}
                   {v.ready_at
-                    ? `${v.actual_size?.toLocaleString()} bytes · Uploaded`
-                    : `${v.expected_size.toLocaleString()} bytes · Upload pending`}
+                    ? `${fileSize(v.actual_size)} · Uploaded`
+                    : `${fileSize(v.expected_size)} · Upload pending`}
                 </p>
                 {v.ready_at && !a.archived_at && (
                   <Button
@@ -373,6 +389,9 @@ export function LeadAttachments({
                   >
                     Get download link
                   </Button>
+                )}
+                {v.ready_at && !a.archived_at && (
+                  <FilePreview id={v.id} name={v.original_name} />
                 )}
                 {!v.ready_at &&
                   !a.archived_at &&
@@ -419,7 +438,7 @@ export function LeadAttachments({
               {a.archived_at ? "Restore attachment" : "Archive attachment"}
             </Button>
           )}
-        </article>
+        </details>
       ))}
     </section>
   );

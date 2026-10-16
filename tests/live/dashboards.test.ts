@@ -209,13 +209,26 @@ it("5A staging: accurate role KPIs, multi-assignment, cancelled/completed scope,
     sale.records.some((r) => r.id === project && r.detail?.includes("0.00")),
   ).toBe(true);
   expect(JSON.stringify(sale)).not.toContain("78234.51");
-  await rpc("BDM", "close_project_sale", {
+  await rpc("LEAD", "transition_commercial_stage", {
     p_project: project,
     p_expected_stage: "For Quotation",
+    p_target: "Under Negotiation",
+    p_reason: "Release to BDM",
+    p_confirm: true,
+  });
+  await rpc("BDM", "close_project_sale", {
+    p_project: project,
+    p_expected_stage: "Under Negotiation",
     p_sale_version: 1,
     p_primary_ops: ids.OPS,
     p_confirm: true,
-    p_reason: "",
+    p_reason: "Client confirmed the agreed price",
+  });
+  await rpc("LEAD", "handoff_closed_project", {
+    p_project: project,
+    p_primary_ops: ids.OPS,
+    p_reason: "Lead-approved Operations handoff",
+    p_confirm: true,
   });
   expect(count(await get("OPS"), "operational_projects")).toBe(
     count(before.OPS, "operational_projects") + 1,
@@ -270,7 +283,7 @@ it("5A staging: accurate role KPIs, multi-assignment, cancelled/completed scope,
     expect(d.recent.length).toBeLessThanOrEqual(8);
     expect(d.records.length).toBeLessThanOrEqual(25);
     expect(JSON.stringify(d)).not.toContain("78234.51");
-    if (actor !== "BDM") expect(d.metrics.sale).toBeUndefined();
+    if (d.role !== "bdm") expect(d.metrics.sale).toBeUndefined();
   }
   const outsider = await get("OTHER_BDM", "closed_projects");
   expect(outsider.records.some((r) => r.id === project)).toBe(false);

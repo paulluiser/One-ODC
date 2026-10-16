@@ -170,80 +170,94 @@ export function ProjectAnalytics({
   ];
   return (
     <div className="analytics-experience">
-      <form
-        className="surface settings-section analytics-filters"
-        action="/dashboard/analytics"
-        aria-label="Analytics filters"
+      <details
+        className="surface analytics-filter-disclosure"
+        open={!!(filters.stage || filters.brand || filters.stakeholder)}
       >
-        <div className="filter-heading">
-          <SlidersHorizontal size={16} aria-hidden="true" />
-          <h2>Filter workspace</h2>
-          <span>Inclusive date range</span>
-        </div>
-        <div className="filter-fields">
-          <label>
-            From
-            <input
-              name="from"
-              type="date"
-              required
-              defaultValue={filters.from}
-            />
-          </label>
-          <label>
-            Through
-            <input name="to" type="date" required defaultValue={filters.to} />
-          </label>
-          <label>
-            Current project stage
-            <select
-              name="stage"
-              aria-label="Current project stage"
-              defaultValue={filters.stage}
-            >
-              <option value="">All stages</option>
-              {analyticsStages.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Brand
-            <select
-              name="brand"
-              aria-label="Brand"
-              defaultValue={filters.brand}
-              disabled={data.role === "operations_admin"}
-            >
-              <option value="">All authorized brands</option>
-              {["SFY", "Stosa", "Both"].map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Assigned stakeholder
-            <select
-              name="stakeholder"
-              aria-label="Assigned stakeholder"
-              defaultValue={filters.stakeholder}
-            >
-              <option value="">All authorized stakeholders</option>
-              {data.people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.display_name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="button button-primary" type="submit">
-            Apply filters
-          </button>
-          <Link className="text-link" href="/dashboard/analytics">
-            Reset
-          </Link>
-        </div>
-      </form>
+        <summary>
+          <SlidersHorizontal size={16} aria-hidden="true" /> Filters{" "}
+          <span>
+            {filters.from} — {filters.to}
+            {filters.stage ? ` · ${filters.stage}` : ""}
+            {filters.brand ? ` · ${filters.brand}` : ""}
+            {filters.stakeholder ? " · Assigned stakeholder" : ""}
+          </span>
+        </summary>
+        <form
+          className="settings-section analytics-filters"
+          action="/dashboard/analytics"
+          aria-label="Analytics filters"
+        >
+          <div className="filter-heading">
+            <SlidersHorizontal size={16} aria-hidden="true" />
+            <h2>Filter workspace</h2>
+            <span>Inclusive date range</span>
+          </div>
+          <div className="filter-fields">
+            <label>
+              From
+              <input
+                name="from"
+                type="date"
+                required
+                defaultValue={filters.from}
+              />
+            </label>
+            <label>
+              Through
+              <input name="to" type="date" required defaultValue={filters.to} />
+            </label>
+            <label>
+              Current project stage
+              <select
+                name="stage"
+                aria-label="Current project stage"
+                defaultValue={filters.stage}
+              >
+                <option value="">All stages</option>
+                {analyticsStages.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Brand
+              <select
+                name="brand"
+                aria-label="Brand"
+                defaultValue={filters.brand}
+                disabled={data.role === "operations_admin"}
+              >
+                <option value="">All authorized brands</option>
+                {["SFY", "Stosa", "Both"].map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Assigned stakeholder
+              <select
+                name="stakeholder"
+                aria-label="Assigned stakeholder"
+                defaultValue={filters.stakeholder}
+              >
+                <option value="">All authorized stakeholders</option>
+                {data.people.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.display_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="button button-primary" type="submit">
+              Apply filters
+            </button>
+            <Link className="text-link" href="/dashboard/analytics">
+              Reset
+            </Link>
+          </div>
+        </form>
+      </details>
       <p className="workspace-data-note">
         <span className="live-dot" aria-hidden="true" />
         Updated {formatTime(data.as_of)}

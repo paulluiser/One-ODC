@@ -1,4 +1,5 @@
 "use client";
+import styles from "./ui-r3/ui-r3.module.css";
 import { PendingIndicator } from "./operation-feedback";
 import { FormPending } from "./form-pending";
 import {
@@ -22,7 +23,9 @@ export function FinanceForm({
   label,
   reasonRequired,
   children,
+  rebuild = false,
 }: {
+  rebuild?: boolean;
   project: string;
   id: string;
   kind: string;
@@ -35,6 +38,7 @@ export function FinanceForm({
   const [open, setOpen] = useState(false),
     [identity, setIdentity] = useState(id),
     [reset, setReset] = useState(0);
+  const [dirty, setDirty] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const formId = useId(),
     reasonId = useId();
@@ -42,6 +46,7 @@ export function FinanceForm({
     async (prev: FormState, data: FormData) => {
       const result = await financeAction(prev, data);
       if (result.success) {
+        setDirty(false);
         setOpen(false);
         setReset((n) => n + 1);
         if (intent === "save" && version === 0)
@@ -52,6 +57,15 @@ export function FinanceForm({
     { error: null },
   );
   useEffect(() => {
+    if (!rebuild || !dirty || pending) return;
+    const unload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", unload);
+    return () => window.removeEventListener("beforeunload", unload);
+  }, [rebuild, dirty, pending]);
+  useEffect(() => {
     // Radix may close while the fieldset is still disabled by the action.
     if (state.success && !pending) trigger.current?.focus();
   }, [state.success, pending]);
@@ -60,6 +74,10 @@ export function FinanceForm({
       id={formId}
       action={action}
       aria-label={label}
+      data-unsaved={rebuild && dirty ? "true" : undefined}
+      onInputCapture={() => {
+        if (rebuild) setDirty(true);
+      }}
       className="live-form"
       onReset={(e) => e.preventDefault()}
     >
@@ -109,7 +127,7 @@ export function FinanceForm({
           <Dialog.Portal>
             <Dialog.Overlay className="dialog-overlay" />
             <Dialog.Content
-              className="detail-dialog"
+              className={`detail-dialog ${rebuild ? styles.dialog : ""}`}
               onCloseAutoFocus={(e) => {
                 const heading = document.getElementById(`payment-${id}`);
                 if (intent === "void" && heading?.dataset.voided === "true") {
@@ -148,6 +166,7 @@ export function FinanceForm({
                 type="submit"
                 form={formId}
                 className="button button-primary"
+                data-destructive={intent === "void" || undefined}
                 disabled={pending}
               >
                 {pending

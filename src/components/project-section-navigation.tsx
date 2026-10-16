@@ -13,6 +13,7 @@ export function ProjectSectionNavigation({
     params = useSearchParams();
   useEffect(() => {
     if (ref.current) ref.current.dataset.ready = "true";
+    let lastTarget: HTMLElement | null = null;
     const sync = () => {
       const target = window.location.hash
         ? document.getElementById(window.location.hash.slice(1))
@@ -25,6 +26,7 @@ export function ProjectSectionNavigation({
       )
         if (parent instanceof HTMLDetailsElement) parent.open = true;
       target?.scrollIntoView({ block: "start" });
+      lastTarget = target;
       for (const link of ref.current?.querySelectorAll<HTMLAnchorElement>(
         "a[href]",
       ) ?? []) {
@@ -52,7 +54,21 @@ export function ProjectSectionNavigation({
     };
     sync();
     window.addEventListener("hashchange", sync);
-    return () => window.removeEventListener("hashchange", sync);
+    // Streamed sections may arrive after navigation hydrates. Reveal a deep-linked
+    // space only once its actual element exists, without repeatedly moving focus.
+    const observer = new MutationObserver(() => {
+      const hash = window.location.hash;
+      const target = hash ? document.getElementById(hash.slice(1)) : null;
+      if (target && target !== lastTarget) sync();
+    });
+    observer.observe(document.getElementById("r0-main") ?? document.body, {
+      childList: true,
+      subtree: true,
+    });
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      observer.disconnect();
+    };
   }, [path, params]);
   return (
     <nav

@@ -1,4 +1,5 @@
 "use client";
+import { FilePreview } from "./productivity/file-preview";
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { supabaseConfig } from "@/lib/env";
@@ -31,6 +32,7 @@ export function ActivityDownload({ id, name }: { id: string; name: string }) {
   }
   return (
     <div>
+      <FilePreview id={id} name={name} />
       <button
         className="button button-outline"
         disabled={pending}

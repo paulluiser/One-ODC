@@ -1,4 +1,5 @@
 "use client";
+import styles from "./ui-r3/ui-r3.module.css";
 import { PendingIndicator } from "./operation-feedback";
 import { FormPending } from "./form-pending";
 import { useActionState, useId, useState } from "react";
@@ -10,7 +11,9 @@ export function QuotationReviewForm({
   quotation,
   intent,
   administrator,
+  rebuild = false,
 }: {
+  rebuild?: boolean;
   quotation: Quotation;
   intent: "submit" | "Approved" | "Returned for Revision";
   administrator: boolean;
@@ -81,7 +84,7 @@ export function QuotationReviewForm({
           <Dialog.Portal>
             <Dialog.Overlay className="dialog-overlay" />
             <Dialog.Content
-              className="detail-dialog"
+              className={`detail-dialog ${rebuild ? styles.dialog : ""}`}
               onEscapeKeyDown={(e) => {
                 if (pending) e.preventDefault();
               }}

@@ -133,7 +133,7 @@ export const dashboardMetrics: Record<Role, DashboardMetric[]> = {
     metric(
       "commercial_opportunities",
       "Active commercial opportunities",
-      "Distinct authorized Projects with an open cycle and commercial stage For Quotation or Negotiation; cancelled/completed Projects excluded.",
+      "Distinct authorized Projects with an open cycle and commercial stage For Quotation or Under Negotiation; cancelled/completed Projects excluded.",
     ),
     metric(
       "closed_projects",

@@ -68,6 +68,8 @@ export function financialAmount(value: string | null | undefined): string {
     : formatPHP(value);
 }
 export function financeError(message: string): string {
+  if (message.includes("PROJECT_LOST"))
+    return "This project is Lost. All project records are read-only.";
   if (message.includes("VERSION_CONFLICT"))
     return "This record changed elsewhere. Reload before retrying; your entries have been kept.";
   if (message.includes("REASON_REQUIRED"))

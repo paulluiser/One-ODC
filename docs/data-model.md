@@ -59,3 +59,11 @@ The earlier JSON `leads.attachment_metadata` snapshots remain intact and explici
 `20261013085045_phase1_file_limit.sql`: validates newly submitted file metadata and version sizes at 50 MiB, blocks submission with active unverified versions, and adds `uploaded_attachments` to immutable snapshots with stable attachment/version IDs, names and actual sizes. Legacy metadata remains `not_uploaded` and is never promoted implicitly.
 
 `20261013090652_attachment_parent_locks.sql`: serializes reservation/archive against the Lead/Project parent, then rechecks write scope after waiting. Both are applied in staging; production application is pending. Staging's migration-version mapping is documented in `phase1-live-verification.md`; it includes the unrelated tracker's existing history.
+
+### Personal calendar events
+
+`calendar_events` stores owner UUID, title, inclusive start/end dates, optional local start/end times (Asia/Manila), location, Notes, optimistic version and cancellation timestamp. Events are private to their active owner, regardless of role; direct authenticated writes are revoked. `calendar_event_history` retains immutable owner-private snapshots and change reasons. Public audit records store only operation/version metadata. The invoker calendar feed combines these rows with authorized source deadlines/schedules without copying or changing business dates. Migration: `20261015071135_consolidated_calendar.sql`; staging only until production rollout is approved.
+
+## Commercial workflow amendment — 2026-10-16
+
+`commercial_status` renames Negotiation to Under Negotiation and adds Lost. `projects` adds `awaiting_handoff` (false by default), `lost_at` and `lost_reason`, with a constraint requiring loss context only for Lost. No new business tables: immutable `commercial_closures` stores the BDM price/Sale version; existing handoff/events/notifications/audit tables record Lead release and acknowledgment. Deal closure and operational handoff are separate transactions under the same Project lock. Ops pipeline visibility is denied while awaiting handoff. Lost Project and child mutations are blocked without disabling RLS; private ready-file reads remain authorized. Historical snapshots are not rewritten. Apply the four 20261016 commercial migrations only to the authorized environment before deploying code that reads the new fields.

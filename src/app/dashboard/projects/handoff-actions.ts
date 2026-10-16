@@ -71,6 +71,7 @@ export async function handoffAction(
   if (result.error) return { error: handoffError(result.error.message) };
   revalidatePath(`/dashboard/projects/${common.data.project}`);
   revalidatePath("/dashboard/projects");
+  revalidatePath("/dashboard/calendar");
   revalidatePath("/dashboard/notifications");
   return {
     error: null,

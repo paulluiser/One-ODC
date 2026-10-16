@@ -144,6 +144,9 @@ test("3E Notes/links persist through real conversion; optimized PDF and three in
     page.getByRole("link", { name: /https:\/\/example.com\/plans/ }),
   ).toBeVisible();
   await page
+    .getByLabel("Review decision", { exact: true })
+    .selectOption("Accepted");
+  await page
     .getByLabel("Primary Designer", { exact: false })
     .selectOption(actors.find((a) => a.actor === "DESIGNER")!.id);
   await page

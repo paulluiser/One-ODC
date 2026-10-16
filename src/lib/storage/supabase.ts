@@ -13,6 +13,42 @@ export function supabaseStorageProvider(
   projectUrl: string,
   publishableKey: string,
 ): StorageProvider {
+  async function authorizedUrl(versionId: string, download: boolean) {
+    const { data: version, error } = await client
+      .from("attachment_versions")
+      .select("object_path,ready_at,mime_type")
+      .eq("id", versionId)
+      .single();
+    if (error || !version?.ready_at)
+      throw new Error("File is unavailable or access was denied.");
+    if (
+      !download &&
+      !["application/pdf", "image/png", "image/jpeg", "image/webp"].includes(
+        version.mime_type,
+      )
+    )
+      throw new Error(
+        "This file type cannot be previewed. Use Download Original.",
+      );
+    const audit = await client.rpc("record_attachment_download", {
+      p_version: versionId,
+    });
+    if (audit.error) throw new Error("File access could not be recorded.");
+    const expiresIn = 60;
+    const signed = await client.storage
+      .from(ATTACHMENT_BUCKET)
+      .createSignedUrl(
+        version.object_path,
+        expiresIn,
+        download ? { download: true } : undefined,
+      );
+    if (signed.error) throw new Error("File access was denied.");
+    return {
+      url: signed.data.signedUrl,
+      expiresIn,
+      mimeType: version.mime_type as string,
+    };
+  }
   return {
     async reserve(input) {
       if (!input.replacementOf) {
@@ -140,22 +176,10 @@ export function supabaseStorageProvider(
       if (error) throw new Error(error.message);
     },
     async signedDownload(versionId) {
-      const { data: version, error } = await client
-        .from("attachment_versions")
-        .select("object_path,ready_at,attachment_id")
-        .eq("id", versionId)
-        .single();
-      if (error || !version?.ready_at) throw new Error("File is unavailable.");
-      const { error: audit } = await client.rpc("record_attachment_download", {
-        p_version: versionId,
-      });
-      if (audit) throw new Error("File access could not be recorded.");
-      const expiresIn = 60;
-      const signed = await client.storage
-        .from(ATTACHMENT_BUCKET)
-        .createSignedUrl(version.object_path, expiresIn, { download: true });
-      if (signed.error) throw new Error("File access was denied.");
-      return { url: signed.data.signedUrl, expiresIn };
+      return authorizedUrl(versionId, true);
+    },
+    async signedPreview(versionId) {
+      return authorizedUrl(versionId, false);
     },
     async archive(id, archived, reason) {
       const { error } = await client.rpc("archive_attachment", {

@@ -1,22 +1,61 @@
 "use client";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 export function ContextPanel({
   title,
   description,
   children,
   triggerLabel,
+  resetOnClose = false,
+  panelClassName,
+  guardUnsaved = false,
+  blockPending = false,
+  primary = false,
 }: {
-  triggerLabel?: string;
+  panelClassName?: string;
+  guardUnsaved?: boolean;
+  blockPending?: boolean;
+  primary?: boolean;
+  triggerLabel?: ReactNode;
+  resetOnClose?: boolean;
   title: string;
   description: string;
   children: ReactNode;
 }) {
+  const [session, setSession] = useState(0);
+  const [open, setOpen] = useState(false);
   const content = useRef<HTMLDivElement>(null);
   return (
-    <Dialog.Root>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (
+          !next &&
+          blockPending &&
+          content.current?.querySelector('[aria-busy="true"]')
+        )
+          return;
+        if (
+          !next &&
+          (guardUnsaved ||
+            document.documentElement.dataset.oneOdcBrand === "opulence")
+        ) {
+          if (content.current?.querySelector('[aria-busy="true"]')) return;
+          if (
+            content.current?.querySelector('[data-unsaved="true"]') &&
+            !window.confirm("Discard unsaved changes?")
+          )
+            return;
+        }
+        setOpen(next);
+        if (!next && resetOnClose) setSession((value) => value + 1);
+      }}
+    >
       <Dialog.Trigger asChild>
-        <button type="button" className="button button-outline">
+        <button
+          type="button"
+          className={`button ${primary ? "button-primary" : "button-outline"}`}
+        >
           {triggerLabel ?? title}
         </button>
       </Dialog.Trigger>
@@ -24,10 +63,10 @@ export function ContextPanel({
         <Dialog.Overlay className="dialog-overlay" />
         <Dialog.Content
           ref={content}
-          className="detail-dialog context-panel"
+          className={`detail-dialog context-panel ${panelClassName ?? ""}`}
           onOpenAutoFocus={(event) => {
             const input = content.current?.querySelector<HTMLElement>(
-              'input:not([type="hidden"]):not([disabled])',
+              'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])',
             );
             if (input) {
               event.preventDefault();
@@ -48,7 +87,7 @@ export function ContextPanel({
             </Dialog.Close>
           </div>
           <Dialog.Description>{description}</Dialog.Description>
-          {children}
+          {resetOnClose ? <div key={session}>{children}</div> : children}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

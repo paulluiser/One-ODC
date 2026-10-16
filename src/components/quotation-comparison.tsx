@@ -1,9 +1,10 @@
+import { DisclosureSummary } from "./ui-r2/primitives";
 import {
   compareQuotations,
   formatPHP,
   formatDelta,
   type Quotation,
-} from "@/lib/quotations";
+} from "../lib/quotations";
 import { RecordTable } from "./record-table";
 export function QuotationComparison({
   before,
@@ -56,7 +57,7 @@ export function QuotationComparison({
                   <th scope="row">
                     {s.after?.name ?? s.before?.name}
                     <details>
-                      <summary>Space reference</summary>
+                      <DisclosureSummary>Space reference</DisclosureSummary>
                       {s.id}
                       {s.before?.name !== s.after?.name && (
                         <p>

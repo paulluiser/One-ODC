@@ -1,0 +1,313 @@
+.records {
+  list-style: none;
+  padding: 0 !important;
+}
+.records li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--r-line);
+}
+.records li:last-child {
+  border-bottom: 0;
+}
+.records a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--r-text);
+}
+.records a:hover {
+  color: var(--r-link);
+}
+.records a svg {
+  margin-left: auto;
+  flex: none;
+}
+.records strong {
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.records p,
+.records small {
+  display: block;
+  color: var(--r-muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.supportMetrics {
+  display: grid;
+  gap: 4px;
+}
+.supportMetrics a {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 58px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--r-line);
+  color: var(--r-text);
+  font-size: 12px;
+}
+.supportMetrics a > span {
+  flex: 1;
+  min-width: 100px;
+}
+.supportMetrics strong {
+  font-size: 21px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.supportMetrics .money {
+  width: 100%;
+  order: 3;
+  font-size: 25px;
+  overflow-wrap: anywhere;
+}
+.stageList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  list-style: none;
+  padding: 0 !important;
+}
+.stageList a {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--r-text);
+}
+.stageList meter {
+  width: 100%;
+  height: 7px;
+  accent-color: var(--brand-chart-1);
+}
+.analytics {
+  display: grid;
+  gap: 20px;
+}
+.filter {
+  border-radius: 16px;
+  background: var(--r-surface);
+  padding: 18px 24px;
+}
+.filter summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.filter summary span {
+  color: var(--r-muted);
+  margin-left: auto;
+  font-size: 11px;
+}
+.filter form {
+  margin-top: 20px;
+}
+.filterFields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+.filter label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--r-text);
+}
+.filter input,
+.filter select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: var(--r-text);
+  background: var(--r-soft);
+  border: 1px solid var(--r-line);
+  border-radius: 10px;
+  font: inherit;
+  color-scheme: light;
+}
+:global(.dark) .filter input,
+:global(.dark) .filter select {
+  color-scheme: dark;
+}
+.filter select:disabled {
+  opacity: 0.7;
+}
+.filter button {
+  background: var(--r-primary);
+  border: 0;
+  border-radius: 10px;
+  color: var(--brand-on-primary);
+  box-shadow: inset 0 0 0 1px var(--brand-primary-border);
+  min-height: 42px;
+  padding: 10px 20px;
+}
+.filterActions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.chartGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.chart {
+  min-width: 0;
+}
+.bars {
+  list-style: none;
+  padding: 0 !important;
+  display: grid;
+  gap: 14px;
+}
+.bars a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--r-text);
+  font-size: 12px;
+}
+.bars a:hover {
+  color: var(--r-link);
+}
+.bars a span {
+  overflow-wrap: anywhere;
+}
+.bars strong {
+  font-variant-numeric: tabular-nums;
+}
+.track {
+  height: 8px;
+  background: var(--r-soft);
+  border-radius: 8px;
+  margin-top: 7px;
+  overflow: hidden;
+}
+.track span {
+  display: block;
+  background: var(--brand-chart-1);
+  height: 100%;
+  border-radius: 8px;
+}
+.months {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 5px 2px 12px !important;
+}
+.months li {
+  flex: 1 0 20px;
+  min-width: 20px;
+}
+.months a {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  font-size: 10px;
+  gap: 6px;
+}
+.months .track {
+  height: 105px;
+  display: flex;
+  align-items: end;
+  margin: 8px auto;
+  width: 14px;
+}
+.months .track span {
+  width: 100%;
+  min-height: 0;
+}
+.metricFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 24px;
+}
+.metricFacts a {
+  color: var(--r-text);
+  border-bottom: 1px solid var(--r-line);
+  padding: 14px 0;
+  min-width: 0;
+}
+.metricFacts span {
+  display: block;
+  color: var(--r-muted);
+  font-size: 11px;
+}
+.metricFacts strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.more summary {
+  cursor: pointer;
+  color: var(--r-link);
+  padding: 8px 0;
+  font-size: 13px;
+}
+.more[open] > summary {
+  margin-bottom: 12px;
+}
+@media (max-width: 1000px) {
+  .metricFacts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .chartGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .filter {
+    padding: 18px;
+  }
+  .filter summary {
+    flex-wrap: wrap;
+  }
+  .filter summary span {
+    margin-left: 0;
+    width: 100%;
+  }
+  .filterFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .filterActions {
+    flex-wrap: wrap;
+  }
+  .metricFacts {
+    gap: 0 16px;
+  }
+  .metricFacts strong {
+    font-size: 19px;
+  }
+  .records li {
+    padding: 15px 0;
+  }
+}
+.stageList meter {
+  appearance: none;
+  background: var(--r-soft);
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.stageList meter::-webkit-meter-bar {
+  background: var(--r-soft);
+  border: 0;
+}
+.stageList meter::-webkit-meter-optimum-value {
+  background: var(--brand-chart-1);
+}
+.stageList meter::-moz-meter-bar {
+  background: var(--brand-chart-1);
+}

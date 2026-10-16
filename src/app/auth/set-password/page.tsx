@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { OneODCLogo } from "@/components/one-odc-logo";
 import { Brand } from "@/components/brand";
 import { PasswordForm } from "@/components/password-form";
 export default async function SetPassword() {
@@ -11,7 +12,11 @@ export default async function SetPassword() {
   if (!user) redirect("/login");
   return (
     <main className="password-page">
-      <Brand />
+      {process.env.ONE_ODC_UI_R0_ENABLED === "true" ? (
+        <OneODCLogo />
+      ) : (
+        <Brand />
+      )}
       <h1>Set your One ODC password.</h1>
       <p>Complete your invited account setup.</p>
       <PasswordForm />

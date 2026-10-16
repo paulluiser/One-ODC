@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { RebuildAnalytics } from "@/components/ui-r0/analytics";
+import { Panel } from "@/components/ui-r0/primitives";
 import { notFound } from "next/navigation";
 import { requireWorkspace } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
@@ -21,6 +23,16 @@ export default async function Analytics({
     ...defaultAnalyticsRange(),
     ...params,
   });
+  if (!parsed.success && process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    return (
+      <Panel label="Invalid analytics filters">
+        <p role="alert">
+          Invalid analytics filters. Use valid dates, a range of up to three
+          years, and an end date no later than today.
+        </p>
+        <Link href="/dashboard/analytics">Reset filters</Link>
+      </Panel>
+    );
   if (!parsed.success)
     return (
       <>
@@ -50,6 +62,8 @@ export default async function Analytics({
   });
   checkDatabase(result.error);
   const data = analyticsSchema.parse(result.data);
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    return <RebuildAnalytics data={data} filters={filters} />;
   return (
     <>
       <PageIntro

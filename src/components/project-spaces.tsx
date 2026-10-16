@@ -1,3 +1,5 @@
+import { projectIsLost } from "@/lib/workspace-session";
+import { DisclosureSummary, SpaceRow } from "./ui-r2/primitives";
 import { risk, localDate } from "@/lib/monitoring";
 import { randomUUID } from "node:crypto";
 import { requireWorkspace } from "@/lib/workspace-session";
@@ -19,7 +21,9 @@ export async function ProjectSpaces({
   manager: boolean;
   people: Person[];
 }) {
+  const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
   const { client, profile } = await requireWorkspace();
+  const lost = await projectIsLost(project);
   const [rows, support, events, monitoring, completion, activity] =
     await Promise.all([
       client
@@ -64,6 +68,7 @@ export async function ProjectSpaces({
   for (const r of [rows, support, events, monitoring, completion, activity])
     checkDatabase(r.error);
   const cancelled =
+    lost ||
     monitoring.data?.state === "Cancelled" ||
     completion.data?.is_operationally_completed === true;
   const held = monitoring.data?.state === "On Hold";
@@ -92,19 +97,22 @@ export async function ProjectSpaces({
       <h2>Spaces</h2>
       <p className="field-hint">
         {spaces.filter((s) => !s.cancelled_at).length} active ·{" "}
-        {spaces.filter((s) => s.cancelled_at).length} cancelled. Duplicate names
-        are supported; each space has a stable ID.
+        {spaces.filter((s) => s.cancelled_at).length} cancelled.
+        {!rebuild &&
+          " Duplicate names are supported; each space has a stable ID."}
       </p>
       {cancelled && (
         <p className="field-hint">
           {completion.data?.is_operationally_completed
             ? "This project is operationally completed. Space records and history are read-only until reopening."
-            : "This project is cancelled. Space records and history are read-only."}
+            : "This project is locked. Space records and history are read-only."}
         </p>
       )}
       {canManage && (
         <details>
-          <summary id="space-create">Create a space</summary>
+          <DisclosureSummary id="space-create">
+            Create a space
+          </DisclosureSummary>
           <SpaceEditForm
             key="create"
             newId={randomUUID()}
@@ -146,7 +154,20 @@ export async function ProjectSpaces({
                 (s.primary_designer_id === profile.id ||
                   roster.some((a) => a.user_id === profile.id))));
           return (
-            <article className="space-card" id={`space-${s.id}`} key={s.id}>
+            <SpaceRow
+              enabled={rebuild}
+              id={`space-${s.id}`}
+              key={s.id}
+              title={s.name}
+              status={s.cancelled_at ? "Cancelled" : s.status}
+              designer={name(s.primary_designer_id)}
+              deadline={s.deadline || "Not scheduled"}
+              risk={
+                process.env.ONE_ODC_MONITORING_ENABLED === "true"
+                  ? indicator
+                  : ""
+              }
+            >
               <h3>{s.name}</h3>
               <p>
                 {s.cancelled_at ? "Cancelled" : s.status} · Revision{" "}
@@ -200,7 +221,9 @@ export async function ProjectSpaces({
                 )}
               </dl>
               <details className="space-technical">
-                <summary>Identity and assignment dates</summary>
+                <DisclosureSummary>
+                  Identity and assignment dates
+                </DisclosureSummary>
                 <p>Space ID: {s.id}</p>
                 <p>Primary assigned: {formatTime(s.primary_assigned_at)}</p>
               </details>
@@ -213,7 +236,7 @@ export async function ProjectSpaces({
                 editable && (
                   <>
                     <details>
-                      <summary>Edit space</summary>
+                      <DisclosureSummary>Edit space</DisclosureSummary>
                       <SpaceEditForm
                         project={project}
                         space={s}
@@ -228,7 +251,9 @@ export async function ProjectSpaces({
                       </p>
                     ) : (
                       <details>
-                        <summary>Change design status</summary>
+                        <DisclosureSummary>
+                          Change design status
+                        </DisclosureSummary>
                         <SpaceStatusForm
                           space={s}
                           manager={manager}
@@ -238,7 +263,7 @@ export async function ProjectSpaces({
                     )}
                     {manager && (
                       <details>
-                        <summary>Cancel space</summary>
+                        <DisclosureSummary>Cancel space</DisclosureSummary>
                         <p className="field-hint">
                           Cancellation preserves records and removes this space
                           from active progress.
@@ -249,13 +274,13 @@ export async function ProjectSpaces({
                   </>
                 )
               )}
-            </article>
+            </SpaceRow>
           );
         })}
       </div>
       {canManage && spaces.some((s) => !s.cancelled_at) && (
         <details>
-          <summary>Bulk reassignment</summary>
+          <DisclosureSummary>Bulk reassignment</DisclosureSummary>
           <BulkSpaceForm
             key="bulk"
             project={project}
@@ -265,13 +290,13 @@ export async function ProjectSpaces({
         </details>
       )}
       <details>
-        <summary>Space history (latest 100 events)</summary>
+        <DisclosureSummary>Space history (latest 100 events)</DisclosureSummary>
         {!history.length && <p>No space changes recorded.</p>}
         {history.map((h) => (
           <details className="history-entry" key={h.id}>
-            <summary>
+            <DisclosureSummary>
               {formatTime(h.occurred_at)} · {h.action} · {h.reason}
-            </summary>
+            </DisclosureSummary>
             <p>
               Space: {h.space_id} · Actor: {h.actor_id}
             </p>

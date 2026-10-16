@@ -80,6 +80,7 @@ export async function installationAction(
   revalidatePath(`/dashboard/projects/${common.data.project}`);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/projects");
+  revalidatePath("/dashboard/calendar");
   revalidatePath("/dashboard/notifications");
   return {
     error: null,

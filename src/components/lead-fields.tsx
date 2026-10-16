@@ -270,10 +270,14 @@ export function ReviewFields({
         <select
           id="decision"
           name="decision"
+          required
           value={decision}
           onChange={(e) => onDecision?.(e.target.value)}
           disabled={disabled}
         >
+          <option value="" disabled>
+            Choose a decision
+          </option>
           {["Accepted", "Returned for Clarification", "Rejected"].map(
             (value) => (
               <option key={value}>{value}</option>

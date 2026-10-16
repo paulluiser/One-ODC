@@ -1,0 +1,33 @@
+.logo {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  line-height: 0;
+}
+.logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.horizontal {
+  width: 202px;
+  max-width: 100%;
+}
+.compact {
+  width: 164px;
+  max-width: 100%;
+}
+.icon {
+  width: 28px;
+}
+.logo .dark {
+  display: none;
+}
+:global(.dark) .logo[data-logo-theme="auto"] .light,
+.logo[data-logo-theme="dark"] .light {
+  display: none;
+}
+:global(.dark) .logo[data-logo-theme="auto"] .dark,
+.logo[data-logo-theme="dark"] .dark {
+  display: block;
+}

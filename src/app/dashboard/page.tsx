@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { RebuildRoleDashboard } from "@/components/ui-r0/role-dashboard";
+import { LeadDashboard } from "@/components/ui-r0/lead-dashboard";
 import { dashboardOptions, dashboardSchema } from "@/lib/dashboard";
 import { RoleDashboard } from "@/components/role-dashboard";
 import { requireWorkspace } from "@/lib/workspace-session";
@@ -21,6 +23,25 @@ export default async function Dashboard({
     });
     checkDatabase(result.error);
     const data = dashboardSchema.parse(result.data);
+    if (
+      process.env.ONE_ODC_UI_R0_ENABLED === "true" &&
+      profile.role === "lead_designer"
+    )
+      return (
+        <LeadDashboard
+          data={data}
+          profile={profile}
+          restricted={Boolean(params.restricted)}
+        />
+      );
+    if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+      return (
+        <RebuildRoleDashboard
+          data={data}
+          profile={profile}
+          restricted={Boolean(params.restricted)}
+        />
+      );
     return (
       <>
         <PageIntro
@@ -32,17 +53,15 @@ export default async function Dashboard({
               <Link href="/dashboard/leads/new">New quotation request</Link>
             </Button>
           )}
+          {process.env.ONE_ODC_ANALYTICS_ENABLED === "true" && (
+            <Link className="button button-outline" href="/dashboard/analytics">
+              Project analytics →
+            </Link>
+          )}
         </PageIntro>
         {params.restricted && (
           <p className="form-error" role="alert">
             Your role does not permit access to that page.
-          </p>
-        )}
-        {process.env.ONE_ODC_ANALYTICS_ENABLED === "true" && (
-          <p className="dashboard-analytics-link">
-            <Link className="text-link" href="/dashboard/analytics">
-              Project analytics →
-            </Link>
           </p>
         )}
         <RoleDashboard data={data} />
@@ -53,7 +72,9 @@ export default async function Dashboard({
     .from("projects")
     .select("id", { count: "exact", head: true });
   if (process.env.ONE_ODC_MONITORING_ENABLED === "true")
-    activeProjects = activeProjects.eq("is_cancelled", false);
+    activeProjects = activeProjects
+      .eq("is_cancelled", false)
+      .neq("commercial_status", "Lost");
   if (process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true")
     activeProjects = activeProjects.eq("is_operationally_completed", false);
   const [leads, projects, notifications] = await Promise.all([

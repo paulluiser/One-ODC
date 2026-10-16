@@ -1,8 +1,9 @@
 import { z } from "zod";
 export const commercialStages = [
   "For Quotation",
-  "Negotiation",
+  "Under Negotiation",
   "Closed",
+  "Lost",
 ] as const;
 export const projectSchema = z.object({
   id: z.uuid(),
@@ -10,11 +11,12 @@ export const projectSchema = z.object({
   name: z.string(),
   lead_designer_id: z.uuid(),
   commercial_status: z.enum(commercialStages),
+  awaiting_handoff: z.boolean().optional(),
   expected_handoff: z.string().nullable(),
   created_at: z.string(),
 });
 export const projectColumns =
-  "id,reference,name,lead_designer_id,commercial_status,expected_handoff,created_at";
+  "id,reference,name,lead_designer_id,commercial_status,awaiting_handoff,expected_handoff,created_at";
 export function projectDirectoryOptions(input: Record<string, unknown>) {
   const text = (key: string) =>
     typeof input[key] === "string" ? (input[key] as string) : "";

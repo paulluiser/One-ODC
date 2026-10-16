@@ -1,0 +1,965 @@
+.scope {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  color: var(--r-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.scope *,
+.scope *::before,
+.scope *::after {
+  box-sizing: border-box;
+}
+.scope :is(h1, h2, h3, p, dl, ul, ol) {
+  margin: 0;
+}
+.scope h1 {
+  font-size: 28px;
+  line-height: 1.22;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.scope h2 {
+  font-size: 18px;
+  font-weight: 500;
+}
+.scope h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.scope a {
+  color: var(--r-link);
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+.heading p {
+  color: var(--r-muted);
+}
+.scope .eyebrow {
+  color: var(--r-link);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+.scope :global(.button) {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: normal;
+}
+.scope :global(.button-primary) {
+  background: var(--brand-primary);
+  color: var(--brand-on-primary);
+  box-shadow: inset 0 0 0 1px var(--brand-primary-border);
+}
+.scope :global(.button-outline) {
+  background: var(--r-surface);
+  color: var(--r-text);
+  border: 1px solid var(--r-line);
+}
+.scope :global(.surface) {
+  background: var(--r-surface);
+  color: var(--r-text);
+  border: 1px solid var(--r-line);
+  border-radius: 16px;
+  box-shadow: none;
+  min-width: 0;
+}
+.scope :global(.live-form) {
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+.scope :global(.field-hint),
+.scope :global(.live-updated) {
+  color: var(--r-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.scope :global(.live-field) {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.scope :is(label, legend) {
+  color: var(--r-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+.scope
+  :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not(
+    [type="hidden"]
+  ) {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--r-line);
+  background: var(--r-surface);
+  color: var(--r-text);
+  border-radius: 10px;
+  font: inherit;
+}
+.scope textarea {
+  resize: vertical;
+}
+.scope :is(input, select, textarea, summary, a, button):focus-visible {
+  outline: 2px solid var(--r-focus);
+  outline-offset: 3px;
+}
+.scope :global(.live-form-grid) {
+  gap: 16px;
+}
+.scope :global(.form-heading) {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--r-line);
+}
+.scope :global(.form-heading) p {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--r-muted);
+}
+.scope :global(.form-section-label) {
+  color: var(--r-text);
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 14px;
+}
+.scope :global(.record-details) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+.scope :global(.record-details) > div {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.scope :global(.record-details) dt {
+  font-size: 11px;
+  color: var(--r-muted);
+}
+.scope :global(.record-details) dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.scope :global(.record-details) div:has(dd[style]) {
+  grid-column: 1/-1;
+}
+.scope :global(.field-error) {
+  color: var(--danger);
+}
+.scope :global(.form-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--r-line);
+}
+.scope :global(.form-actions) > span {
+  flex-basis: 100%;
+}
+.scope :global(.history-json) {
+  max-width: 100%;
+  overflow: auto;
+  font-size: 11px;
+  padding: 12px;
+  background: var(--r-soft);
+  border-radius: 10px;
+}
+.scope :global(.history-entry) {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--r-line);
+  overflow-wrap: anywhere;
+}
+.scope :global(.history-entry) p {
+  margin-top: 7px;
+}
+.scope :global(.activity-description) {
+  white-space: pre-wrap;
+}
+.chevron {
+  display: none;
+}
+.scope summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 0;
+  color: var(--r-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+.scope summary::-webkit-details-marker {
+  display: none;
+}
+.scope summary::marker {
+  content: "";
+}
+.scope summary::after,
+.scope summary::before {
+  display: none !important;
+}
+.scope summary > .chevron {
+  display: block;
+  flex: 0 0 auto;
+  color: var(--r-muted);
+  transition: transform 160ms ease;
+}
+.scope details[open] > summary > .chevron {
+  transform: rotate(90deg);
+}
+.summaryLabel {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.scope details {
+  min-width: 0;
+  border-top: 1px solid var(--r-line);
+}
+.scope details > :not(summary) {
+  margin-top: 8px;
+}
+.scope details:global(.surface) {
+  padding: 4px 20px 16px;
+}
+.scope details:global(.surface):not([open]) {
+  padding-bottom: 4px;
+}
+.disclosureBody {
+  display: grid;
+  gap: 16px;
+  padding: 0 0 8px;
+}
+.scope details details {
+  background: transparent;
+  border-radius: 0;
+}
+.directory {
+  border: 1px solid var(--r-line);
+  border-radius: 16px;
+  background: var(--r-surface);
+  overflow: hidden;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  padding: 20px;
+  border-bottom: 1px solid var(--r-line);
+}
+.filters label {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 130px;
+  min-width: 0;
+}
+.filters label:first-child {
+  flex: 2 1 220px;
+}
+.filters > a {
+  align-self: center;
+}
+.listHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 12px;
+}
+.listHeading > span {
+  color: var(--r-muted);
+  font-size: 12px;
+}
+.recordList {
+  padding: 0 20px;
+}
+.scope .record {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.6fr) minmax(125px, 0.8fr) minmax(150px, 1fr)
+    18px;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+  border-top: 1px solid var(--r-line);
+  color: var(--r-text);
+}
+.recordIdentity {
+  min-width: 0;
+}
+.record h3 {
+  margin: 4px 0;
+  font-size: 15px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.record p,
+.record small {
+  font-size: 12px;
+  color: var(--r-muted);
+  overflow-wrap: anywhere;
+}
+.recordDate {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+}
+.recordDate > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.reference {
+  color: var(--r-muted);
+  font-size: 11px;
+}
+.status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--r-link);
+  background: var(--r-selected);
+  overflow-wrap: anywhere;
+}
+.pagination {
+  display: flex;
+  gap: 16px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--r-line);
+  font-size: 12px;
+}
+.pagination > span {
+  margin-right: auto;
+  color: var(--r-muted);
+}
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--r-muted);
+}
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 8px 20px 20px;
+}
+.scope .projectCard {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid var(--r-line);
+  color: var(--r-text);
+}
+.projectCard:hover,
+.record:hover {
+  background: var(--r-soft);
+}
+.projectCard h3 {
+  font-size: 16px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.cardTop,
+.cardStatuses,
+.progressLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cardStatuses {
+  justify-content: start;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+.progressLabel {
+  font-size: 12px;
+  margin-top: 8px;
+}
+.scope progress {
+  width: 100%;
+  height: 5px;
+  border: 0;
+  appearance: none;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--r-line);
+  accent-color: var(--brand-primary-border);
+}
+.scope progress::-webkit-progress-bar {
+  background: var(--r-line);
+}
+.scope progress::-webkit-progress-value {
+  background: var(--brand-chart-1);
+  border-radius: 4px;
+}
+.cardFacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.cardFacts div {
+  min-width: 0;
+}
+.cardFacts dt {
+  color: var(--r-muted);
+  font-size: 11px;
+}
+.cardFacts dd {
+  font-size: 12px;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+.preview {
+  font-size: 12px;
+  color: var(--r-muted);
+}
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 20px;
+  align-items: start;
+}
+.workspaceMain,
+.workspaceAside {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.scope :global(.project-context) {
+  padding: 20px;
+  border: 1px solid var(--r-line);
+  border-radius: 16px;
+  background: var(--r-surface);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+.scope :global(.project-context) > div {
+  border: 0;
+  min-width: 0;
+}
+.scope :global(.project-context) span {
+  color: var(--r-muted);
+  font-size: 11px;
+}
+.scope :global(.project-context) strong {
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.scope :global(.project-workspace-nav) {
+  position: static;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 6px;
+  border: 1px solid var(--r-line);
+  box-shadow: none;
+  scrollbar-width: thin;
+}
+.scope :global(.project-workspace-nav) a {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  padding: 10px 14px;
+}
+.scope :global(.project-workspace-nav) a[aria-current] {
+  background: var(--r-selected);
+  color: var(--r-link);
+}
+.scope :global(.team-list) {
+  list-style: none;
+  display: grid;
+  gap: 0;
+  padding: 0;
+}
+.scope :global(.team-list) li {
+  display: grid;
+  gap: 3px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--r-line);
+}
+.scope :global(.team-list) b {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--r-muted);
+}
+.scope :global(.recent-project-activity) ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.scope :global(.recent-project-activity) li {
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid var(--r-line);
+  padding-bottom: 14px;
+}
+.scope :global(.recent-project-activity) strong {
+  font-weight: 500;
+  font-size: 12px;
+}
+.scope :global(.recent-project-activity) span {
+  font-size: 11px;
+  color: var(--r-muted);
+}
+.scope :global(.space-work-grid) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.scope .spaceRow {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.spaceRow > summary > .summaryLabel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 110px 65px;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+}
+.scope .spaceRow > summary {
+  min-height: 86px;
+  padding: 14px 0;
+}
+.spaceIdentity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.spaceIdentity strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.spaceIdentity > span,
+.spaceDeadline > span {
+  color: var(--r-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.spaceDeadline {
+  display: grid;
+  gap: 3px;
+}
+.spaceDeadline > strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.risk {
+  font-size: 11px;
+  color: var(--r-muted);
+}
+.spaceBody {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: var(--r-soft);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.spaceBody > h3,
+.spaceBody > h3 + p,
+.spaceBody > :global(.space-risk) {
+  display: none;
+}
+.scope :global(.project-spaces),
+.scope :global(.project-monitoring),
+.scope #project-activities {
+  scroll-margin-top: 116px;
+}
+.scope :global(.space-technical) {
+  font-size: 11px;
+}
+.scope :global(.project-timeline) {
+  border-left: 1px solid var(--r-line);
+  padding-left: 18px;
+  margin-left: 4px;
+}
+.scope :global(.project-timeline) > article {
+  position: relative;
+  padding: 16px 0;
+}
+.scope :global(.project-timeline) > article::before {
+  position: absolute;
+  left: -23px;
+  top: 23px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--r-link);
+  content: "";
+  border: 2px solid var(--r-surface);
+}
+.scope :global(.project-timeline) h3 {
+  font-size: 13px;
+}
+.scope :global(.project-monitoring) > :global(.list-controls) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  background: var(--r-soft);
+  border: 0;
+  padding: 16px;
+  border-radius: 12px;
+  align-items: end;
+}
+.leadGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr);
+  gap: 20px;
+  align-items: start;
+}
+.leadGrid > div {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.formColumns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  gap: 24px;
+  align-items: start;
+}
+.formColumns > aside {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  background: var(--r-soft);
+  border-radius: 12px;
+}
+.formColumns :global(.lead-field-groups) {
+  grid-template-columns: 1fr;
+}
+.formColumns :global(.lead-field-groups) :global(.live-form-grid) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.formColumns :global(.lead-field-groups) :global(.span-all) {
+  grid-column: auto;
+}
+.scope :global(.resource-link-fields) {
+  min-width: 0;
+}
+@media (max-width: 1250px) {
+  .projectGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+  }
+  .workspaceAside {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 1000px) {
+  .leadGrid,
+  .formColumns {
+    grid-template-columns: 1fr;
+  }
+  .scope :global(.project-context) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .scope {
+    gap: 16px;
+  }
+  .heading {
+    align-items: start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .scope h1 {
+    font-size: 25px;
+  }
+  .heading > a {
+    width: 100%;
+  }
+  .filters {
+    padding: 16px;
+  }
+  .filters label,
+  .filters label:first-child {
+    flex-basis: 100%;
+  }
+  .filters > button {
+    width: 100%;
+  }
+  .listHeading {
+    padding: 16px;
+    align-items: start;
+  }
+  .listHeading > span {
+    text-align: right;
+  }
+  .recordList {
+    padding: 0 16px;
+  }
+  .scope .record {
+    grid-template-columns: 1fr 18px;
+    gap: 12px;
+  }
+  .recordIdentity {
+    grid-column: 1;
+  }
+  .record > svg {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .record > div {
+    grid-column: 1;
+  }
+  .projectGrid {
+    grid-template-columns: 1fr;
+    padding: 0 16px 16px;
+  }
+  .scope .projectCard {
+    padding: 16px;
+  }
+  .workspaceAside {
+    grid-template-columns: 1fr;
+  }
+  .scope :global(.live-form),
+  .scope :global(.project-context) {
+    padding: 16px;
+  }
+  .scope :global(.project-context) {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .scope :global(.record-details) {
+    grid-template-columns: 1fr;
+  }
+  .scope details:global(.surface) {
+    padding-inline: 16px;
+  }
+  .spaceRow > summary > .summaryLabel {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+  .spaceIdentity {
+    grid-column: 1/-1;
+  }
+  .spaceDeadline {
+    grid-column: 1;
+  }
+  .risk {
+    grid-column: 2;
+  }
+  .spaceBody {
+    padding: 12px;
+  }
+  .scope :global(.project-monitoring) > :global(.list-controls) {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+  .scope :global(.form-actions) > button {
+    flex: 1 1 100%;
+  }
+  .formColumns > aside {
+    padding: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scope summary > .chevron {
+    transition: none;
+  }
+}
+
+/* Reset inherited compact label/value grids inside the isolated brief. */
+.scope :global(.record-details) > div {
+  display: block;
+  text-align: left;
+}
+.scope :global(.record-details) dd {
+  text-align: left;
+}
+.scope :global(.live-field),
+.scope :global(.form-actions) {
+  margin: 0;
+}
+.scope :global(.lead-review-form) {
+  align-content: start;
+}
+
+/* Activity stays chronological; inherited module grids must not split rows. */
+.scope :global(.project-timeline) {
+  display: block;
+}
+.scope :global(.recent-project-activity) ul,
+.scope :global(.team-list) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.scope summary {
+  flex-wrap: nowrap;
+}
+.scope details[id^="space-"] {
+  scroll-margin-top: 116px;
+}
+
+.directoryTools {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--r-muted);
+  font-size: 12px;
+}
+.viewSwitch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--r-line);
+  border-radius: 10px;
+}
+.viewSwitch a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 10px;
+  color: var(--r-muted);
+  border-radius: 7px;
+}
+.viewSwitch a[aria-current] {
+  color: var(--r-link);
+  background: var(--r-selected);
+}
+.projectList {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.scope .projectList .projectCard {
+  grid-template-columns:
+    minmax(180px, 1.2fr) minmax(120px, 0.8fr) minmax(95px, 0.6fr)
+    minmax(230px, 1.4fr);
+  gap: 10px 20px;
+  align-items: center;
+}
+.projectList .cardTop {
+  grid-column: 1;
+  grid-row: 1;
+}
+.projectList .projectCard h3 {
+  grid-column: 1;
+  grid-row: 2;
+}
+.projectList .cardStatuses {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.projectList .progressLabel {
+  grid-column: 3;
+  grid-row: 1;
+  margin: 0;
+  flex-wrap: wrap;
+}
+.projectList progress {
+  grid-column: 3;
+  grid-row: 2;
+}
+.projectList .cardFacts {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+}
+.projectList .preview {
+  grid-column: 3 / span 2;
+  grid-row: 1 / span 2;
+}
+@media (max-width: 1200px) {
+  .scope .projectList .projectCard {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.8fr);
+  }
+  .projectList .cardFacts {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding-top: 12px;
+    border-top: 1px solid var(--r-line);
+  }
+  .projectList .preview {
+    grid-column: 3;
+  }
+}
+@media (max-width: 600px) {
+  .listHeading:has(.directoryTools) {
+    flex-direction: column;
+  }
+  .directoryTools {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .scope .projectList .projectCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .projectList .projectCard > * {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .projectList .cardFacts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Status labels retain explicit text; semantic color never carries the meaning alone. */
+.status[data-status-tone="info"] {
+  color: var(--brand-info);
+  background: var(--brand-info-soft);
+}
+.status[data-status-tone="success"] {
+  color: var(--brand-success);
+  background: var(--brand-success-soft);
+}
+.status[data-status-tone="warning"] {
+  color: var(--brand-warning);
+  background: var(--brand-warning-soft);
+}
+.status[data-status-tone="destructive"] {
+  color: var(--brand-destructive);
+  background: var(--brand-destructive-soft);
+}
+.status[data-status-tone="neutral"] {
+  color: var(--brand-muted);
+  background: var(--brand-soft);
+}

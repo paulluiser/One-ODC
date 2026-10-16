@@ -37,14 +37,14 @@ it("pagination preserves filters and encodes literal search input", () => {
   const options = projectDirectoryOptions({
     q: "A & B %_",
     by: "reference",
-    stage: "Negotiation",
+    stage: "Under Negotiation",
     sort: "name",
   });
   const url = new URL(projectDirectoryUrl(options, 2), "http://localhost");
   expect(Object.fromEntries(url.searchParams)).toEqual({
     q: "A & B %_",
     by: "reference",
-    stage: "Negotiation",
+    stage: "Under Negotiation",
     sort: "name",
     page: "2",
   });

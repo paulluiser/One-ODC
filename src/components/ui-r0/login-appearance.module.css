@@ -1,0 +1,10 @@
+.root {
+  position: relative;
+  z-index: 10;
+}
+.root .menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  max-width: calc(100vw - 48px);
+}
