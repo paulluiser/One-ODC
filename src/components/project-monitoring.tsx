@@ -1,3 +1,4 @@
+import { FilterBar } from "./filter-bar";
 import { projectIsLost } from "@/lib/workspace-session";
 import { DisclosureSummary } from "./ui-r2/primitives";
 import { randomUUID } from "node:crypto";
@@ -356,9 +357,9 @@ export async function ProjectMonitoring({
   const timelineSection = (
     <>
       <h3>Project timeline</h3>
-      <form
-        method="get"
-        className="list-controls"
+      <FilterBar
+        resetHref={`/dashboard/projects/${project}`}
+        aria-label="Activity timeline filters"
         key={JSON.stringify(filters)}
       >
         <label className="live-field" htmlFor="timeline-category">
@@ -422,11 +423,7 @@ export async function ProjectMonitoring({
             ))}
           </select>
         </label>
-        <button type="submit" className="button button-outline">
-          Filter timeline
-        </button>
-        <a href={`/dashboard/projects/${project}`}>Clear timeline filters</a>
-      </form>
+      </FilterBar>
       {!timeline.length && <p>No authorized events match these filters.</p>}
       <div className="project-timeline">
         {timeline.map((t) => (

@@ -264,26 +264,6 @@
   background: var(--r-surface);
   overflow: hidden;
 }
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
-  padding: 20px;
-  border-bottom: 1px solid var(--r-line);
-}
-.filters label {
-  display: grid;
-  gap: 6px;
-  flex: 1 1 130px;
-  min-width: 0;
-}
-.filters label:first-child {
-  flex: 2 1 220px;
-}
-.filters > a {
-  align-self: center;
-}
 .listHeading {
   display: flex;
   align-items: center;
@@ -713,16 +693,6 @@
     font-size: 25px;
   }
   .heading > a {
-    width: 100%;
-  }
-  .filters {
-    padding: 16px;
-  }
-  .filters label,
-  .filters label:first-child {
-    flex-basis: 100%;
-  }
-  .filters > button {
     width: 100%;
   }
   .listHeading {

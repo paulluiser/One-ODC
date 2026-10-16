@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FilterBar } from "@/components/filter-bar";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
@@ -144,7 +145,11 @@ export default async function Calendar({
             </Link>
           </nav>
         </div>
-        <form className="calendar-filters" action="/dashboard/calendar">
+        <FilterBar
+          action="/dashboard/calendar"
+          resetHref={`/dashboard/calendar?view=${view}`}
+          aria-label="Calendar filters"
+        >
           <input type="hidden" name="view" value={view} />
           <label>
             Month
@@ -165,8 +170,7 @@ export default async function Calendar({
               ))}
             </select>
           </label>
-          <button className="button button-outline">Apply filters</button>
-        </form>
+        </FilterBar>
         <p className="field-hint calendar-scope">
           Only records you are authorized to view appear. Dates follow each
           project’s calendar; personal events use Asia/Manila. Cancelled work is

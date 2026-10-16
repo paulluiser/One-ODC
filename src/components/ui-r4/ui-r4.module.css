@@ -251,18 +251,6 @@
 .directory td:last-child {
   min-width: 220px;
 }
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
-}
-.filters > label {
-  display: grid;
-  gap: 6px;
-  flex: 1;
-  min-width: 160px;
-}
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -402,9 +390,6 @@
   .workspace :global(.operations-record),
   .workspace :global(.readiness-checklist) {
     padding: 16px;
-  }
-  .filters {
-    align-items: stretch;
   }
 }
 .checklist {

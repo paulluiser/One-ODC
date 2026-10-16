@@ -1,0 +1,98 @@
+.bar {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  background: var(--brand-surface);
+  color: var(--brand-text);
+}
+.bar .fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+.bar .fields > label {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--brand-text);
+}
+.bar .fields input:not([type="hidden"]),
+.bar .fields select {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--brand-input);
+  border-radius: 10px;
+  background: var(--brand-surface);
+  color: var(--brand-text);
+  font: inherit;
+  font-weight: 400;
+  color-scheme: light;
+}
+:global(.dark) .bar .fields input,
+:global(.dark) .bar .fields select {
+  color-scheme: dark;
+}
+.bar .fields input:focus-visible,
+.bar .fields select:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+.bar .fields [aria-invalid="true"] {
+  border-color: var(--destructive, #b42318);
+}
+.bar .fields select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.bar .actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--brand-border);
+}
+.bar .actions > button {
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 20px;
+  font-size: 13px;
+}
+.bar .actions > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--brand-link, var(--brand-primary));
+  font-size: 13px;
+  text-decoration: none;
+}
+.bar .actions > a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 900px) {
+  .bar .fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .bar {
+    padding: 16px;
+  }
+  .bar .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

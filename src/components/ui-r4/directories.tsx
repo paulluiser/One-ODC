@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FilterBar } from "../filter-bar";
 import { randomUUID } from "node:crypto";
 import type { Supplier } from "../../lib/logistics";
 import { formatTime, roleLabels, type Profile } from "../../lib/phase1";
@@ -48,7 +49,11 @@ export function SupplierDirectory({
       }
     >
       <section className="surface live-form">
-        <form className={styles.filters} action="/dashboard/suppliers">
+        <FilterBar
+          action="/dashboard/suppliers"
+          resetHref="/dashboard/suppliers"
+          aria-label="Supplier filters"
+        >
           <label htmlFor="supplier-search">
             Search supplier name
             <input
@@ -66,11 +71,7 @@ export function SupplierDirectory({
               <option value="updated">Recently updated</option>
             </select>
           </label>
-          <button className="button button-primary">Search</button>
-          <Link className="button button-outline" href="/dashboard/suppliers">
-            Clear
-          </Link>
-        </form>
+        </FilterBar>
         <div className={styles.toolbar}>
           <p>
             {count} matching suppliers · Page {page}
@@ -230,7 +231,11 @@ export function UserDirectory({
       }
     >
       <section className="surface live-form">
-        <form className={styles.filters} action="/dashboard/users">
+        <FilterBar
+          action="/dashboard/users"
+          resetHref="/dashboard/users"
+          aria-label="Team access filters"
+        >
           <label htmlFor="user-search">
             Search team accounts
             <input
@@ -260,11 +265,7 @@ export function UserDirectory({
               <option value="inactive">Inactive</option>
             </select>
           </label>
-          <button className="button button-primary">Filter</button>
-          <Link className="button button-outline" href="/dashboard/users">
-            Clear
-          </Link>
-        </form>
+        </FilterBar>
         <div className={styles.toolbar}>
           <h2>Team accounts</h2>
           <p>

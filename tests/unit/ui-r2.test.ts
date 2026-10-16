@@ -117,7 +117,7 @@ it("authorized project cards preserve equal-weighted design progress and escaped
   expect(html).toContain('value="1" max="4"');
   expect(html).toContain("Kitchen &lt;script&gt;");
   expect(html).toContain("Lead Designer");
-  expect(html).toContain("Clear filters");
+  expect(html).toContain("Reset filters");
 });
 it("leads keep distinct records for duplicate names, statuses and scoped pagination", () => {
   const lead = {

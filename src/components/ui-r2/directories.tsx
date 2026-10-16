@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FilterBar } from "../filter-bar";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -57,7 +58,10 @@ export function LeadDirectory({
         }
       />
       <section className={styles.directory}>
-        <form className={styles.filters} method="get">
+        <FilterBar
+          resetHref="/dashboard/leads?status=All"
+          aria-label="Lead filters"
+        >
           <label>
             Search project or client name
             <input
@@ -76,13 +80,7 @@ export function LeadDirectory({
               ))}
             </select>
           </label>
-          <button className="button button-outline" type="submit">
-            Apply filters
-          </button>
-          {(q || status) && (
-            <Link href="/dashboard/leads?status=All">Clear filters</Link>
-          )}
-        </form>
+        </FilterBar>
         <div className={styles.listHeading}>
           <h2>{bdm ? "Your requests" : "Review queue"}</h2>
           <span>{count} matching records</span>
@@ -171,9 +169,9 @@ export function ProjectDirectory({
         }
       />
       <section className={styles.directory}>
-        <form
-          className={styles.filters}
-          method="get"
+        <FilterBar
+          resetHref={`/dashboard/projects?view=${view}`}
+          aria-label="Project filters"
           key={projectDirectoryUrl(options, 1)}
         >
           <input type="hidden" name="view" value={view} />
@@ -209,13 +207,7 @@ export function ProjectDirectory({
               <option value="name">Project name</option>
             </select>
           </label>
-          <button className="button button-outline" type="submit">
-            Apply filters
-          </button>
-          {(options.q || options.stage) && (
-            <Link href={`/dashboard/projects?view=${view}`}>Clear filters</Link>
-          )}
-        </form>
+        </FilterBar>
         <div className={styles.listHeading}>
           <h2>{ops ? "Assigned pipeline" : "Project directory"}</h2>
           <div className={styles.directoryTools}>
