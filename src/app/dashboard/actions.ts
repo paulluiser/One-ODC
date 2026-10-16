@@ -224,12 +224,14 @@ export async function inviteUser(
   const parsed = z
     .object({
       email: z.email().max(254),
-      name: z.string().trim().min(1).max(200),
+      first_name: z.string().trim().min(1).max(100),
+      last_name: z.string().trim().min(1).max(100),
       role: z.enum(roles),
     })
     .safeParse({
       email: value(data, "email"),
-      name: value(data, "display_name"),
+      first_name: value(data, "first_name"),
+      last_name: value(data, "last_name"),
       role: value(data, "role"),
     });
   if (!parsed.success)
@@ -245,6 +247,7 @@ export async function inviteUser(
         "Invitations require the server-only Supabase secret key and application URL. Existing invited users can still be provisioned below.",
     };
   const v = parsed.data;
+  const name = `${v.first_name} ${v.last_name}`.trim();
   const { error: auditError } = await client.rpc("record_invitation_request", {
     p_email: v.email,
     p_role: v.role,
@@ -252,7 +255,7 @@ export async function inviteUser(
   if (auditError) return { error: workflowError(auditError.message) };
   const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(
     v.email,
-    { data: { full_name: v.name }, redirectTo: `${appUrl}/auth/confirm` },
+    { data: { full_name: name, first_name: v.first_name, last_name: v.last_name }, redirectTo: `${appUrl}/auth/confirm` },
   );
   if (error || !invited.user)
     return {
@@ -263,7 +266,7 @@ export async function inviteUser(
     p_user: invited.user.id,
     p_role: v.role,
     p_active: true,
-    p_name: v.name,
+    p_name: name,
     p_reason: "Provisioned by administrator after invitation",
   });
   revalidatePath("/dashboard", "layout");

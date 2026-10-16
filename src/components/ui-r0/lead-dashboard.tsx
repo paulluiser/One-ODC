@@ -28,6 +28,12 @@ import { calendarEventSchema, todayManila } from "@/lib/calendar";
 import { formatTime, type Profile } from "@/lib/phase1";
 import { Panel, SectionHeading, StatTile, Empty } from "./primitives";
 import styles from "./ui-r0.module.css";
+function greeting(profile: Profile, at: string) {
+  const hour = new Date(at).getHours();
+  const part = hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
+  const firstName = profile.display_name.trim().split(/\s+/)[0] || "there";
+  return `${part}, ${firstName}`;
+}
 export async function LeadDashboard({
   data,
   profile,
@@ -93,7 +99,7 @@ export async function LeadDashboard({
           <span className={styles.eyebrow}>
             DESIGN, WITH EVERY DETAIL CONNECTED
           </span>
-          <h2>Welcome back, {profile.display_name}.</h2>
+          <h2>{greeting(profile, data.as_of)}.</h2>
           <p>Here’s what needs your attention across the studio.</p>
         </div>
         <Link
@@ -393,7 +399,7 @@ export async function LeadDashboard({
             description="The latest updates in your authorized workspace."
           />
           <ul className={styles.activityList}>
-            {data.recent.slice(0, 3).map((r) => (
+            {data.recent.slice(0, 5).map((r) => (
               <li key={r.id}>
                 <span className={styles.activityIcon}>
                   <Activity size={16} />
@@ -412,22 +418,7 @@ export async function LeadDashboard({
               description="Relevant project activity will appear here."
             />
           )}
-          {data.recent.length > 3 && (
-            <details className={styles.moreQueue}>
-              <summary>More recent activity</summary>
-              <ul className={styles.activityList}>
-                {data.recent.slice(3).map((r) => (
-                  <li key={r.id}>
-                    <div>
-                      <strong>{r.label}</strong>
-                      <p>{r.detail}</p>
-                      <small>{r.at ? formatTime(r.at) : ""}</small>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
+          {data.recent.length > 5 && <div className={styles.panelFooter}><Link href="/dashboard/notifications">View all activity <ArrowUpRight size={15} aria-hidden="true" /></Link></div>}
         </Panel>
         <Panel label="Upcoming dates">
           <SectionHeading

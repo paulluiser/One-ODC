@@ -58,10 +58,9 @@ export function OperationEditor({
       panelClassName={`${dialog.dialog} ${styles.dialog}`}
       triggerLabel={
         menu ? (
-          <>
+          <span aria-label={title} title={title}>
             <Ellipsis size={16} aria-hidden="true" />
-            {title}
-          </>
+          </span>
         ) : (
           title
         )

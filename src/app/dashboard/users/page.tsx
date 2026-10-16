@@ -8,7 +8,7 @@ import { PageIntro } from "@/components/live-data";
 export default async function Users({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; role?: string; status?: string }>;
 }) {
   const { client } = await requireRole(["system_administrator"]);
   const p = await searchParams;
@@ -16,9 +16,16 @@ export default async function Users({
     100000,
     Math.max(1, Number.parseInt(p.page ?? "1", 10) || 1),
   );
-  const { data, error, count } = await client
+  const query = (p.q ?? "").trim();
+  const role = p.role && roleLabels[p.role as keyof typeof roleLabels] ? p.role : "";
+  const status = p.status === "active" || p.status === "inactive" ? p.status : "";
+  let profilesQuery = client
     .from("profiles")
-    .select("id,display_name,role,active", { count: "exact" })
+    .select("id,display_name,role,active", { count: "exact" });
+  if (query) profilesQuery = profilesQuery.ilike("display_name", `%${query}%`);
+  if (role) profilesQuery = profilesQuery.eq("role", role);
+  if (status) profilesQuery = profilesQuery.eq("active", status === "active");
+  const { data, error, count } = await profilesQuery
     .order("created_at", { ascending: false })
     .range((page - 1) * 25, page * 25 - 1);
   checkDatabase(error);
@@ -37,6 +44,9 @@ export default async function Users({
         profiles={profiles}
         count={count ?? 0}
         page={page}
+        query={query}
+        roleFilter={role}
+        statusFilter={status}
         configured={
           !!process.env.SUPABASE_SECRET_KEY && !!process.env.NEXT_PUBLIC_APP_URL
         }

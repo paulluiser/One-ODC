@@ -1,4 +1,3 @@
-import { CsvExport } from "../productivity/common";
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import {
@@ -117,23 +116,6 @@ function Ledger({
     createId = randomUUID();
   return (
     <section className="surface live-form" aria-label={`${title} payments`}>
-      <CsvExport
-        label={`Export ${kind} payments CSV`}
-        headers={[
-          "Payment date",
-          "Amount (PHP)",
-          "Reference",
-          "Method",
-          "Status",
-        ]}
-        rows={group.records.map((p) => [
-          p.payment_date,
-          p.amount,
-          p.reference,
-          p.method,
-          p.voided ? "Voided" : "Active",
-        ])}
-      />
       <div className={styles.sectionHeader}>
         <div>
           <h2>{title} payments</h2>

@@ -505,7 +505,8 @@ export function InvitationForm({
 }) {
   const [state, action, pending] = useActionState(inviteUser, initial);
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [role, setRole] = useState("designer");
   return (
     <form action={action} className="surface live-form">
@@ -519,12 +520,23 @@ export function InvitationForm({
       )}
       <div className="live-form-grid">
         <div className="live-field">
-          <label htmlFor="invite-name">Name *</label>
+          <label htmlFor="invite-first-name">First name *</label>
           <input
-            id="invite-name"
-            name="display_name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            id="invite-first-name"
+            name="first_name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+            disabled={pending}
+          />
+        </div>
+        <div className="live-field">
+          <label htmlFor="invite-last-name">Last name *</label>
+          <input
+            id="invite-last-name"
+            name="last_name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
             required
             disabled={pending}
           />

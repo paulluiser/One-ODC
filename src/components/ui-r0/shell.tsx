@@ -6,7 +6,6 @@ import {
 } from "../productivity/header";
 import { ProjectTools } from "../productivity/project-tools";
 import { UnsavedChangesGuard } from "../productivity/unsaved-guard";
-import { CsvExport } from "../productivity/common";
 import {
   useState,
   useSyncExternalStore,
@@ -372,13 +371,6 @@ export function RebuildShell({
                 key={path.split("/")[3]}
                 project={path.split("/")[3]}
                 profile={profile}
-              />
-            )}
-            {(path === "/dashboard/projects" ||
-              path === "/dashboard/leads") && (
-              <CsvExport
-                kind={path.endsWith("leads") ? "leads" : "projects"}
-                label="Export filtered page CSV"
               />
             )}
             {children}

@@ -24,6 +24,12 @@ import { formatTime, type Profile } from "../../lib/phase1";
 import { Panel, SectionHeading, StatTile, Empty } from "./primitives";
 import styles from "./ui-r0.module.css";
 import r1 from "./ui-r1.module.css";
+function greeting(profile: Profile, at: string) {
+  const hour = new Date(at).getHours();
+  const part = hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening";
+  const firstName = profile.display_name.trim().split(/\s+/)[0] || "there";
+  return `${part}, ${firstName}`;
+}
 const icons = {
   system_administrator: [Users, Mail, ShieldAlert, UserRoundX],
   designer: [Layers3, Clock3, FileCheck2, Clock3],
@@ -103,7 +109,7 @@ export function RebuildRoleDashboard({
       )}
       <section className={styles.welcome} aria-label="Welcome">
         <div>
-          <span className={styles.eyebrow}>{profile.display_name}</span>
+          <span className={styles.eyebrow}>{greeting(profile, data.as_of)}</span>
           <h2>{intro[0]}</h2>
           <p>{intro[1]}</p>
         </div>
@@ -212,6 +218,13 @@ export function RebuildRoleDashboard({
                     : "Your responsibilities"
             }
             description="Current authorized scope"
+            action={
+              <Link className={styles.textLink} href={
+                data.role === "system_administrator" ? "/dashboard/users" : "/dashboard/projects"
+              }>
+                Open full view <ArrowUpRight size={15} aria-hidden="true" />
+              </Link>
+            }
           />
           {data.role === "operations_admin" ? (
             <ul className={r1.stageList}>
@@ -280,18 +293,19 @@ export function RebuildRoleDashboard({
           description="Updates from your authorized workspace."
         />
         {data.recent.length ? (
-          records(data.recent.slice(0, 3), true)
+          records(data.recent.slice(0, 5), true)
         ) : (
           <Empty
             title="No recent activity"
             description="Relevant updates will appear here."
           />
         )}
-        {data.recent.length > 3 && (
-          <details className={styles.moreQueue}>
-            <summary>More recent activity</summary>
-            {records(data.recent.slice(3), true)}
-          </details>
+        {data.recent.length > 5 && (
+          <div className={styles.panelFooter}>
+            <Link href={data.role === "system_administrator" ? "/dashboard?view=system_activity" : "/dashboard/notifications"}>
+              View all activity <ArrowUpRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
         )}
       </Panel>
       <footer className={styles.dataFoot}>

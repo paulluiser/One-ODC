@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Inbox, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import styles from "./ui-r0.module.css";
 export function Panel({
@@ -71,12 +71,15 @@ export function StatTile({
 export function Empty({
   title,
   description,
+  icon: Icon = Inbox,
 }: {
   title: string;
   description: string;
+  icon?: LucideIcon;
 }) {
   return (
     <div className={styles.empty}>
+      <Icon size={24} aria-hidden="true" />
       <h3>{title}</h3>
       <p>{description}</p>
     </div>

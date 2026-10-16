@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Star, Link as LinkIcon, MessageSquare, Layers } from "lucide-react";
-import { productivityRequest, ErrorNotice, CsvExport } from "./common";
+import { productivityRequest, ErrorNotice } from "./common";
 import type { Profile } from "@/lib/phase1";
 import { DisclosureSummary } from "../ui-r2/primitives";
 import styles from "./productivity.module.css";
@@ -114,13 +114,6 @@ export function ProjectTools({
           <Star size={16} fill={access?.favorite ? "currentColor" : "none"} />
           {access?.favorite ? "Unfavorite" : "Favorite"}
         </button>
-        {access?.canDiscuss && (
-          <CsvExport
-            kind="spaces"
-            project={project}
-            label="Export Spaces CSV (100/page)"
-          />
-        )}
       </div>
       {copy.startsWith("http") ? (
         <label className="live-field">

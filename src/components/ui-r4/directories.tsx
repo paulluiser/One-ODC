@@ -190,6 +190,9 @@ export function UserDirectory({
   page,
   configured,
   history,
+  query = "",
+  roleFilter = "",
+  statusFilter = "",
 }: {
   profiles: Profile[];
   count: number;
@@ -202,6 +205,9 @@ export function UserDirectory({
     actor_id: string;
     occurred_at: string;
   }[];
+  query?: string;
+  roleFilter?: string;
+  statusFilter?: string;
 }) {
   return (
     <OperationsFrame
@@ -218,6 +224,13 @@ export function UserDirectory({
       }
     >
       <section className="surface live-form">
+        <form className={styles.filters} action="/dashboard/users">
+          <label htmlFor="user-search">Search team accounts<input id="user-search" name="q" defaultValue={query} placeholder="Name or email" /></label>
+          <label htmlFor="user-role">Role<select id="user-role" name="role" defaultValue={roleFilter}><option value="">All roles</option>{Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <label htmlFor="user-status">Status<select id="user-status" name="status" defaultValue={statusFilter}><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+          <button className="button button-primary">Filter</button>
+          <Link className="button button-outline" href="/dashboard/users">Clear</Link>
+        </form>
         <div className={styles.toolbar}>
           <h2>Team accounts</h2>
           <p>
@@ -238,7 +251,7 @@ export function UserDirectory({
                 <th scope="col">Team member</th>
                 <th scope="col">Role</th>
                 <th scope="col">Access</th>
-                <th scope="col">Manage</th>
+                <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -266,8 +279,8 @@ export function UserDirectory({
         </RecordTable>
         {!profiles.length && <p>No accounts on this page.</p>}
         <nav className={styles.toolbar} aria-label="Account pages">
-          {page > 1 && <Link href={`?page=${page - 1}`}>Previous</Link>}
-          {page * 25 < count && <Link href={`?page=${page + 1}`}>Next</Link>}
+          {page > 1 && <Link href={`?q=${encodeURIComponent(query)}&role=${roleFilter}&status=${statusFilter}&page=${page - 1}`}>Previous</Link>}
+          {page * 25 < count && <Link href={`?q=${encodeURIComponent(query)}&role=${roleFilter}&status=${statusFilter}&page=${page + 1}`}>Next</Link>}
         </nav>
       </section>
       <details className="surface live-form">

@@ -426,3 +426,5 @@ Read-only production inventory: four baseline migrations, one active administrat
 ### Production database completion — 2026-10-16
 
 Restricted PostgreSQL backup created and its pg_restore catalog validated; all 27 missing migrations applied in canonical order. Read-only verification found profiles=1, projects=0, leads=0, attachments=0 and audit_events=1. The attachment bucket remains private with a 50 MiB limit, and all 47 public tables have RLS enabled. Security advisor retains the existing leaked-password-protection warning; performance advisor reports informational unindexed-FK and unused-index findings. No production seed data, test users, hosting configuration or website deployment was performed.
+
+- UI refinements: invitation form now captures first/last names, role dashboards greet users by time of day and first name, team access has search/role/status filters with icon actions, recent activity is capped at five with full-view links, empty states use icons, and CSV export controls were removed from the product surface.
