@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowUpRight,
-  SlidersHorizontal,
   FolderOpen,
   CheckCheck,
   Layers3,
@@ -9,7 +8,6 @@ import {
 } from "lucide-react";
 import {
   analyticsDefinitions,
-  analyticsStages,
   analyticsUrl,
   collectionRate,
   rate,
@@ -21,12 +19,18 @@ import { formatTime } from "../../lib/phase1";
 import { Panel, SectionHeading, StatTile, Empty } from "./primitives";
 import styles from "./ui-r0.module.css";
 import r1 from "./ui-r1.module.css";
+import {
+  AnalyticsFilterPanel,
+  type AnalyticsFilterRecovery,
+} from "./analytics-filters";
 export function RebuildAnalytics({
   data,
   filters,
+  recovery,
 }: {
   data: AnalyticsData;
   filters: AnalyticsFilters;
+  recovery?: AnalyticsFilterRecovery;
 }) {
   const count = (key: string) => data.metrics[key]?.count ?? 0;
   const bucketCount = (key: string, bucket: string) =>
@@ -208,86 +212,12 @@ export function RebuildAnalytics({
           <ArrowUpRight size={15} />
         </Link>
       </section>
-      <details
-        className={r1.filter}
-        open={!!(filters.stage || filters.brand || filters.stakeholder)}
-      >
-        <summary>
-          <SlidersHorizontal size={17} aria-hidden="true" />
-          Filters
-          <span>
-            {filters.from} — {filters.to}
-            {filters.stage ? ` · ${filters.stage}` : ""}
-            {filters.brand ? ` · ${filters.brand}` : ""}
-            {filters.stakeholder ? " · Assigned stakeholder" : ""}
-          </span>
-        </summary>
-        <form action="/dashboard/analytics" aria-label="Analytics filters">
-          <div className={r1.filterFields}>
-            <label>
-              From
-              <input
-                name="from"
-                type="date"
-                required
-                defaultValue={filters.from}
-              />
-            </label>
-            <label>
-              Through
-              <input name="to" type="date" required defaultValue={filters.to} />
-            </label>
-            <label>
-              Current project stage
-              <select
-                name="stage"
-                aria-label="Current project stage"
-                defaultValue={filters.stage}
-              >
-                <option value="">All stages</option>
-                {analyticsStages.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Brand
-              <select
-                name="brand"
-                aria-label="Brand"
-                defaultValue={filters.brand}
-                disabled={data.role === "operations_admin"}
-              >
-                <option value="">All authorized brands</option>
-                {["SFY", "Stosa", "Both"].map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Assigned stakeholder
-              <select
-                name="stakeholder"
-                aria-label="Assigned stakeholder"
-                defaultValue={filters.stakeholder}
-              >
-                <option value="">All authorized stakeholders</option>
-                {data.people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.display_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className={r1.filterActions}>
-              <button type="submit">Apply filters</button>
-              <Link className={styles.textLink} href="/dashboard/analytics">
-                Reset
-              </Link>
-            </div>
-          </div>
-        </form>
-      </details>
+      <AnalyticsFilterPanel
+        key={JSON.stringify({ filters, recovery })}
+        data={data}
+        filters={filters}
+        recovery={recovery}
+      />
       {data.role === "operations_admin" && (
         <p className={styles.smallPrint}>
           Only assigned Closed Projects enter these analytics. Originating-lead

@@ -30,17 +30,49 @@ export const analyticsFilters = z
     bucket: z.string().max(100).default(""),
     page: z.coerce.number().int().min(1).max(100000).default(1),
   })
-  .refine(
-    (v) =>
-      v.to >= v.from &&
-      (Date.parse(v.to) - Date.parse(v.from)) / 86400000 <= 1095 &&
-      v.to <= localDate(new Date().toISOString()),
-    {
-      message: "Choose a range of up to three years ending today or earlier.",
-      path: ["to"],
-    },
-  );
+  .superRefine((v, ctx) => {
+    if (v.to < v.from)
+      ctx.addIssue({
+        code: "custom",
+        path: ["to"],
+        message: "End date must be on or after the start date.",
+      });
+    if ((Date.parse(v.to) - Date.parse(v.from)) / 86400000 > 1095)
+      ctx.addIssue({
+        code: "custom",
+        path: ["from"],
+        message: "Choose a range of 1,095 days or less (up to three years).",
+      });
+    const today = localDate(new Date().toISOString());
+    if (v.to > today)
+      ctx.addIssue({
+        code: "custom",
+        path: ["to"],
+        message: "End date cannot be later than today.",
+      });
+    if (v.from > today)
+      ctx.addIssue({
+        code: "custom",
+        path: ["from"],
+        message: "Start date cannot be later than today.",
+      });
+  });
 export type AnalyticsFilters = z.infer<typeof analyticsFilters>;
+export function analyticsFilterErrors(input: unknown) {
+  const parsed = analyticsFilters.safeParse(input);
+  const errors: Record<string, string> = {};
+  if (!parsed.success)
+    for (const issue of parsed.error.issues) {
+      const field = String(issue.path[0] ?? "filters");
+      if (!errors[field])
+        errors[field] = ["from", "to"].includes(field)
+          ? issue.code === "custom"
+            ? issue.message
+            : "Choose a valid calendar date."
+          : `Choose a valid ${field === "stakeholder" ? "stakeholder" : field}.`;
+    }
+  return errors;
+}
 export function defaultAnalyticsRange(now = new Date()) {
   const to = localDate(now.toISOString());
   const start = new Date(`${to}T00:00:00Z`);

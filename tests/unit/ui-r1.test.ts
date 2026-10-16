@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 import { RebuildRoleDashboard } from "../../src/components/ui-r0/role-dashboard";
 import { RebuildAnalytics } from "../../src/components/ui-r0/analytics";
 import { dashboardMetrics, type DashboardData } from "../../src/lib/dashboard";
@@ -42,13 +43,13 @@ for (const role of roles)
       workload_count: 0,
       unread: 0,
     };
-    const profile = { role, display_name: "Test <script>" } as Profile;
+    const profile = { role, display_name: "Test<script> Person" } as Profile;
     const html = renderToStaticMarkup(
       createElement(RebuildRoleDashboard, { data, profile, restricted: true }),
     );
-    expect(html).toContain("You’re all caught up");
+    expect(html).toContain("All clear");
     expect(html).toContain("Your role does not permit access");
-    expect(html).toContain("Test &lt;script&gt;");
+    expect(html).toContain("Test&lt;script&gt;");
     expect(html).not.toContain("view=raw");
     if (role === "bdm") expect(html).toContain("123,456,789.12");
     else expect(html).not.toContain("123,456,789.12");
@@ -82,6 +83,21 @@ for (const role of [...roles, "lead_designer"] as const)
     expect(html).toContain("bucket=Closed");
     expect(html).toContain('aria-label="Current project stage"');
     expect(html).toContain('aria-label="Assigned stakeholder"');
+    expect(html).toContain('method="get"');
+    expect(html).toContain("Last 30 days");
+    const recoveryHtml = renderToStaticMarkup(
+      createElement(RebuildAnalytics, {
+        data,
+        filters,
+        recovery: {
+          values: { from: "2025-02-30" },
+          errors: { from: "Choose a valid calendar date." },
+        },
+      }),
+    );
+    expect(recoveryHtml).toContain("These filters weren’t applied.");
+    expect(recoveryHtml).toContain('aria-label="Analytics KPIs"');
+    expect(recoveryHtml).toContain('id="analytics-from-error"');
     expect(html).toContain("No matching records");
     expect(html).not.toContain("view=raw");
     if (["designer", "operations_admin"].includes(role))

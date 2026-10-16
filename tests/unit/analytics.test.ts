@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   analyticsFilters,
+  analyticsFilterErrors,
   analyticsUrl,
   collectionRate,
   defaultAnalyticsRange,
@@ -43,6 +44,53 @@ describe("5B analytics contracts", () => {
       bucket: "At Risk",
       page: "2",
     });
+  });
+  it("provides field-specific errors for invalid date ranges and unsafe parameters", () => {
+    expect(
+      analyticsFilterErrors({ from: "2025-03-01", to: "2025-02-01" }).to,
+    ).toMatch(/on or after/);
+    expect(
+      analyticsFilterErrors({ from: "2020-01-01", to: "2025-01-01" }).from,
+    ).toMatch(/1,095/);
+    expect(
+      analyticsFilterErrors({ from: "2025-02-30", to: "2025-03-01" }).from,
+    ).toMatch(/valid calendar date/);
+    expect(
+      analyticsFilterErrors({ from: "2025-01-01", to: "2999-01-01" }).to,
+    ).toMatch(/later than today/);
+    expect(
+      analyticsFilterErrors({
+        from: ["2025-01-01", "2025-02-01"],
+        to: "2025-03-01",
+      }).from,
+    ).toBeDefined();
+    expect(
+      analyticsFilterErrors({
+        from: "2025-01-01",
+        to: "2025-03-01",
+        stage: "fake",
+        stakeholder: "fake",
+        page: "0",
+      }),
+    ).toMatchObject({
+      stage: expect.any(String),
+      stakeholder: expect.any(String),
+      page: expect.any(String),
+    });
+  });
+  it("accepts inclusive single-day and 1,095-day ranges but rejects a longer range", () => {
+    expect(
+      analyticsFilters.safeParse({ from: "2025-03-01", to: "2025-03-01" })
+        .success,
+    ).toBe(true);
+    expect(
+      analyticsFilters.safeParse({ from: "2022-03-02", to: "2025-03-01" })
+        .success,
+    ).toBe(true);
+    expect(
+      analyticsFilters.safeParse({ from: "2022-03-01", to: "2025-03-01" })
+        .success,
+    ).toBe(false);
   });
   it("distinguishes empty denominators, zero and overcollection without floating-point money", () => {
     expect(rate(0, 0)).toBe("Not Available");

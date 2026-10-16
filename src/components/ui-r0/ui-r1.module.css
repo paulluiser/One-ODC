@@ -153,6 +153,64 @@
   gap: 16px;
   align-items: center;
 }
+.filterError {
+  color: var(--destructive, #b42318);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.filter [aria-invalid="true"] {
+  border-color: var(--destructive, #b42318);
+}
+.filterHint {
+  color: var(--r-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 12px;
+}
+.filterNotice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--r-line);
+  border-radius: 12px;
+  background: var(--r-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.filterNotice > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--r-primary);
+}
+.filterNotice p {
+  margin: 4px 0 0;
+}
+.filterPresets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--r-muted);
+}
+.filterPresets button {
+  color: var(--r-text);
+  background: var(--r-soft);
+  box-shadow: none;
+  border: 1px solid var(--r-line);
+  min-height: 34px;
+  padding: 6px 12px;
+}
+.filter button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.filterActions > a {
+  color: var(--r-link);
+}
 .chartGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
