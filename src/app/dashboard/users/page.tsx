@@ -1,5 +1,6 @@
 import { UserDirectory } from "@/components/ui-r4/directories";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import { profileSchema, roleLabels } from "@/lib/phase1";
@@ -14,6 +15,7 @@ export default async function Users({
     q?: string;
     role?: string;
     status?: string;
+    sort?: string;
   }>;
 }) {
   const { client } = await requireRole(["system_administrator"]);
@@ -22,9 +24,12 @@ export default async function Users({
     100000,
     Math.max(1, Number.parseInt(p.page ?? "1", 10) || 1),
   );
-  const query = (p.q ?? "").trim();
+  const query = typeof p.q === "string" ? p.q.trim().slice(0, 200) : "";
+  const sort = p.sort === "name" ? "name" : "newest";
   const role =
-    p.role && roleLabels[p.role as keyof typeof roleLabels] ? p.role : "";
+    typeof p.role === "string" && Object.hasOwn(roleLabels, p.role)
+      ? p.role
+      : "";
   const status =
     p.status === "active" || p.status === "inactive" ? p.status : "";
   let profilesQuery = client
@@ -34,8 +39,15 @@ export default async function Users({
   if (role) profilesQuery = profilesQuery.eq("role", role);
   if (status) profilesQuery = profilesQuery.eq("active", status === "active");
   const { data, error, count } = await profilesQuery
-    .order("created_at", { ascending: false })
+    .order(sort === "name" ? "display_name" : "created_at", {
+      ascending: sort === "name",
+    })
+    .order("id")
     .range((page - 1) * 25, page * 25 - 1);
+  if (error?.code === "PGRST103" && page > 1)
+    redirect(
+      `/dashboard/users?${new URLSearchParams({ q: query, sort, role, status, page: "1" })}`,
+    );
   checkDatabase(error);
   const profiles = profileSchema.array().parse(data ?? []);
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
@@ -47,6 +59,7 @@ export default async function Users({
         count={count ?? 0}
         page={page}
         query={query}
+        sort={sort}
         roleFilter={role}
         statusFilter={status}
         configured={

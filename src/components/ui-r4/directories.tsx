@@ -28,6 +28,7 @@ export function SupplierDirectory({
   events,
   search,
   sort,
+  status = "",
   page,
   count,
 }: {
@@ -35,6 +36,7 @@ export function SupplierDirectory({
   events: SupplierEvent[];
   search: string;
   sort: string;
+  status?: string;
   page: number;
   count: number;
 }) {
@@ -50,28 +52,38 @@ export function SupplierDirectory({
     >
       <section className="surface live-form">
         <FilterBar
-          action="/dashboard/suppliers"
-          resetHref="/dashboard/suppliers"
-          aria-label="Supplier filters"
-        >
-          <label htmlFor="supplier-search">
-            Search supplier name
-            <input
-              id="supplier-search"
-              name="q"
-              maxLength={200}
-              defaultValue={search}
-            />
-          </label>
-          <label htmlFor="supplier-sort">
-            Sort suppliers
-            <select id="supplier-sort" name="sort" defaultValue={sort}>
-              <option value="name">Name A–Z</option>
-              <option value="name_desc">Name Z–A</option>
-              <option value="updated">Recently updated</option>
-            </select>
-          </label>
-        </FilterBar>
+          resultCount={count}
+          values={{ q: search, sort, status }}
+          config={{
+            label: "Supplier filters",
+            search: {
+              key: "q",
+              label: "Search suppliers",
+              placeholder: "Search supplier name…",
+            },
+            sort: {
+              key: "sort",
+              label: "Sort suppliers",
+              defaultValue: "name",
+              options: [
+                { value: "name", label: "Name A–Z" },
+                { value: "name_desc", label: "Name Z–A" },
+                { value: "updated", label: "Recently updated" },
+              ],
+            },
+            fields: [
+              {
+                key: "status",
+                label: "Availability",
+                options: [
+                  { value: "", label: "All suppliers" },
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                ],
+              },
+            ],
+          }}
+        />
         <div className={styles.toolbar}>
           <p>
             {count} matching suppliers · Page {page}
@@ -79,14 +91,14 @@ export function SupplierDirectory({
           <nav aria-label="Supplier pages">
             {page > 1 && (
               <Link
-                href={`?q=${encodeURIComponent(search)}&sort=${sort}&page=${page - 1}`}
+                href={`?q=${encodeURIComponent(search)}&sort=${sort}&status=${status}&page=${page - 1}`}
               >
                 Previous
               </Link>
             )}{" "}
             {page * 50 < count && (
               <Link
-                href={`?q=${encodeURIComponent(search)}&sort=${sort}&page=${page + 1}`}
+                href={`?q=${encodeURIComponent(search)}&sort=${sort}&status=${status}&page=${page + 1}`}
               >
                 Next
               </Link>
@@ -196,6 +208,7 @@ export function UserDirectory({
   query = "",
   roleFilter = "",
   statusFilter = "",
+  sort = "newest",
 }: {
   profiles: Profile[];
   count: number;
@@ -212,6 +225,7 @@ export function UserDirectory({
   query?: string;
   roleFilter?: string;
   statusFilter?: string;
+  sort?: string;
 }) {
   return (
     <OperationsFrame
@@ -232,40 +246,48 @@ export function UserDirectory({
     >
       <section className="surface live-form">
         <FilterBar
-          action="/dashboard/users"
-          resetHref="/dashboard/users"
-          aria-label="Team access filters"
-        >
-          <label htmlFor="user-search">
-            Search team accounts
-            <input
-              id="user-search"
-              name="q"
-              defaultValue={query}
-              placeholder="Search by name"
-              maxLength={200}
-            />
-          </label>
-          <label htmlFor="user-role">
-            Role
-            <select id="user-role" name="role" defaultValue={roleFilter}>
-              <option value="">All roles</option>
-              {Object.entries(roleLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label htmlFor="user-status">
-            Status
-            <select id="user-status" name="status" defaultValue={statusFilter}>
-              <option value="">All statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </label>
-        </FilterBar>
+          resultCount={count}
+          values={{ q: query, role: roleFilter, status: statusFilter, sort }}
+          config={{
+            label: "Team access filters",
+            sort: {
+              key: "sort",
+              label: "Sort team accounts",
+              defaultValue: "newest",
+              options: [
+                { value: "newest", label: "Newest first" },
+                { value: "name", label: "Name A–Z" },
+              ],
+            },
+            search: {
+              key: "q",
+              label: "Search team accounts",
+              placeholder: "Search team member name…",
+            },
+            fields: [
+              {
+                key: "role",
+                label: "Role",
+                options: [
+                  { value: "", label: "All roles" },
+                  ...Object.entries(roleLabels).map(([value, label]) => ({
+                    value,
+                    label,
+                  })),
+                ],
+              },
+              {
+                key: "status",
+                label: "Access",
+                options: [
+                  { value: "", label: "All statuses" },
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                ],
+              },
+            ],
+          }}
+        />
         <div className={styles.toolbar}>
           <h2>Team accounts</h2>
           <p>
@@ -316,14 +338,14 @@ export function UserDirectory({
         <nav className={styles.toolbar} aria-label="Account pages">
           {page > 1 && (
             <Link
-              href={`?q=${encodeURIComponent(query)}&role=${roleFilter}&status=${statusFilter}&page=${page - 1}`}
+              href={`?q=${encodeURIComponent(query)}&role=${roleFilter}&status=${statusFilter}&sort=${sort}&page=${page - 1}`}
             >
               Previous
             </Link>
           )}
           {page * 25 < count && (
             <Link
-              href={`?q=${encodeURIComponent(query)}&role=${roleFilter}&status=${statusFilter}&page=${page + 1}`}
+              href={`?q=${encodeURIComponent(query)}&role=${roleFilter}&status=${statusFilter}&sort=${sort}&page=${page + 1}`}
             >
               Next
             </Link>

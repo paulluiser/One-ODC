@@ -1,4 +1,11 @@
 import { Fragment } from "react";
+import { FilterBar } from "./filter-bar";
+import {
+  filterOptions,
+  toolbarText,
+  toolbarChoice,
+  type ToolbarQuery,
+} from "@/lib/filter-toolbar";
 import {
   OperationSummary,
   OperationEditor,
@@ -33,7 +40,13 @@ function skippedTransition(event: LogisticsEvent) {
     ? `${from} → ${current?.status}: skipped ${stages.slice(start + 1, end).join(", ")}`
     : null;
 }
-export async function ProjectLogistics({ project }: { project: string }) {
+export async function ProjectLogistics({
+  project,
+  query = {},
+}: {
+  project: string;
+  query?: ToolbarQuery;
+}) {
   const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
   const { client, profile } = await requireWorkspace();
   const p = await client
@@ -84,6 +97,42 @@ export async function ProjectLogistics({ project }: { project: string }) {
       : { data: null, error: null };
   checkDatabase(completion.error);
   const completed = completion.data?.is_operationally_completed === true;
+  const logisticsQ = toolbarText(query, "logistics_q"),
+    logisticsStatus = toolbarChoice(
+      query,
+      "logistics_status",
+      logisticsStatuses,
+    ),
+    logisticsBrand = toolbarChoice(query, "logistics_brand", [
+      "SFY",
+      "Stosa",
+      "Both",
+    ]),
+    logisticsSort = toolbarChoice(
+      query,
+      "logistics_sort",
+      ["created", "supplier"],
+      "created",
+    );
+  const visibleRecords = (
+    (records.data as (Logistics & { created_at: string })[]) ?? []
+  )
+    .filter(
+      (r) =>
+        (!logisticsQ ||
+          `${r.supplier_name} ${r.reference}`
+            .toLowerCase()
+            .includes(logisticsQ.toLowerCase())) &&
+        (!logisticsStatus || r.status === logisticsStatus) &&
+        (!logisticsBrand || r.brand === logisticsBrand),
+    )
+    .sort(
+      (a, b) =>
+        (logisticsSort === "supplier"
+          ? a.supplier_name.localeCompare(b.supplier_name)
+          : a.created_at.localeCompare(b.created_at)) ||
+        a.id.localeCompare(b.id),
+    );
   const permitted = manager || profile.role === "operations_admin",
     writable =
       permitted &&
@@ -154,9 +203,61 @@ export async function ProjectLogistics({ project }: { project: string }) {
             />
           </OperationEditor>
         )}
+        {rebuild && (
+          <FilterBar
+            resultCount={visibleRecords.length}
+            values={{
+              logistics_q: logisticsQ,
+              logistics_status: logisticsStatus,
+              logistics_brand: logisticsBrand,
+              logistics_sort: logisticsSort,
+            }}
+            config={{
+              label: "Logistics filters",
+              search: {
+                key: "logistics_q",
+                label: "Search logistics",
+                placeholder: "Search supplier or reference…",
+              },
+              sort: {
+                key: "logistics_sort",
+                label: "Sort logistics",
+                defaultValue: "created",
+                options: [
+                  { value: "created", label: "Creation order" },
+                  { value: "supplier", label: "Supplier A–Z" },
+                ],
+              },
+              fields: [
+                {
+                  key: "logistics_status",
+                  label: "Logistics stage",
+                  options: [
+                    { value: "", label: "All stages" },
+                    ...filterOptions(logisticsStatuses),
+                  ],
+                },
+                {
+                  key: "logistics_brand",
+                  label: "Brand",
+                  options: [
+                    { value: "", label: "All brands" },
+                    ...filterOptions(["SFY", "Stosa", "Both"]),
+                  ],
+                },
+              ],
+            }}
+          />
+        )}
         {!records.data?.length && <p>No supplier/logistics records yet.</p>}
+        {rebuild && !!records.data?.length && !visibleRecords.length && (
+          <p>No logistics records match these filters.</p>
+        )}
         <div className="operations-record-grid">
-          {((records.data as Logistics[]) ?? []).map((r) => (
+          {(rebuild
+            ? visibleRecords
+            : ((records.data as (Logistics & { created_at: string })[]) ?? [])
+          ).map((r) => (
             <article
               className="surface live-form operations-record"
               key={r.id}

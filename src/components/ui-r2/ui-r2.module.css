@@ -262,7 +262,7 @@
   border: 1px solid var(--r-line);
   border-radius: 16px;
   background: var(--r-surface);
-  overflow: hidden;
+  overflow: visible;
 }
 .listHeading {
   display: flex;

@@ -1,5 +1,6 @@
 import { SupplierDirectory } from "@/components/ui-r4/directories";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageIntro } from "@/components/live-data";
 import { ContextPanel } from "@/components/context-panel";
 import { RecordTable, RecordStatus } from "@/components/record-table";
@@ -44,6 +45,10 @@ export default async function Suppliers({
       : query.sort === "name_desc"
         ? "name_desc"
         : "name";
+  const status =
+    query.status === "active" || query.status === "inactive"
+      ? query.status
+      : "";
   let request = client
     .from("suppliers")
     .select("*", { count: "exact" })
@@ -53,7 +58,12 @@ export default async function Suppliers({
     .order("id")
     .range((page - 1) * 50, page * 50 - 1);
   if (search) request = request.ilike("name", projectSearchPattern(search));
+  if (status) request = request.eq("active", status === "active");
   const r = await request;
+  if (r.error?.code === "PGRST103" && page > 1)
+    redirect(
+      `/dashboard/suppliers?${new URLSearchParams({ q: search, sort, status, page: "1" })}`,
+    );
   checkDatabase(r.error);
   const events = r.data?.length
     ? await client
@@ -74,6 +84,7 @@ export default async function Suppliers({
         events={events.data ?? []}
         search={search}
         sort={sort}
+        status={status}
         page={page}
         count={r.count ?? 0}
       />

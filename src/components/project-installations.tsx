@@ -1,4 +1,12 @@
 import { Fragment } from "react";
+import { FilterBar } from "./filter-bar";
+import {
+  filterOptions,
+  toolbarText,
+  toolbarChoice,
+  type ToolbarQuery,
+} from "@/lib/filter-toolbar";
+import { installationStatuses } from "@/lib/installations";
 import {
   ReadinessGroups,
   OperationSummary,
@@ -20,7 +28,13 @@ import {
   InstallationForm,
 } from "./installation-form";
 import type { CommercialHandoff } from "@/lib/handoff";
-export async function ProjectInstallations({ project }: { project: string }) {
+export async function ProjectInstallations({
+  project,
+  query = {},
+}: {
+  project: string;
+  query?: ToolbarQuery;
+}) {
   const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
   const { client, profile } = await requireWorkspace();
   const p = await client
@@ -94,6 +108,34 @@ export async function ProjectInstallations({ project }: { project: string }) {
   checkDatabase(people.error);
   const names = new Map((people.data ?? []).map((p) => [p.id, p.display_name]));
   const activeSpaces = (spaces.data ?? []).filter((s) => !s.cancelled_at);
+  const installationQ = toolbarText(query, "installation_q"),
+    installationStatus = toolbarChoice(
+      query,
+      "installation_status",
+      installationStatuses,
+    ),
+    installationSort = toolbarChoice(
+      query,
+      "installation_sort",
+      ["created", "name"],
+      "created",
+    );
+  const visibleSpaces = (spaces.data ?? [])
+    .filter(
+      (s) =>
+        (!installationQ ||
+          s.name.toLowerCase().includes(installationQ.toLowerCase())) &&
+        (!installationStatus ||
+          ((installations.data ?? []).find((i) => i.space_id === s.id)
+            ?.status ?? "Not Scheduled") === installationStatus),
+    )
+    .sort(
+      (a, b) =>
+        (installationSort === "name"
+          ? a.name.localeCompare(b.name)
+          : a.created_at.localeCompare(b.created_at)) ||
+        a.id.localeCompare(b.id),
+    );
   const satisfied = activeSpaces.filter((s) =>
     (installations.data ?? []).some(
       (i) =>
@@ -198,7 +240,47 @@ export async function ProjectInstallations({ project }: { project: string }) {
           )}
         </section>
         <div className="operations-record-grid">
-          {(spaces.data ?? []).map((s) => {
+          {rebuild && (
+            <FilterBar
+              resultCount={visibleSpaces.length}
+              values={{
+                installation_q: installationQ,
+                installation_status: installationStatus,
+                installation_sort: installationSort,
+              }}
+              config={{
+                label: "Installation filters",
+                search: {
+                  key: "installation_q",
+                  label: "Search installations",
+                  placeholder: "Search installation space…",
+                },
+                sort: {
+                  key: "installation_sort",
+                  label: "Sort installations",
+                  defaultValue: "created",
+                  options: [
+                    { value: "created", label: "Creation order" },
+                    { value: "name", label: "Space A–Z" },
+                  ],
+                },
+                fields: [
+                  {
+                    key: "installation_status",
+                    label: "Installation status",
+                    options: [
+                      { value: "", label: "All statuses" },
+                      ...filterOptions(installationStatuses),
+                    ],
+                  },
+                ],
+              }}
+            />
+          )}
+          {rebuild && !visibleSpaces.length && (
+            <p>No installation records match these filters.</p>
+          )}
+          {(rebuild ? visibleSpaces : (spaces.data ?? [])).map((s) => {
             const installation = (
               (installations.data as Installation[]) ?? []
             ).find((i) => i.space_id === s.id);

@@ -6,6 +6,8 @@ Active batch: **Consolidated microfeatures — all eleven authorized in one run;
 
 ## Architecture / security
 
+Filtering: `src/components/filter-bar.tsx` is the shared hybrid toolbar (search, filter popover, separate sort, active chips, Clear All and real result counts), configured with types/helpers in `src/lib/filter-toolbar.ts`. Clear All/chip removal preserve search/sort and unrelated tab/view parameters; query changes reset pagination. Spaces/logistics/installation use namespaced URL keys and filter only already-authorized server results. Directory read queries support their configured sort/availability options; out-of-range pages recover to page 1. Analytics retains shared date validation. Focused tests: `tests/unit/filter-toolbar.test.ts` and UI-R1/R2/R4 tests. Defer full regression to pre-production.
+
 Next.js App Router + React/TypeScript, Tailwind, existing Deep Blue brand, local Inter, Radix, Supabase Auth/PostgreSQL/private Storage. Phase 3E adds pinned browser QPDF WASM; otherwise reuse existing libraries. Read the relevant installed Next guide under `node_modules/next/dist/docs/` before changing framework code; retain the generated AGENTS block.
 
 `/dashboard` uses real records; `/demo` is explicitly fictional and isolated. Server actions verify `auth.getUser` and the current active `profiles` role. RLS independently scopes reads; authenticated business writes use actor-checked transactional RPCs with immutable audit. Never trust editable Auth metadata or expose secret/service credentials. Ops receives assigned pipeline preview only; no lead/origin/team/history or restricted files before closure. BDM monitors related projects; Designers assigned projects; Lead manages own projects; System Admin has oversight.

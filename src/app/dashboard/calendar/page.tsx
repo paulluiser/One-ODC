@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FilterBar } from "@/components/filter-bar";
+import { filterOptions } from "@/lib/filter-toolbar";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
@@ -52,6 +53,9 @@ export default async function Calendar({
       ? query.kind
       : "";
   const view = query.view === "agenda" ? "agenda" : "month";
+  const search =
+    typeof query.q === "string" ? query.q.trim().slice(0, 200) : "";
+  const sort = query.sort === "latest" ? "latest" : "earliest";
   const result = await client.rpc("workspace_calendar", {
     p_from: range.from,
     p_to: range.to,
@@ -60,14 +64,28 @@ export default async function Calendar({
   const events = calendarEventSchema
     .array()
     .parse(result.data)
-    .filter((e) => !kind || e.kind === kind);
-  const agenda = selected
-    ? eventsOnDate(events, selected)
-    : events.filter(
-        (e) => e.date <= `${month}-31` && e.end_date >= `${month}-01`,
-      );
+    .filter(
+      (e) =>
+        (!kind || e.kind === kind) &&
+        (!search ||
+          `${e.title} ${e.subtitle}`
+            .toLowerCase()
+            .includes(search.toLowerCase())),
+    );
+  const agenda = (
+    selected
+      ? eventsOnDate(events, selected)
+      : events.filter(
+          (e) => e.date <= `${month}-31` && e.end_date >= `${month}-01`,
+        )
+  ).sort(
+    (a, b) =>
+      (sort === "latest" ? -1 : 1) * a.date.localeCompare(b.date) ||
+      (a.time ?? "").localeCompare(b.time ?? "") ||
+      a.id.localeCompare(b.id),
+  );
   const url = (params: Record<string, string>) =>
-    `/dashboard/calendar?${new URLSearchParams({ month, kind, view, ...params })}`;
+    `/dashboard/calendar?${new URLSearchParams({ month, kind, view, q: search, sort, ...params })}`;
   const formatDate = (date: string) =>
     new Intl.DateTimeFormat("en", {
       month: "short",
@@ -146,31 +164,48 @@ export default async function Calendar({
           </nav>
         </div>
         <FilterBar
-          action="/dashboard/calendar"
-          resetHref={`/dashboard/calendar?view=${view}`}
-          aria-label="Calendar filters"
-        >
-          <input type="hidden" name="view" value={view} />
-          <label>
-            Month
-            <input
-              name="month"
-              type="month"
-              min="2000-01"
-              max="2100-12"
-              defaultValue={month}
-            />
-          </label>
-          <label>
-            Show
-            <select name="kind" defaultValue={kind}>
-              <option value="">All dates</option>
-              {calendarKinds.map((k) => (
-                <option key={k}>{k}</option>
-              ))}
-            </select>
-          </label>
-        </FilterBar>
+          resultCount={agenda.length}
+          values={{ month, kind, q: search, sort, view }}
+          config={{
+            label: "Calendar filters",
+            search: {
+              key: "q",
+              label: "Search calendar",
+              placeholder: "Search events and deadlines…",
+            },
+            sort:
+              view === "agenda"
+                ? {
+                    key: "sort",
+                    label: "Sort dates",
+                    defaultValue: "earliest",
+                    options: [
+                      { value: "earliest", label: "Earliest first" },
+                      { value: "latest", label: "Latest first" },
+                    ],
+                  }
+                : undefined,
+            paginationKeys: ["day"],
+            fields: [
+              {
+                key: "month",
+                label: "Month",
+                type: "month",
+                min: "2000-01",
+                max: "2100-12",
+                defaultValue: today.slice(0, 7),
+              },
+              {
+                key: "kind",
+                label: "Event type",
+                options: [
+                  { value: "", label: "All dates" },
+                  ...filterOptions(calendarKinds),
+                ],
+              },
+            ],
+          }}
+        />
         <p className="field-hint calendar-scope">
           Only records you are authorized to view appear. Dates follow each
           project’s calendar; personal events use Asia/Manila. Cancelled work is

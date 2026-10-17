@@ -358,72 +358,56 @@ export async function ProjectMonitoring({
     <>
       <h3>Project timeline</h3>
       <FilterBar
-        resetHref={`/dashboard/projects/${project}`}
-        aria-label="Activity timeline filters"
-        key={JSON.stringify(filters)}
-      >
-        <label className="live-field" htmlFor="timeline-category">
-          Timeline category
-          <select
-            id="timeline-category"
-            name="category"
-            defaultValue={category}
-          >
-            <option value="">All authorized events</option>
-            {[...activityCategories, "System Event"].map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </label>
-        <label className="live-field" htmlFor="timeline-from">
-          From date
-          <input
-            id="timeline-from"
-            name="from"
-            type="date"
-            defaultValue={date("from") || ""}
-          />
-        </label>
-        <label className="live-field" htmlFor="timeline-to">
-          To date
-          <input
-            id="timeline-to"
-            name="to"
-            type="date"
-            defaultValue={date("to") || ""}
-          />
-        </label>
-        <label className="live-field" htmlFor="timeline-actor">
-          Timeline actor
-          <select
-            id="timeline-actor"
-            name="actor"
-            defaultValue={uuid("actor") || ""}
-          >
-            <option value="">All actors</option>
-            {actorOptions.map((a) => (
-              <option key={a} value={a}>
-                {actorName(a)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="live-field" htmlFor="timeline-space">
-          Timeline space
-          <select
-            id="timeline-space"
-            name="space"
-            defaultValue={uuid("space") || ""}
-          >
-            <option value="">All spaces</option>
-            {spaces.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} · {s.id.slice(0, 8)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </FilterBar>
+        resultCount={timeline.length}
+        resultLabel="events on this page"
+        values={{
+          category,
+          from: date("from") || "",
+          to: date("to") || "",
+          actor: uuid("actor") || "",
+          space: uuid("space") || "",
+        }}
+        config={{
+          label: "Activity timeline filters",
+          fields: [
+            {
+              key: "category",
+              label: "Timeline category",
+              options: [
+                { value: "", label: "All authorized events" },
+                ...[...activityCategories, "System Event"].map((value) => ({
+                  value,
+                  label: value,
+                })),
+              ],
+            },
+            { key: "from", label: "From date", type: "date" },
+            { key: "to", label: "To date", type: "date" },
+            {
+              key: "actor",
+              label: "Timeline actor",
+              options: [
+                { value: "", label: "All actors" },
+                ...actorOptions.map((value) => ({
+                  value,
+                  label: actorName(value),
+                })),
+              ],
+            },
+            {
+              key: "space",
+              label: "Timeline space",
+              options: [
+                { value: "", label: "All spaces" },
+                ...spaces.map((s) => ({
+                  value: s.id,
+                  label: `${s.name} · ${s.id.slice(0, 8)}`,
+                })),
+              ],
+            },
+          ],
+        }}
+      />
       {!timeline.length && <p>No authorized events match these filters.</p>}
       <div className="project-timeline">
         {timeline.map((t) => (

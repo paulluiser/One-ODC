@@ -13,6 +13,7 @@ import {
 } from "@/lib/project-workspace";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 export default async function Projects({
   searchParams,
 }: {
@@ -34,6 +35,10 @@ export default async function Projects({
     .order("id", { ascending: true })
     .range((options.page - 1) * 25, options.page * 25 - 1);
   const { data, error, count } = await query;
+  if (error?.code === "PGRST103" && options.page > 1)
+    redirect(
+      `${projectDirectoryUrl(options, 1)}&view=${parameters.view === "list" ? "list" : "grid"}`,
+    );
   checkDatabase(error);
   const projects = projectSchema.array().parse(data ?? []);
   let monitoring: Record<string, Monitoring> | undefined;

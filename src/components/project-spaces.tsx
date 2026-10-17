@@ -1,4 +1,12 @@
 import { projectIsLost } from "@/lib/workspace-session";
+import { FilterBar } from "./filter-bar";
+import {
+  filterOptions,
+  toolbarText,
+  toolbarChoice,
+  type ToolbarQuery,
+} from "@/lib/filter-toolbar";
+import { spaceStatuses } from "@/lib/spaces";
 import { DisclosureSummary, SpaceRow } from "./ui-r2/primitives";
 import { risk, localDate } from "@/lib/monitoring";
 import { randomUUID } from "node:crypto";
@@ -16,10 +24,12 @@ export async function ProjectSpaces({
   project,
   manager,
   people,
+  query = {},
 }: {
   project: string;
   manager: boolean;
   people: Person[];
+  query?: ToolbarQuery;
 }) {
   const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
   const { client, profile } = await requireWorkspace();
@@ -92,9 +102,97 @@ export async function ProjectSpaces({
   checkDatabase(installations.error);
   const timezone = monitoring.data?.timezone || "Asia/Manila",
     now = new Date().toISOString();
+  const spaceQ = toolbarText(query, "space_q"),
+    spaceStatus = toolbarChoice(query, "space_status", spaceStatuses),
+    spaceScope = toolbarChoice(query, "space_scope", [
+      "active",
+      "cancelled",
+      "mine",
+    ]),
+    spaceSort = toolbarChoice(
+      query,
+      "space_sort",
+      ["created", "name", "deadline"],
+      "created",
+    );
+  const visibleSpaces = spaces
+    .filter(
+      (s) =>
+        (!spaceQ || s.name.toLowerCase().includes(spaceQ.toLowerCase())) &&
+        (!spaceStatus || s.status === spaceStatus) &&
+        (!spaceScope ||
+          (spaceScope === "active"
+            ? !s.cancelled_at
+            : spaceScope === "cancelled"
+              ? !!s.cancelled_at
+              : s.primary_designer_id === profile.id ||
+                supporters.some(
+                  (a) => a.space_id === s.id && a.user_id === profile.id,
+                ))),
+    )
+    .sort(
+      (a, b) =>
+        (spaceSort === "name"
+          ? a.name.localeCompare(b.name)
+          : spaceSort === "deadline"
+            ? (a.deadline || "9999-12-31").localeCompare(
+                b.deadline || "9999-12-31",
+              )
+            : a.created_at.localeCompare(b.created_at)) ||
+        a.id.localeCompare(b.id),
+    );
   return (
     <section className="surface live-form project-spaces" id="project-spaces">
       <h2>Spaces</h2>
+      {rebuild && (
+        <FilterBar
+          resultCount={visibleSpaces.length}
+          values={{
+            space_q: spaceQ,
+            space_status: spaceStatus,
+            space_scope: spaceScope,
+            space_sort: spaceSort,
+          }}
+          config={{
+            label: "Space filters",
+            search: {
+              key: "space_q",
+              label: "Search spaces",
+              placeholder: "Search spaces…",
+            },
+            sort: {
+              key: "space_sort",
+              label: "Sort spaces",
+              defaultValue: "created",
+              options: [
+                { value: "created", label: "Creation order" },
+                { value: "name", label: "Name A–Z" },
+                { value: "deadline", label: "Deadline first" },
+              ],
+            },
+            fields: [
+              {
+                key: "space_status",
+                label: "Design status",
+                options: [
+                  { value: "", label: "All statuses" },
+                  ...filterOptions(spaceStatuses),
+                ],
+              },
+              {
+                key: "space_scope",
+                label: "Scope",
+                options: [
+                  { value: "", label: "All spaces" },
+                  { value: "active", label: "Active spaces" },
+                  { value: "cancelled", label: "Cancelled spaces" },
+                  { value: "mine", label: "Assigned to me" },
+                ],
+              },
+            ],
+          }}
+        />
+      )}
       <p className="field-hint">
         {spaces.filter((s) => !s.cancelled_at).length} active ·{" "}
         {spaces.filter((s) => s.cancelled_at).length} cancelled.
@@ -124,8 +222,11 @@ export async function ProjectSpaces({
         </details>
       )}
       {!spaces.length && <p>No spaces have been created for this project.</p>}
+      {rebuild && !!spaces.length && !visibleSpaces.length && (
+        <p>No spaces match these filters.</p>
+      )}
       <div className="space-work-grid">
-        {spaces.map((s) => {
+        {(rebuild ? visibleSpaces : spaces).map((s) => {
           const roster = supporters.filter((a) => a.space_id === s.id);
           const latest = (activity.data ?? [])
             .filter(

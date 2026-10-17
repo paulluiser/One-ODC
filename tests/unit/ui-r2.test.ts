@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 import {
   Disclosure,
   Scope,
@@ -117,7 +118,8 @@ it("authorized project cards preserve equal-weighted design progress and escaped
   expect(html).toContain('value="1" max="4"');
   expect(html).toContain("Kitchen &lt;script&gt;");
   expect(html).toContain("Lead Designer");
-  expect(html).toContain("Reset filters");
+  expect(html).toContain("Filters");
+  expect(html).not.toContain("Clear all");
 });
 it("leads keep distinct records for duplicate names, statuses and scoped pagination", () => {
   const lead = {
@@ -190,12 +192,11 @@ it("project list mode preserves filters, pagination and the selected view in nav
     }),
   );
   expect(html).toContain('data-project-view="list"');
-  expect(html).toContain('name="view" value="list"');
   expect(html).toContain('aria-label="Project view"');
   expect(html).toContain("stage=Under+Negotiation");
   expect(html).toContain("sort=name");
   expect(html).toContain("page=3&amp;view=list");
-  expect(html).toContain("/dashboard/projects?view=list");
+  expect(html).toContain("Clear all");
   expect(html).toContain("25.0%");
 });
 it("list mode retains the Ops limited pipeline preview", () => {

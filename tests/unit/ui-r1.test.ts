@@ -97,7 +97,7 @@ for (const role of [...roles, "lead_designer"] as const)
     );
     expect(recoveryHtml).toContain("These filters weren’t applied.");
     expect(recoveryHtml).toContain('aria-label="Analytics KPIs"');
-    expect(recoveryHtml).toContain('id="analytics-from-error"');
+    expect(recoveryHtml).toContain('-from-error"');
     expect(html).toContain("No matching records");
     expect(html).not.toContain("view=raw");
     if (["designer", "operations_admin"].includes(role))

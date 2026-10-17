@@ -1,5 +1,6 @@
 import { LeadDirectory } from "@/components/ui-r2/directories";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
 import { leadSchema, statuses } from "@/lib/phase1";
@@ -8,7 +9,12 @@ import { Button } from "@/components/ui/button";
 export default async function Leads({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    page?: string;
+    sort?: string;
+  }>;
 }) {
   const { client, profile } = await requireRole([
     "bdm",
@@ -17,6 +23,8 @@ export default async function Leads({
   ]);
   const p = await searchParams;
   const q = typeof p.q === "string" ? p.q.trim().slice(0, 200) : "";
+  const sort =
+    p.sort === "name" ? "name" : p.sort === "newest" ? "newest" : "updated";
   const status =
     typeof p.status === "string" &&
     statuses.includes(p.status as (typeof statuses)[number])
@@ -31,21 +39,34 @@ export default async function Leads({
   let query = client
     .from("leads")
     .select("*", { count: "exact" })
-    .order("updated_at", { ascending: false })
+    .order(
+      sort === "name"
+        ? "project_name"
+        : sort === "newest"
+          ? "created_at"
+          : "updated_at",
+      { ascending: sort === "name" },
+    )
+    .order("id")
     .range((page - 1) * 25, page * 25 - 1);
   if (q)
     query = query.ilike("project_name", `%${q.replace(/[\\%_]/g, "\\$&")}%`);
   if (status) query = query.eq("status", status);
   const { data, error, count } = await query;
+  if (error?.code === "PGRST103" && page > 1)
+    redirect(
+      `/dashboard/leads?${new URLSearchParams({ q, sort, status: status || "All", page: "1" })}`,
+    );
   checkDatabase(error);
   const leads = leadSchema.array().parse(data ?? []);
   const url = (number: number) =>
-    `/dashboard/leads?${new URLSearchParams({ q, status: status || "All", page: String(number) })}`;
+    `/dashboard/leads?${new URLSearchParams({ q, sort, status: status || "All", page: String(number) })}`;
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
     return (
       <LeadDirectory
         leads={leads}
         q={q}
+        sort={sort}
         status={status}
         page={page}
         count={count ?? 0}

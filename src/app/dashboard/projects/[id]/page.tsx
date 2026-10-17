@@ -137,7 +137,7 @@ async function ProjectDetail({
               ) : undefined
             }
           >
-            <ProjectInstallations project={id} />
+            <ProjectInstallations project={id} query={query} />
           </Section>
         ) : logisticsTab && project.commercial_status === "Closed" ? (
           <Section
@@ -147,7 +147,7 @@ async function ProjectDetail({
               ) : undefined
             }
           >
-            <ProjectLogistics project={id} />
+            <ProjectLogistics project={id} query={query} />
           </Section>
         ) : financeEnabled &&
           project.commercial_status === "Closed" &&
@@ -301,9 +301,9 @@ async function ProjectDetail({
         >
           <ProjectHandoff project={id} />
           {installationTab ? (
-            <ProjectInstallations project={id} />
+            <ProjectInstallations project={id} query={query} />
           ) : (
-            <ProjectLogistics project={id} />
+            <ProjectLogistics project={id} query={query} />
           )}
         </Suspense>
       </CommercialFrame>
@@ -320,7 +320,7 @@ async function ProjectDetail({
         </Section>
         {navigation}
         <Section>
-          <ProjectInstallations project={id} />
+          <ProjectInstallations project={id} query={query} />
         </Section>
       </>
     );
@@ -336,7 +336,7 @@ async function ProjectDetail({
         </Section>
         {navigation}
         <Section>
-          <ProjectLogistics project={id} />
+          <ProjectLogistics project={id} query={query} />
         </Section>
       </>
     );
@@ -470,6 +470,7 @@ async function ProjectDetail({
             {process.env.ONE_ODC_SPACES_ENABLED === "true" && (
               <Section>
                 <ProjectSpaces
+                  query={query}
                   project={id}
                   manager={editable}
                   people={
@@ -694,6 +695,7 @@ async function ProjectDetail({
       {process.env.ONE_ODC_SPACES_ENABLED === "true" && (
         <Section>
           <ProjectSpaces
+            query={query}
             project={id}
             manager={editable}
             people={

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FilterBar } from "../filter-bar";
+import { filterOptions } from "../../lib/filter-toolbar";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -29,6 +30,7 @@ export function LeadDirectory({
   page,
   count,
   bdm,
+  sort = "updated",
 }: {
   leads: Lead[];
   q: string;
@@ -36,9 +38,10 @@ export function LeadDirectory({
   page: number;
   count: number;
   bdm: boolean;
+  sort?: string;
 }) {
   const url = (p: number) =>
-    `/dashboard/leads?${new URLSearchParams({ q, status: status || "All", page: String(p) })}`;
+    `/dashboard/leads?${new URLSearchParams({ q, sort, status: status || "All", page: String(p) })}`;
   return (
     <Scope>
       <Heading
@@ -59,28 +62,38 @@ export function LeadDirectory({
       />
       <section className={styles.directory}>
         <FilterBar
-          resetHref="/dashboard/leads?status=All"
-          aria-label="Lead filters"
-        >
-          <label>
-            Search project or client name
-            <input
-              name="q"
-              defaultValue={q}
-              maxLength={200}
-              placeholder="Find a lead…"
-            />
-          </label>
-          <label>
-            Status
-            <select name="status" defaultValue={status || "All"}>
-              <option value="All">All statuses</option>
-              {statuses.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
-        </FilterBar>
+          resultCount={count}
+          values={{ q, sort, status: status || "All" }}
+          config={{
+            label: "Lead filters",
+            sort: {
+              key: "sort",
+              label: "Sort leads",
+              defaultValue: "updated",
+              options: [
+                { value: "updated", label: "Recently updated" },
+                { value: "newest", label: "Newest first" },
+                { value: "name", label: "Project name A–Z" },
+              ],
+            },
+            search: {
+              key: "q",
+              label: "Search leads",
+              placeholder: "Search lead or project name…",
+            },
+            fields: [
+              {
+                key: "status",
+                label: "Status",
+                defaultValue: "All",
+                options: [
+                  { value: "All", label: "All statuses" },
+                  ...filterOptions(statuses),
+                ],
+              },
+            ],
+          }}
+        />
         <div className={styles.listHeading}>
           <h2>{bdm ? "Your requests" : "Review queue"}</h2>
           <span>{count} matching records</span>
@@ -170,44 +183,54 @@ export function ProjectDirectory({
       />
       <section className={styles.directory}>
         <FilterBar
-          resetHref={`/dashboard/projects?view=${view}`}
-          aria-label="Project filters"
-          key={projectDirectoryUrl(options, 1)}
-        >
-          <input type="hidden" name="view" value={view} />
-          <label>
-            Search projects
-            <input
-              name="q"
-              defaultValue={options.q}
-              maxLength={200}
-              placeholder="Find a project…"
-            />
-          </label>
-          <label>
-            Search by
-            <select name="by" defaultValue={options.searchBy}>
-              <option value="name">Project name</option>
-              <option value="reference">Reference</option>
-            </select>
-          </label>
-          <label>
-            Commercial stage
-            <select name="stage" defaultValue={options.stage}>
-              <option value="">All stages</option>
-              {commercialStages.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Sort projects
-            <select name="sort" defaultValue={options.sort}>
-              <option value="newest">Newest first</option>
-              <option value="name">Project name</option>
-            </select>
-          </label>
-        </FilterBar>
+          resultCount={count}
+          values={{
+            q: options.q,
+            by: options.searchBy,
+            stage: options.stage,
+            sort: options.sort,
+            view,
+          }}
+          config={{
+            label: "Project filters",
+            search: {
+              key: "q",
+              label: "Search projects",
+              placeholder:
+                options.searchBy === "reference"
+                  ? "Search project reference…"
+                  : "Search projects…",
+            },
+            sort: {
+              key: "sort",
+              label: "Sort projects",
+              defaultValue: "newest",
+              options: [
+                { value: "newest", label: "Newest first" },
+                { value: "name", label: "Project name A–Z" },
+              ],
+            },
+            fields: [
+              {
+                key: "by",
+                label: "Search by",
+                defaultValue: "name",
+                options: [
+                  { value: "name", label: "Project name" },
+                  { value: "reference", label: "Reference" },
+                ],
+              },
+              {
+                key: "stage",
+                label: "Commercial stage",
+                options: [
+                  { value: "", label: "All stages" },
+                  ...filterOptions(commercialStages),
+                ],
+              },
+            ],
+          }}
+        />
         <div className={styles.listHeading}>
           <h2>{ops ? "Assigned pipeline" : "Project directory"}</h2>
           <div className={styles.directoryTools}>
