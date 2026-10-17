@@ -130,16 +130,16 @@ export function GlobalSearch({ className = "" }: { className?: string }) {
       }}
     >
       <div className={styles.searchBar}>
-        <Search size={18} aria-hidden="true" />
+        <Search size={20} strokeWidth={1.8} aria-hidden="true" />
         <input
           ref={input}
           type="search"
           aria-label="Search workspace"
-          placeholder="Search workspace…"
+          placeholder="Search"
           autoComplete="off"
           maxLength={200}
-          aria-controls={open ? `${id}-results` : undefined}
-          aria-describedby={open ? `${id}-status` : undefined}
+          aria-controls={open && ready ? `${id}-results` : undefined}
+          aria-describedby={open && ready ? `${id}-status` : undefined}
           value={q}
           onFocus={() => {
             if (!open) {
@@ -185,7 +185,7 @@ export function GlobalSearch({ className = "" }: { className?: string }) {
           }}
         />
       </div>
-      {open && (
+      {open && ready && (
         <div
           id={`${id}-results`}
           className={styles.searchDropdown}

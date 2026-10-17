@@ -6,11 +6,12 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  height: 42px;
-  padding: 0 12px;
+  height: 44px;
+  padding: 0 14px;
   border: 1px solid var(--brand-border);
   border-radius: 12px;
-  background: var(--brand-soft);
+  background: var(--brand-surface);
+  box-shadow: 0 1px 2px var(--brand-shadow);
   color: var(--brand-muted);
 }
 .searchBar:focus-within {
@@ -31,7 +32,7 @@
   background: transparent;
   color: var(--brand-text);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   box-shadow: none;
 }
 .inlineSearch .searchBar input:focus-visible {
