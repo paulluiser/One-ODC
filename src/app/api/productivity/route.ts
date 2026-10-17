@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireWorkspace } from "@/lib/workspace-session";
-import { projectSearchPattern } from "@/lib/project-workspace";
-import { recoveryMessage, type SearchHit } from "@/lib/productivity";
+import { recoveryMessage } from "@/lib/productivity";
 import { z } from "zod";
 const uuid = z.uuid();
 const response = (data: unknown, status = 200) =>
@@ -26,85 +25,8 @@ export async function GET(request: NextRequest) {
     return r.data;
   };
   try {
-    if (action === "search") {
-      const q = (params.get("q") ?? "").trim().slice(0, 100);
-      if (q.length < 2) return response({ results: [] });
-      const pattern = projectSearchPattern(q),
-        results: SearchHit[] = [];
-      const [projects, leads, spaces, suppliers] = await Promise.all([
-        client
-          .from("projects")
-          .select("id,name,reference,commercial_status")
-          .ilike("name", pattern)
-          .order("created_at", { ascending: false })
-          .limit(6),
-        manager || profile.role === "bdm"
-          ? client
-              .from("leads")
-              .select("id,project_name,status,brand")
-              .ilike("project_name", pattern)
-              .order("updated_at", { ascending: false })
-              .limit(6)
-          : null,
-        client
-          .from("spaces")
-          .select("id,name,project_id,status")
-          .ilike("name", pattern)
-          .order("updated_at", { ascending: false })
-          .limit(6),
-        manager || profile.role === "operations_admin"
-          ? client
-              .from("suppliers")
-              .select("id,name,brand")
-              .ilike("name", pattern)
-              .order("name")
-              .limit(6)
-          : null,
-      ]);
-      const references =
-        read(
-          await client
-            .from("projects")
-            .select("id,name,reference,commercial_status")
-            .ilike("reference", pattern)
-            .order("created_at", { ascending: false })
-            .limit(6),
-        ) ?? [];
-      const matchedProjects = [
-        ...new Map(
-          [...(read(projects) ?? []), ...references].map((p) => [p.id, p]),
-        ).values(),
-      ].slice(0, 6);
-      for (const p of matchedProjects)
-        results.push({
-          kind: "Projects",
-          title: p.name,
-          detail: `${p.reference} · ${p.commercial_status}`,
-          href: `/dashboard/projects/${p.id}`,
-        });
-      for (const p of leads ? (read(leads) ?? []) : [])
-        results.push({
-          kind: "Leads",
-          title: p.project_name,
-          detail: `${p.brand} · ${p.status}`,
-          href: `/dashboard/leads/${p.id}`,
-        });
-      for (const p of read(spaces) ?? [])
-        results.push({
-          kind: "Spaces",
-          title: p.name,
-          detail: p.status,
-          href: `/dashboard/projects/${p.project_id}#project-spaces`,
-        });
-      for (const p of suppliers ? (read(suppliers) ?? []) : [])
-        results.push({
-          kind: "Suppliers",
-          title: p.name,
-          detail: p.brand ?? "Supplier",
-          href: `/dashboard/suppliers?q=${encodeURIComponent(p.name)}`,
-        });
-      return response({ results });
-    }
+    if (action === "search")
+      return response({ error: "Global search is no longer available." }, 404);
     if (action === "shortcuts") {
       const records = read(
         await client

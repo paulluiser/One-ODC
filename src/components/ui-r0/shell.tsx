@@ -1,5 +1,4 @@
 "use client";
-import { GlobalSearch } from "../productivity/header";
 import { ProjectTools } from "../productivity/project-tools";
 import { UnsavedChangesGuard } from "../productivity/unsaved-guard";
 import {
@@ -211,7 +210,6 @@ export function RebuildShell({
                 <p>{roleLabels[profile.role]} Workspace</p>
               </div>
             </div>
-            <GlobalSearch className={styles.globalSearch} />
             <div className={styles.utilities} aria-label="Workspace utilities">
               {calendarEnabled && (
                 <Link

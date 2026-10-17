@@ -234,12 +234,6 @@
   gap: 8px;
   flex: none;
 }
-.globalSearch {
-  flex: 1 1 200px;
-  max-width: 320px;
-  min-width: 140px;
-  margin-left: auto;
-}
 .iconButton,
 .avatar {
   display: grid;
@@ -1016,24 +1010,12 @@
   }
 }
 @media (max-width: 900px) {
-  .header {
-    flex-wrap: wrap;
-    height: auto;
-    min-height: 76px;
-    padding-block: 14px;
-  }
-  .globalSearch {
-    order: 3;
-    flex-basis: 100%;
-    max-width: none;
-    margin-left: 0;
-  }
   .root {
     display: block;
     padding: 12px;
   }
   .header {
-    height: auto;
+    height: 76px;
     top: 12px;
     padding-inline: 16px;
   }
@@ -1103,7 +1085,7 @@
   }
   .header {
     top: 8px;
-    height: auto;
+    height: 72px;
     border-radius: 14px;
     padding-inline: 10px;
     gap: 6px;

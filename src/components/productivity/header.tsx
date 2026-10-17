@@ -1,16 +1,9 @@
 "use client";
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useState, useSyncExternalStore } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { Search, HelpCircle, Star, X } from "lucide-react";
+import { HelpCircle, Star, X } from "lucide-react";
 import type { Profile } from "@/lib/phase1";
-import type { SearchHit } from "@/lib/productivity";
 import { productivityRequest, ErrorNotice } from "./common";
 import styles from "./productivity.module.css";
 const guidance: Record<string, string[]> = {
@@ -69,191 +62,6 @@ function Modal({
         {children}
       </Dialog.Content>
     </Dialog.Portal>
-  );
-}
-export function GlobalSearch({ className = "" }: { className?: string }) {
-  const [open, setOpen] = useState(false);
-  const [q, setQ] = useState("");
-  const [hits, setHits] = useState<SearchHit[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [retry, setRetry] = useState(0);
-  const root = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
-  const refs = useRef<(HTMLAnchorElement | null)[]>([]);
-  const id = useId();
-  useEffect(() => {
-    const closeOutside = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("pointerdown", closeOutside);
-    return () => document.removeEventListener("pointerdown", closeOutside);
-  }, []);
-  useEffect(() => {
-    if (!open || q.trim().length < 2) return;
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      void productivityRequest<{ results: SearchHit[] }>(
-        { action: "search", q },
-        controller.signal,
-      )
-        .then((data) => {
-          if (!controller.signal.aborted) setHits(data.results);
-        })
-        .catch((e) => {
-          if (!controller.signal.aborted)
-            setError(
-              e instanceof Error
-                ? e.message
-                : "Search could not be loaded. Please retry.",
-            );
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setBusy(false);
-        });
-    }, 250);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [open, q, retry]);
-  const ready = q.trim().length >= 2;
-  return (
-    <div
-      ref={root}
-      className={`${styles.inlineSearch} ${className}`}
-      role="search"
-      aria-label="Workspace search"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
-          setOpen(false);
-      }}
-    >
-      <div className={styles.searchBar}>
-        <Search size={20} strokeWidth={1.8} aria-hidden="true" />
-        <input
-          ref={input}
-          type="search"
-          aria-label="Search workspace"
-          placeholder="Search"
-          autoComplete="off"
-          maxLength={200}
-          aria-controls={open && ready ? `${id}-results` : undefined}
-          aria-describedby={open && ready ? `${id}-status` : undefined}
-          value={q}
-          onFocus={() => {
-            if (!open) {
-              setOpen(true);
-              setBusy(ready);
-              setHits([]);
-              setError("");
-            }
-          }}
-          onClick={() => {
-            if (!open) {
-              setOpen(true);
-              setBusy(ready);
-              setHits([]);
-              setError("");
-            }
-          }}
-          onChange={(event) => {
-            setQ(event.target.value);
-            setOpen(true);
-            setBusy(event.target.value.trim().length >= 2);
-            setHits([]);
-            setError("");
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.preventDefault();
-              setOpen(false);
-            }
-            if (
-              (event.key === "ArrowDown" || event.key === "ArrowUp") &&
-              hits.length
-            ) {
-              event.preventDefault();
-              refs.current[
-                event.key === "ArrowDown" ? 0 : hits.length - 1
-              ]?.focus();
-            }
-            if (event.key === "Enter" && hits.length) {
-              event.preventDefault();
-              refs.current[0]?.click();
-            }
-          }}
-        />
-      </div>
-      {open && ready && (
-        <div
-          id={`${id}-results`}
-          className={styles.searchDropdown}
-          role="region"
-          aria-label="Search results"
-          aria-busy={busy}
-        >
-          <p id={`${id}-status`} role="status" className={styles.searchStatus}>
-            {busy
-              ? "Searching authorized records…"
-              : !ready
-                ? "Search projects, leads, spaces or suppliers. Enter at least two characters."
-                : error
-                  ? ""
-                  : !hits.length
-                    ? "No matching records."
-                    : `${hits.length} matching records`}
-          </p>
-          <ErrorNotice
-            message={error}
-            retry={() => {
-              setBusy(true);
-              setError("");
-              setRetry((v) => v + 1);
-            }}
-          />
-          <div className={styles.results}>
-            {hits.map((hit, index) => (
-              <div key={hit.href}>
-                {(index === 0 || hits[index - 1].kind !== hit.kind) && (
-                  <h3 className={styles.searchGroup}>{hit.kind}</h3>
-                )}
-                <Link
-                  ref={(el) => {
-                    refs.current[index] = el;
-                  }}
-                  href={hit.href}
-                  className={styles.result}
-                  onClick={() => {
-                    setOpen(false);
-                    setQ("");
-                    setHits([]);
-                    setBusy(false);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      input.current?.focus();
-                      setOpen(false);
-                    }
-                    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-                      event.preventDefault();
-                      const next = index + (event.key === "ArrowDown" ? 1 : -1);
-                      if (next < 0 || next >= hits.length)
-                        input.current?.focus();
-                      else refs.current[next]?.focus();
-                    }
-                  }}
-                >
-                  <strong>{hit.title}</strong>
-                  {hit.detail && <small>{hit.detail}</small>}
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 export function WorkspaceHelp({
@@ -315,9 +123,10 @@ export function WorkspaceHelp({
             ))}
           </ol>
           <p>
-            Use Search to find authorized records. Project links never grant
-            access. File previews are private and may require refreshing.
-            Calendar combines permitted deadlines with your own events.
+            Use project directories to find authorized records. Project links
+            never grant access. File previews are private and may require
+            refreshing. Calendar combines permitted deadlines with your own
+            events.
           </p>
           <p>
             For access or invitation help, contact your System Administrator.
