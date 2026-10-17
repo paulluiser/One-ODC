@@ -211,8 +211,8 @@ export function RebuildShell({
                 <p>{roleLabels[profile.role]} Workspace</p>
               </div>
             </div>
+            <GlobalSearch className={styles.globalSearch} />
             <div className={styles.utilities} aria-label="Workspace utilities">
-              <GlobalSearch className={styles.iconButton} />
               {calendarEnabled && (
                 <Link
                   className={styles.iconButton}

@@ -1,5 +1,11 @@
 "use client";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { Search, HelpCircle, Star, X } from "lucide-react";
@@ -65,32 +71,42 @@ function Modal({
     </Dialog.Portal>
   );
 }
-export function GlobalSearch({ className }: { className: string }) {
-  const [open, setOpen] = useState(false),
-    [q, setQ] = useState(""),
-    [hits, setHits] = useState<SearchHit[]>([]),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [index, setIndex] = useState(-1),
-    [retry, setRetry] = useState(0);
+export function GlobalSearch({ className = "" }: { className?: string }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const root = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
   const refs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const id = useId();
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, []);
   useEffect(() => {
     if (!open || q.trim().length < 2) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      setBusy(true);
-      setError("");
-      setHits([]);
       void productivityRequest<{ results: SearchHit[] }>(
         { action: "search", q },
         controller.signal,
       )
-        .then((d) => {
-          setHits(d.results);
-          setIndex(-1);
+        .then((data) => {
+          if (!controller.signal.aborted) setHits(data.results);
         })
         .catch((e) => {
-          if (e.name !== "AbortError") setError(e.message);
+          if (!controller.signal.aborted)
+            setError(
+              e instanceof Error
+                ? e.message
+                : "Search could not be loaded. Please retry.",
+            );
         })
         .finally(() => {
           if (!controller.signal.aborted) setBusy(false);
@@ -101,101 +117,143 @@ export function GlobalSearch({ className }: { className: string }) {
       controller.abort();
     };
   }, [open, q, retry]);
-  function toggle(v: boolean) {
-    setOpen(v);
-    setBusy(false);
-    setHits([]);
-    setError("");
-    setIndex(-1);
-    if (!v) setQ("");
-  }
+  const ready = q.trim().length >= 2;
   return (
-    <Dialog.Root open={open} onOpenChange={toggle}>
-      <Dialog.Trigger asChild>
-        <button
-          className={className}
-          type="button"
-          aria-label="Search workspace"
-          title="Search"
-        >
-          <Search size={19} />
-        </button>
-      </Dialog.Trigger>
-      <Modal title="Search workspace" close={() => toggle(false)}>
+    <div
+      ref={root}
+      className={`${styles.inlineSearch} ${className}`}
+      role="search"
+      aria-label="Workspace search"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+          setOpen(false);
+      }}
+    >
+      <div className={styles.searchBar}>
+        <Search size={18} aria-hidden="true" />
         <input
-          className={styles.search}
+          ref={input}
+          type="search"
+          aria-label="Search workspace"
+          placeholder="Search workspace…"
           autoComplete="off"
-          placeholder="Projects, leads, Spaces or suppliers"
-          aria-label="Search records"
+          maxLength={200}
+          aria-controls={open ? `${id}-results` : undefined}
+          aria-describedby={open ? `${id}-status` : undefined}
           value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setBusy(e.target.value.trim().length >= 2);
-            setError("");
-            setHits([]);
-            setIndex(-1);
+          onFocus={() => {
+            if (!open) {
+              setOpen(true);
+              setBusy(ready);
+              setHits([]);
+              setError("");
+            }
           }}
-          onKeyDown={(e) => {
+          onClick={() => {
+            if (!open) {
+              setOpen(true);
+              setBusy(ready);
+              setHits([]);
+              setError("");
+            }
+          }}
+          onChange={(event) => {
+            setQ(event.target.value);
+            setOpen(true);
+            setBusy(event.target.value.trim().length >= 2);
+            setHits([]);
+            setError("");
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              setOpen(false);
+            }
             if (
-              ["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key) &&
+              (event.key === "ArrowDown" || event.key === "ArrowUp") &&
               hits.length
             ) {
-              e.preventDefault();
-              const next =
-                e.key === "Home"
-                  ? 0
-                  : e.key === "End"
-                    ? hits.length - 1
-                    : e.key === "ArrowDown"
-                      ? (index + 1) % hits.length
-                      : (index - 1 + hits.length) % hits.length;
-              setIndex(next);
-              refs.current[next]?.focus();
+              event.preventDefault();
+              refs.current[
+                event.key === "ArrowDown" ? 0 : hits.length - 1
+              ]?.focus();
+            }
+            if (event.key === "Enter" && hits.length) {
+              event.preventDefault();
+              refs.current[0]?.click();
             }
           }}
         />
-        <p role="status">
-          {busy
-            ? "Searching authorized records…"
-            : q.trim().length < 2
-              ? "Enter at least two characters."
-              : !hits.length && !error
-                ? "No matching records."
-                : ""}
-        </p>
-        <ErrorNotice message={error} retry={() => setRetry((v) => v + 1)} />
-        <div className={styles.results}>
-          {hits.map((h, i) => (
-            <div key={h.href}>
-              {i === 0 || hits[i - 1].kind !== h.kind ? (
-                <h3>{h.kind}</h3>
-              ) : null}
-              <Link
-                ref={(el) => {
-                  refs.current[i] = el;
-                }}
-                href={h.href}
-                className={styles.result}
-                onClick={() => toggle(false)}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                    e.preventDefault();
-                    const next =
-                      (i + (e.key === "ArrowDown" ? 1 : -1) + hits.length) %
-                      hits.length;
-                    setIndex(next);
-                    refs.current[next]?.focus();
-                  }
-                }}
-              >
-                <strong>{h.title}</strong>
-                <small>{h.detail}</small>
-              </Link>
-            </div>
-          ))}
+      </div>
+      {open && (
+        <div
+          id={`${id}-results`}
+          className={styles.searchDropdown}
+          role="region"
+          aria-label="Search results"
+          aria-busy={busy}
+        >
+          <p id={`${id}-status`} role="status" className={styles.searchStatus}>
+            {busy
+              ? "Searching authorized records…"
+              : !ready
+                ? "Search projects, leads, spaces or suppliers. Enter at least two characters."
+                : error
+                  ? ""
+                  : !hits.length
+                    ? "No matching records."
+                    : `${hits.length} matching records`}
+          </p>
+          <ErrorNotice
+            message={error}
+            retry={() => {
+              setBusy(true);
+              setError("");
+              setRetry((v) => v + 1);
+            }}
+          />
+          <div className={styles.results}>
+            {hits.map((hit, index) => (
+              <div key={hit.href}>
+                {(index === 0 || hits[index - 1].kind !== hit.kind) && (
+                  <h3 className={styles.searchGroup}>{hit.kind}</h3>
+                )}
+                <Link
+                  ref={(el) => {
+                    refs.current[index] = el;
+                  }}
+                  href={hit.href}
+                  className={styles.result}
+                  onClick={() => {
+                    setOpen(false);
+                    setQ("");
+                    setHits([]);
+                    setBusy(false);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      input.current?.focus();
+                      setOpen(false);
+                    }
+                    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                      event.preventDefault();
+                      const next = index + (event.key === "ArrowDown" ? 1 : -1);
+                      if (next < 0 || next >= hits.length)
+                        input.current?.focus();
+                      else refs.current[next]?.focus();
+                    }
+                  }}
+                >
+                  <strong>{hit.title}</strong>
+                  {hit.detail && <small>{hit.detail}</small>}
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
-      </Modal>
-    </Dialog.Root>
+      )}
+    </div>
   );
 }
 export function WorkspaceHelp({

@@ -1,3 +1,77 @@
+.inlineSearch {
+  position: relative;
+  min-width: 0;
+}
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand-muted);
+}
+.searchBar:focus-within {
+  outline: 2px solid var(--brand-focus);
+  outline-offset: 2px;
+}
+.searchBar > svg {
+  flex-shrink: 0;
+}
+.searchBar input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  color: var(--brand-text);
+  font: inherit;
+  font-size: 13px;
+  box-shadow: none;
+}
+.inlineSearch .searchBar input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.searchBar input::placeholder {
+  color: var(--brand-muted);
+}
+.searchDropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: max(100%, 340px);
+  max-width: calc(100vw - 48px);
+  max-height: min(480px, 65dvh);
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  background: var(--brand-surface);
+  color: var(--brand-text);
+  box-shadow: 0 12px 32px var(--brand-shadow);
+  z-index: 50;
+}
+.searchStatus {
+  margin: 0;
+  padding: 4px 8px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--brand-muted);
+}
+.searchGroup {
+  margin: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 .dialog {
   max-width: 680px;
   width: calc(100vw - 32px);
