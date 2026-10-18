@@ -139,7 +139,7 @@ export async function UnifiedProjectWorkspace({
     !restricted && enabled("SPACES")
       ? client
           .from("spaces")
-          .select("id,name,status,cancelled_at")
+          .select("id,name,status,cancelled_at,updated_at")
           .eq("project_id", id)
           .order("created_at")
       : { data: [], error: null },
@@ -452,7 +452,7 @@ export async function UnifiedProjectWorkspace({
                 title="Spaces"
                 icon={<Layers size={18} />}
                 href={url("spaces")}
-                action={manager ? "Manage spaces" : "View spaces"}
+                action="View all"
               >
                 {!spaces.length ? (
                   <>
@@ -476,10 +476,18 @@ export async function UnifiedProjectWorkspace({
                     {spaces.slice(0, 4).map((s) => (
                       <li key={s.id}>
                         <Link href={url("spaces") + `#space-${s.id}`}>
-                          <span>{s.name}</span>
+                          <span className={styles.spaceName}>{s.name}</span>
                           <Status>
                             {s.cancelled_at ? "Cancelled" : s.status}
                           </Status>
+                          <time
+                            className={styles.spaceUpdated}
+                            dateTime={s.updated_at}
+                            title={formatTime(s.updated_at)}
+                          >
+                            Updated {directoryDate(s.updated_at.slice(0, 10))}
+                          </time>
+                          <ArrowRight size={14} aria-hidden="true" />
                         </Link>
                       </li>
                     ))}
@@ -590,18 +598,6 @@ export async function UnifiedProjectWorkspace({
                     </dd>
                   </div>
                 </dl>
-              </Card>
-              <Card
-                title="Discussion"
-                icon={<MessageSquare size={18} />}
-                href={url("activity", "discussion")}
-                action="Open"
-              >
-                <DiscussionPanel
-                  presentation="preview"
-                  project={id}
-                  profile={profile}
-                />
               </Card>
             </div>
           </div>
@@ -735,7 +731,10 @@ export async function UnifiedProjectWorkspace({
             )}
             {view.tab === "activity" && (
               <>
-                <Subnav>
+                <nav
+                  className={styles.discussionNav}
+                  aria-label="Discussion and activity"
+                >
                   <Link
                     href={url("activity", "discussion")}
                     aria-current={section !== "history" ? "page" : undefined}
@@ -746,9 +745,9 @@ export async function UnifiedProjectWorkspace({
                     href={url("activity", "history")}
                     aria-current={section === "history" ? "page" : undefined}
                   >
-                    History
+                    Activity
                   </Link>
-                </Subnav>
+                </nav>
                 {section !== "history" ? (
                   <Card
                     title="Project discussion"

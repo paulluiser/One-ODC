@@ -1,4 +1,5 @@
 "use client";
+import { DiscussionBadge } from "../productivity/discussion-sync";
 import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
@@ -78,6 +79,7 @@ export function WorkspaceNavigation({
             aria-current={tab === t ? "page" : undefined}
           >
             {t[0].toUpperCase() + t.slice(1)}
+            {t === "activity" && <DiscussionBadge project={project} />}
           </Link>
         ))}
     </nav>

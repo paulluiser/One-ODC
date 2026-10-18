@@ -9,6 +9,7 @@ import { checkDatabase } from "@/lib/live-data";
 import { formatTime } from "@/lib/phase1";
 import {
   financialAmount,
+  canManagePayment,
   type Financials,
   type FinancialValue,
   type PaymentGroup,
@@ -96,6 +97,7 @@ function PaymentSection({
   kind,
   group,
   manage,
+  record = false,
   cancelled,
   admin,
   today,
@@ -104,6 +106,7 @@ function PaymentSection({
   kind: "client" | "supplier";
   group: PaymentGroup;
   manage: boolean;
+  record?: boolean;
   cancelled: boolean;
   admin: boolean;
   today: string;
@@ -131,7 +134,7 @@ function PaymentSection({
           )}
         </>
       )}
-      {manage && !cancelled && (
+      {(manage || record) && !cancelled && (
         <details>
           <summary>Add {kind} payment</summary>
           <FinanceForm
@@ -256,6 +259,9 @@ export async function ProjectFinancials({ project }: { project: string }) {
     admin = profile.role === "system_administrator";
   if (lost) {
     f.can_manage_payments = false;
+    f.can_manage_client_payments = false;
+    f.can_manage_supplier_payments = false;
+    f.can_record_client_payments = false;
     if (f.sale) f.sale.editable = false;
     if (f.raw) f.raw.editable = false;
   }
@@ -326,7 +332,8 @@ export async function ProjectFinancials({ project }: { project: string }) {
         project={project}
         kind="client"
         group={f.client_payments}
-        manage={f.can_manage_payments}
+        record={f.can_record_client_payments}
+        manage={canManagePayment(f, "client")}
         cancelled={f.cancelled}
         admin={admin}
         today={f.today}
@@ -335,7 +342,7 @@ export async function ProjectFinancials({ project }: { project: string }) {
         project={project}
         kind="supplier"
         group={f.supplier_payments}
-        manage={f.can_manage_payments}
+        manage={canManagePayment(f, "supplier")}
         cancelled={f.cancelled}
         admin={admin}
         today={f.today}

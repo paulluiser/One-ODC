@@ -20,3 +20,4 @@ artifacts/verification/
 ui-review/
 supabase/.temp/
 supabase/.branches/
+.vercel

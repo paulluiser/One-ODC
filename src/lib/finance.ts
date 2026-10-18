@@ -53,6 +53,9 @@ export type Financials = {
   today: string;
   cancelled: boolean;
   can_manage_payments: boolean;
+  can_record_client_payments?: boolean;
+  can_manage_client_payments?: boolean;
+  can_manage_supplier_payments?: boolean;
   sale?: FinancialValue;
   raw?: FinancialValue;
   approved_quotation?: { id: string; number: number; total: string } | null;
@@ -86,4 +89,16 @@ export function financeError(message: string): string {
   if (message.includes("INVALID_AMOUNT") || message.includes("INVALID_PAYMENT"))
     return "Check the amount (nonnegative PHP, up to 2 decimals), actual payment date and method.";
   return "The financial change could not be saved. Your entries are kept; please retry.";
+}
+
+export function canManagePayment(
+  financials: Financials,
+  kind: "client" | "supplier",
+) {
+  return (
+    (kind === "client"
+      ? financials.can_manage_client_payments
+      : financials.can_manage_supplier_payments) ??
+    financials.can_manage_payments
+  );
 }

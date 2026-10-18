@@ -1,3 +1,7 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { SpaceDirectory } from "./space-directory";
+import directoryStyles from "./space-directory.module.css";
 import { projectIsLost } from "@/lib/workspace-session";
 import { FilterBar } from "./filter-bar";
 import {
@@ -46,14 +50,16 @@ export async function ProjectSpaces({
         .from("space_supporters")
         .select("space_id,user_id,assigned_at,spaces!inner(project_id)")
         .eq("spaces.project_id", project),
-      client
-        .from("space_events")
-        .select(
-          "id,space_id,action,reason,actor_id,occurred_at,previous_value,new_value",
-        )
-        .eq("project_id", project)
-        .order("occurred_at", { ascending: false })
-        .limit(100),
+      !rebuild
+        ? client
+            .from("space_events")
+            .select(
+              "id,space_id,action,reason,actor_id,occurred_at,previous_value,new_value",
+            )
+            .eq("project_id", project)
+            .order("occurred_at", { ascending: false })
+            .limit(100)
+        : { data: [], error: null },
       process.env.ONE_ODC_MONITORING_ENABLED === "true"
         ? client
             .from("project_monitoring")
@@ -85,6 +91,7 @@ export async function ProjectSpaces({
   const canManage = manager && !cancelled;
   const spaces = (rows.data || []) as (Space & {
     created_at: string;
+    updated_at: string;
     last_progress_at: string | null;
   })[];
   const supporters = (support.data || []) as Supporter[];
@@ -143,7 +150,33 @@ export async function ProjectSpaces({
     );
   return (
     <section className="surface live-form project-spaces" id="project-spaces">
-      <h2>Spaces</h2>
+      <div className={directoryStyles.heading}>
+        <h2>Spaces</h2>
+        {rebuild && (
+          <Link
+            className={directoryStyles.history}
+            href={`/dashboard/projects/${project}?tab=activity&section=history&category=System+Event`}
+          >
+            View full space history in Activity tab{" "}
+            <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        )}
+      </div>
+      {canManage && (
+        <details>
+          <DisclosureSummary id="space-create">
+            Create a space
+          </DisclosureSummary>
+          <SpaceEditForm
+            key="create"
+            newId={randomUUID()}
+            project={project}
+            supporters={[]}
+            people={people}
+            manager
+          />
+        </details>
+      )}
       {rebuild && (
         <FilterBar
           resultCount={visibleSpaces.length}
@@ -151,6 +184,9 @@ export async function ProjectSpaces({
             ...(typeof query.tab === "string" ? { tab: query.tab } : {}),
             ...(typeof query.section === "string"
               ? { section: query.section }
+              : {}),
+            ...(typeof query.space_detail === "string"
+              ? { space_detail: query.space_detail }
               : {}),
             space_q: spaceQ,
             space_status: spaceStatus,
@@ -197,12 +233,14 @@ export async function ProjectSpaces({
           }}
         />
       )}
-      <p className="field-hint">
-        {spaces.filter((s) => !s.cancelled_at).length} active ·{" "}
-        {spaces.filter((s) => s.cancelled_at).length} cancelled.
-        {!rebuild &&
-          " Duplicate names are supported; each space has a stable ID."}
-      </p>
+      {!rebuild && (
+        <p className="field-hint">
+          {spaces.filter((s) => !s.cancelled_at).length} active ·{" "}
+          {spaces.filter((s) => s.cancelled_at).length} cancelled.
+          {!rebuild &&
+            " Duplicate names are supported; each space has a stable ID."}
+        </p>
+      )}
       {cancelled && (
         <p className="field-hint">
           {completion.data?.is_operationally_completed
@@ -210,27 +248,28 @@ export async function ProjectSpaces({
             : "This project is locked. Space records and history are read-only."}
         </p>
       )}
-      {canManage && (
-        <details>
-          <DisclosureSummary id="space-create">
-            Create a space
-          </DisclosureSummary>
-          <SpaceEditForm
-            key="create"
-            newId={randomUUID()}
-            project={project}
-            supporters={[]}
-            people={people}
-            manager
-          />
-        </details>
-      )}
+
       {!spaces.length && <p>No spaces have been created for this project.</p>}
       {rebuild && !!spaces.length && !visibleSpaces.length && (
         <p>No spaces match these filters.</p>
       )}
+      {rebuild && visibleSpaces.length > 0 && (
+        <SpaceDirectory
+          rows={visibleSpaces.map((s) => ({
+            id: s.id,
+            name: s.name,
+            designer: name(s.primary_designer_id),
+            status: s.cancelled_at ? "Cancelled" : s.status,
+            deadline: s.deadline,
+            updated: s.updated_at,
+          }))}
+        />
+      )}
       <div className="space-work-grid">
-        {(rebuild ? visibleSpaces : spaces).map((s) => {
+        {(rebuild
+          ? spaces.filter((s) => s.id === toolbarText(query, "space_detail"))
+          : spaces
+        ).map((s) => {
           const roster = supporters.filter((a) => a.space_id === s.id);
           const latest = (activity.data ?? [])
             .filter(
@@ -394,28 +433,32 @@ export async function ProjectSpaces({
           />
         </details>
       )}
-      <details>
-        <DisclosureSummary>Space history (latest 100 events)</DisclosureSummary>
-        {!history.length && <p>No space changes recorded.</p>}
-        {history.map((h) => (
-          <details className="history-entry" key={h.id}>
-            <DisclosureSummary>
-              {formatTime(h.occurred_at)} · {h.action} · {h.reason}
-            </DisclosureSummary>
-            <p>
-              Space: {h.space_id} · Actor: {h.actor_id}
-            </p>
-            <h3>Previous record</h3>
-            <pre className="history-json">
-              {JSON.stringify(h.previous_value, null, 2)}
-            </pre>
-            <h3>Updated record</h3>
-            <pre className="history-json">
-              {JSON.stringify(h.new_value, null, 2)}
-            </pre>
-          </details>
-        ))}
-      </details>
+      {!rebuild && (
+        <details>
+          <DisclosureSummary>
+            Space history (latest 100 events)
+          </DisclosureSummary>
+          {!history.length && <p>No space changes recorded.</p>}
+          {history.map((h) => (
+            <details className="history-entry" key={h.id}>
+              <DisclosureSummary>
+                {formatTime(h.occurred_at)} · {h.action} · {h.reason}
+              </DisclosureSummary>
+              <p>
+                Space: {h.space_id} · Actor: {h.actor_id}
+              </p>
+              <h3>Previous record</h3>
+              <pre className="history-json">
+                {JSON.stringify(h.previous_value, null, 2)}
+              </pre>
+              <h3>Updated record</h3>
+              <pre className="history-json">
+                {JSON.stringify(h.new_value, null, 2)}
+              </pre>
+            </details>
+          ))}
+        </details>
+      )}
     </section>
   );
 }

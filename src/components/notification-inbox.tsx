@@ -1,5 +1,11 @@
 "use client";
-import { useActionState } from "react";
+import { notificationLink } from "@/lib/notification-link";
+import {
+  discussionChanged,
+  useDiscussionCounts,
+} from "./productivity/discussion-sync";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { Bell, CheckCheck, ArrowUpRight } from "lucide-react";
 import { formatTime, type Notification } from "@/lib/phase1";
@@ -15,6 +21,9 @@ function ReadButton({
   disabled?: boolean;
 }) {
   const [state, action, pending] = useActionState(readNotifications, {});
+  useEffect(() => {
+    if (state.success) discussionChanged();
+  }, [state.success]);
   return (
     <div className={styles.readAction}>
       <form action={action}>
@@ -44,6 +53,11 @@ export function NotificationInbox({
   page: number;
   total: number;
 }) {
+  const latestUnread = useDiscussionCounts().notifications;
+  const router = useRouter();
+  useEffect(() => {
+    if (latestUnread !== undefined && latestUnread !== unread) router.refresh();
+  }, [latestUnread, unread, router]);
   const href = (p: number) =>
     `/dashboard/notifications?${new URLSearchParams({ view: all ? "all" : "unread", page: String(p) })}`;
   return (
@@ -82,15 +96,11 @@ export function NotificationInbox({
                   {formatTime(n.created_at)} · {n.read_at ? "Read" : "Unread"}
                 </p>
                 {(n.project_id || n.lead_id) && (
-                  <Link
-                    className="text-link"
-                    href={
-                      n.project_id
-                        ? `/dashboard/projects/${n.project_id}`
-                        : `/dashboard/leads/${n.lead_id}`
-                    }
-                  >
-                    Open record <ArrowUpRight size={14} aria-hidden="true" />
+                  <Link className="text-link" href={notificationLink(n)!}>
+                    {n.type === "project_mention"
+                      ? "View discussion"
+                      : "Open record"}{" "}
+                    <ArrowUpRight size={14} aria-hidden="true" />
                   </Link>
                 )}
               </div>

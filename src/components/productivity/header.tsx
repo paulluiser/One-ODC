@@ -197,7 +197,7 @@ export function ProjectShortcuts({ className }: { className: string }) {
         <button
           className={className}
           type="button"
-          aria-label="Favorite and recent projects"
+          aria-label="Flagged and recent projects"
           title="Project shortcuts"
         >
           <Star size={18} />
@@ -206,7 +206,7 @@ export function ProjectShortcuts({ className }: { className: string }) {
       <Modal title="Your project shortcuts" close={() => setOpen(false)}>
         {busy && <p role="status">Loading authorized projects…</p>}
         <ErrorNotice message={error} retry={() => void load()} />
-        {["Favorites", "Recently viewed"].map((label, i) => (
+        {["Flagged", "Recently viewed"].map((label, i) => (
           <section key={label}>
             <h3>{label}</h3>
             {rows

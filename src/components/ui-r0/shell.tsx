@@ -1,4 +1,8 @@
 "use client";
+import {
+  DiscussionSync,
+  useDiscussionCounts,
+} from "../productivity/discussion-sync";
 import { UnsavedChangesGuard } from "../productivity/unsaved-guard";
 import {
   useState,
@@ -50,6 +54,7 @@ export function RebuildShell({
   calendarEnabled: boolean;
   children: ReactNode;
 }) {
+  const liveUnread = useDiscussionCounts().notifications ?? unread;
   const [drawer, setDrawer] = useState(false),
     [themeOpen, setThemeOpen] = useState(false),
     [profileOpen, setProfileOpen] = useState(false);
@@ -223,13 +228,13 @@ export function RebuildShell({
               <Link
                 className={styles.iconButton}
                 href="/dashboard/notifications"
-                aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
+                aria-label={`Notifications${liveUnread ? `, ${liveUnread} unread` : ""}`}
                 title="Notifications"
               >
                 <Bell size={20} strokeWidth={1.8} />
-                {unread > 0 && (
+                {liveUnread > 0 && (
                   <span aria-hidden="true" className={styles.unreadBadge}>
-                    {unread > 99 ? "99+" : unread}
+                    {liveUnread > 99 ? "99+" : liveUnread}
                   </span>
                 )}
               </Link>
@@ -355,6 +360,7 @@ export function RebuildShell({
           </header>
           <main id="r0-main" tabIndex={-1} className={styles.content}>
             <UnsavedChangesGuard />
+            <DiscussionSync user={profile.id} />
             {children}
           </main>
           <span className={styles.srOnly} role="status">

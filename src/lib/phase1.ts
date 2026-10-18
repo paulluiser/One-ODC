@@ -166,6 +166,9 @@ export type Review = {
   reviewer_id: string;
 };
 export type Notification = {
+  type?: string | null;
+  comment_id?: string | null;
+  space_id?: string | null;
   id: string;
   message: string;
   lead_id: string | null;

@@ -240,6 +240,6 @@ it("project directory defaults to list and preserves the favorites filter in vie
     }),
   );
   expect(html).toContain('data-project-view="list"');
-  expect(html).toContain("Favorites only");
+  expect(html).toContain("Flagged projects");
   expect(html).toContain("favorites=true&amp;view=grid");
 });

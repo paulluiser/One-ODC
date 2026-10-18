@@ -141,6 +141,21 @@ export async function ProjectMonitoring({
       : { data: [], error: null };
   checkDatabase(assignmentResult.error);
   const assignments = assignmentResult.data ?? [];
+  // Read only snapshots belonging to this authorized timeline page.
+  const spaceEventIds = timeline
+    .filter((event) => event.space_id && event.kind === "system")
+    .map((event) => event.id);
+  const spaceEventResult =
+    unified && spaceEventIds.length
+      ? await client
+          .from("space_events")
+          .select("id,reason,previous_value,new_value")
+          .eq("project_id", project)
+          .in("id", spaceEventIds)
+      : { data: [], error: null };
+  checkDatabase(spaceEventResult.error);
+  const spaceEventDetails = spaceEventResult.data ?? [];
+
   const coordinators = coordinatorsResult.data || [];
   const attachments = (attachmentsResult.data || []).map((a) => ({
     id: a.id,
@@ -443,6 +458,18 @@ export async function ProjectMonitoring({
                   : readableProjectEvent(t.description)
                 : t.description}
             </p>
+            {spaceEventDetails.find((event) => event.id === t.id) && (
+              <details>
+                <DisclosureSummary>Space change details</DisclosureSummary>
+                <pre className="history-json">
+                  {JSON.stringify(
+                    spaceEventDetails.find((event) => event.id === t.id),
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
+            )}
             {assignments.find((a) => a.id === t.id) && (
               <details>
                 <DisclosureSummary>Assignment details</DisclosureSummary>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import {
   financialAmount,
+  canManagePayment,
   type Financials,
   type FinancialValue,
   type PaymentGroup,
@@ -121,28 +122,30 @@ function Ledger({
           <h2>{title} payments</h2>
           <p className={styles.muted}>Actual recorded payments · PHP</p>
         </div>
-        {f.can_manage_payments && !f.cancelled && (
-          <ContextPanel
-            title={`Add ${kind} payment`}
-            description="Record an actual payment. Confirm the amount, date and payment reference before saving."
-            panelClassName={styles.dialog}
-            guardUnsaved
-            resetOnClose
-          >
-            <FinanceForm
-              rebuild
-              project={project}
-              id={createId}
-              kind={kind}
-              version={0}
-              intent="save"
-              label={`Record ${kind} payment`}
-              reasonRequired={admin}
+        {(canManagePayment(f, kind) ||
+          (kind === "client" && f.can_record_client_payments)) &&
+          !f.cancelled && (
+            <ContextPanel
+              title={`Add ${kind} payment`}
+              description="Record an actual payment. Confirm the amount, date and payment reference before saving."
+              panelClassName={styles.dialog}
+              guardUnsaved
+              resetOnClose
             >
-              <AmountFields id={createId} today={f.today} />
-            </FinanceForm>
-          </ContextPanel>
-        )}
+              <FinanceForm
+                rebuild
+                project={project}
+                id={createId}
+                kind={kind}
+                version={0}
+                intent="save"
+                label={`Record ${kind} payment`}
+                reasonRequired={admin}
+              >
+                <AmountFields id={createId} today={f.today} />
+              </FinanceForm>
+            </ContextPanel>
+          )}
       </div>
       <div className={styles.ledgerSummary}>
         <div>
@@ -199,7 +202,7 @@ function Ledger({
                   <td className={styles.number}>{financialAmount(p.amount)}</td>
                   <td>
                     <div className={styles.recordActions}>
-                      {f.can_manage_payments && !p.voided && (
+                      {canManagePayment(f, kind) && !p.voided && (
                         <>
                           <ContextPanel
                             title={`Correct ${kind} payment`}

@@ -18,9 +18,12 @@ export default async function Notifications({
     const page = Math.max(1, Math.min(100000, Number(params.page) || 1)) | 0;
     let query = client
       .from("notifications")
-      .select("id,message,created_at,read_at,lead_id,project_id", {
-        count: "exact",
-      });
+      .select(
+        "id,message,created_at,read_at,lead_id,project_id,type,comment_id,space_id",
+        {
+          count: "exact",
+        },
+      );
     if (!all) query = query.is("read_at", null);
     const [notices, unread] = await Promise.all([
       query

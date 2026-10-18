@@ -1,3 +1,4 @@
+import { DiscussionBadge } from "../productivity/discussion-sync";
 import Link from "next/link";
 import {
   ProjectColumnMenu,
@@ -234,10 +235,10 @@ export function ProjectDirectory({
               },
               {
                 key: "favorites",
-                label: "Favorites",
+                label: "Flag",
                 options: [
                   { value: "", label: "All projects" },
-                  { value: "true", label: "Favorites only" },
+                  { value: "true", label: "Flagged projects" },
                 ],
               },
               {
@@ -312,7 +313,10 @@ export function ProjectDirectory({
                     </span>
                     <ArrowUpRight size={18} aria-hidden="true" />
                   </div>
-                  <h3>{project.name}</h3>
+                  <h3>
+                    <DiscussionBadge project={project.id} dot />
+                    {project.name}
+                  </h3>
                   <div className={styles.cardStatuses}>
                     <Status>{project.commercial_status}</Status>
                     {project.awaiting_handoff && (
@@ -374,7 +378,7 @@ export function ProjectDirectory({
             <h3>No matching projects</h3>
             <p>
               {options.favorites
-                ? "No favorites match these filters. Mark a project as Favorite in its workspace, or clear the Favorites filter."
+                ? "No flagged projects match these filters. Flag a project in its workspace, or clear the Flag filter."
                 : "Try another search or stage. Projects appear here after lead acceptance and assignment."}
             </p>
           </div>

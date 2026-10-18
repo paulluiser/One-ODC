@@ -139,3 +139,44 @@ it("locked historical spaces and items render their snapshots, escaped, with acc
   expect(html).not.toContain("Submit for Review</button>");
   expect(html).toContain("lucide-chevron-right");
 });
+it("BDM receipt capability reveals only the client add control and respects locked projects", () => {
+  const html = renderToStaticMarkup(
+    createElement(FinancialWorkspace, {
+      project: "project",
+      financials: { ...base, can_record_client_payments: true },
+      admin: false,
+    }),
+  );
+  expect(html).toContain("Add client payment");
+  expect(html).not.toContain("Add supplier payment");
+  expect(html).not.toContain("Correct or void");
+  expect(html).not.toContain("Raw management");
+  const locked = renderToStaticMarkup(
+    createElement(FinancialWorkspace, {
+      project: "project",
+      financials: {
+        ...base,
+        can_record_client_payments: true,
+        cancelled: true,
+      },
+      admin: false,
+    }),
+  );
+  expect(locked).not.toContain("Add client payment");
+});
+it("Ops supplier-only capability never exposes a client add control", () => {
+  const html = renderToStaticMarkup(
+    createElement(FinancialWorkspace, {
+      project: "project",
+      financials: {
+        ...base,
+        can_manage_client_payments: false,
+        can_manage_supplier_payments: true,
+        can_manage_payments: false,
+      },
+      admin: false,
+    }),
+  );
+  expect(html).toContain("Add supplier payment");
+  expect(html).not.toContain("Add client payment");
+});

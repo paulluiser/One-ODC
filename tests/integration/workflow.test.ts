@@ -2003,7 +2003,12 @@ describe("Phase 3C independent project finances", () => {
         () => financialValue(project, "Raw", "1", 1),
         "ACCESS_DENIED",
       );
-      await denied(() => payment(project), "ACCESS_DENIED");
+      await denied(
+        () => payment(project, paymentA, "supplier"),
+        "ACCESS_DENIED",
+      );
+      if (user === ids.designer)
+        await denied(() => payment(project), "ACCESS_DENIED");
     }
     await actor(ids.otherBdm);
     await denied(
@@ -2030,7 +2035,8 @@ describe("Phase 3C independent project finances", () => {
     );
     await actor(ids.ops);
     await financialValue(project, "Raw", "50", 1);
-    await payment(project);
+    await denied(() => payment(project), "ACCESS_DENIED");
+    await payment(project, paymentA, "supplier");
     const f = await finances(project);
     expect(f.raw?.amount).toBe("50.00");
     for (const key of [
@@ -2814,7 +2820,7 @@ describe("Phase 4A commercial closure and handoff", () => {
       (await db.query("select * from public.commercial_closures")).rows,
     ).toEqual([]);
     await financialValue(project, "Raw", "1");
-    await payment(project);
+    await payment(project, paymentA, "supplier");
     await actor(ids.otherBdm);
     await denied(() => handoff(project), "ACCESS_DENIED");
     expect(
@@ -4300,7 +4306,7 @@ describe("Microfeatures PostgreSQL permissions and integrity", () => {
     expect(
       (
         await db.query(
-          "select * from public.notifications where message='You were mentioned in a project discussion.'",
+          "select * from public.notifications where type='project_mention'",
         )
       ).rows,
     ).toHaveLength(1);
@@ -5117,5 +5123,410 @@ describe("Links-only quotation requests", () => {
         )
       ).rows,
     ).toHaveLength(1);
+  });
+});
+
+describe("Discussion unread receipts and mention delivery", () => {
+  it("counts messages per project/user, preserves unloaded messages and denies unauthorized receipts", async () => {
+    await submit();
+    const project = await accept(ids.designer, [ids.ops]);
+    const secondLead = "20000000-0000-4000-8000-000000000055";
+    await actor(ids.bdm);
+    await db.query("select public.save_lead($1,0,$2::jsonb,true,'')", [
+      secondLead,
+      JSON.stringify({
+        ...payload,
+        project_name: "Second residence",
+        address: "Other address",
+      }),
+    ]);
+    await actor(ids.lead);
+    const second = (
+      await db.query<{ id: string }>(
+        "select public.review_lead($1,1,'Accepted','',$2,'{}','{}',null) as id",
+        [secondLead, ids.designer],
+      )
+    ).rows[0].id;
+    const one = "70000000-0000-4000-8000-000000000051";
+    const two = "70000000-0000-4000-8000-000000000052";
+    const three = "70000000-0000-4000-8000-000000000053";
+    await actor(ids.designer);
+    for (const [id, p] of [
+      [one, project],
+      [two, project],
+      [three, second],
+    ])
+      await db.query(
+        "select public.save_project_comment($1,$2,null,0,'Discussion receipt test','{}','')",
+        [id, p],
+      );
+    expect(
+      (await db.query("select * from public.discussion_unread()")).rows,
+    ).toEqual([]);
+    await actor(ids.lead);
+    expect(
+      (
+        await db.query<{ unread: number }>(
+          "select * from public.discussion_unread() where project_id=$1",
+          [project],
+        )
+      ).rows[0].unread,
+    ).toBe(2);
+    await db.query("select public.read_project_comments($1,$2::uuid[])", [
+      project,
+      [one],
+    ]);
+    await db.query("select public.read_project_comments($1,$2::uuid[])", [
+      project,
+      [one],
+    ]);
+    expect(
+      (
+        await db.query<{ unread: number }>(
+          "select * from public.discussion_unread() where project_id=$1",
+          [project],
+        )
+      ).rows[0].unread,
+    ).toBe(1);
+    expect(
+      (
+        await db.query<{ unread: number }>(
+          "select * from public.discussion_unread() where project_id=$1",
+          [second],
+        )
+      ).rows[0].unread,
+    ).toBe(1);
+    await denied(
+      () =>
+        db.query("select public.read_project_comments($1,$2::uuid[])", [
+          project,
+          [three],
+        ]),
+      "ACCESS_DENIED",
+    );
+    for (const who of [ids.otherBdm, ids.ops, ids.stranger]) {
+      await actor(who);
+      expect(
+        (await db.query("select * from public.discussion_unread()")).rows,
+      ).toEqual([]);
+      expect(
+        (await db.query("select * from public.project_comment_reads")).rows,
+      ).toEqual([]);
+      await denied(
+        () =>
+          db.query("select public.read_project_comments($1,$2::uuid[])", [
+            project,
+            [one],
+          ]),
+        "ACCESS_DENIED",
+      );
+    }
+    await actor(ids.bdm);
+    expect(
+      (
+        await db.query<{ unread: number }>(
+          "select * from public.discussion_unread() where project_id=$1",
+          [project],
+        )
+      ).rows[0].unread,
+    ).toBe(2);
+  });
+  it("makes exact submission retries idempotent and creates one contextual mention per recipient/message", async () => {
+    await submit();
+    const project = await accept();
+    await actor(ids.designer);
+    const id = "70000000-0000-4000-8000-000000000054";
+    const save = () =>
+      db.query(
+        "select public.save_project_comment($1,$2,null,0,'Please review the kitchen',$3::uuid[],'')",
+        [id, project, [ids.lead, ids.lead, ids.designer]],
+      );
+    await save();
+    await save();
+    expect(
+      (
+        await db.query("select * from public.project_comments where id=$1", [
+          id,
+        ])
+      ).rows,
+    ).toHaveLength(1);
+    expect(
+      (
+        await db.query(
+          "select * from public.notifications where comment_id=$1",
+          [id],
+        )
+      ).rows,
+    ).toHaveLength(0);
+    await actor(ids.lead);
+    const notice = (
+      await db.query<{ type: string; message: string; comment_id: string }>(
+        "select * from public.notifications where comment_id=$1",
+        [id],
+      )
+    ).rows;
+    expect(notice).toHaveLength(1);
+    expect(notice[0].type).toBe("project_mention");
+    expect(notice[0].message).toContain("Database test residence");
+    expect(notice[0].message).toContain("Please review the kitchen");
+    await actor(ids.designer);
+    await db.query(
+      "select public.save_project_comment($1,$2,null,1,'Correction without mention','{}','Correction')",
+      [id, project],
+    );
+    await db.query(
+      "select public.save_project_comment($1,$2,null,2,'Mention restored',$3::uuid[],'Correction')",
+      [id, project, [ids.lead]],
+    );
+    await actor(ids.lead);
+    expect(
+      (
+        await db.query(
+          "select * from public.notifications where comment_id=$1",
+          [id],
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await actor(ids.otherBdm);
+    expect(
+      (
+        await db.query(
+          "select * from public.notifications where comment_id=$1",
+          [id],
+        )
+      ).rows,
+    ).toHaveLength(0);
+  });
+});
+
+describe("Discussion edits without reasons", () => {
+  it("allows author edits without a reason, preserves space context and audits the previous content", async () => {
+    const project = await spaceProject();
+    await createSpace(project);
+    await actor(ids.designer);
+    const comment = "70000000-0000-4000-8000-000000000065";
+    await db.query(
+      "select public.save_project_comment($1,$2,$3,0,'Kitchen finish selection','{}','')",
+      [comment, project, spaceId],
+    );
+    await db.query(
+      "select public.save_project_comment($1,$2,$3,1,'Kitchen finish confirmed','{}','')",
+      [comment, project, spaceId],
+    );
+    expect(
+      (
+        await db.query<{ space_id: string; body: string; version: number }>(
+          "select space_id,body,version from public.project_comments where id=$1",
+          [comment],
+        )
+      ).rows[0],
+    ).toEqual({
+      space_id: spaceId,
+      body: "Kitchen finish confirmed",
+      version: 2,
+    });
+    await denied(
+      () =>
+        db.query(
+          "select public.save_project_comment($1,$2,$3,1,'Stale edit','{}','')",
+          [comment, project, spaceId],
+        ),
+      "VERSION_CONFLICT",
+    );
+    await actor(ids.bdm);
+    await denied(
+      () =>
+        db.query(
+          "select public.save_project_comment($1,$2,$3,2,'Other author edit','{}','')",
+          [comment, project, spaceId],
+        ),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.admin);
+    const history = (
+      await db.query<{
+        previous_value: { body: string };
+        new_value: { body: string; reason: string };
+      }>(
+        "select previous_value,new_value from public.audit_events where entity_id=$1 and action='comment.corrected'",
+        [comment],
+      )
+    ).rows;
+    expect(history).toHaveLength(1);
+    expect(history[0].previous_value.body).toBe("Kitchen finish selection");
+    expect(history[0].new_value.body).toBe("Kitchen finish confirmed");
+    expect(history[0].new_value.reason).toBe("");
+  });
+});
+
+describe("BDM client payment recording", () => {
+  it("allows related BDM client receipts, retains audit/decimal totals and blocks supplier payments, edits, voids and foreign projects", async () => {
+    const project = await spaceProject();
+    await actor(ids.bdm);
+    let f = await finances(project);
+    expect(f.can_record_client_payments).toBe(true);
+    expect(f.can_manage_payments).toBe(false);
+    expect(f).not.toHaveProperty("raw");
+    await payment(project, paymentA, "client", 0, paidData("1234.56"), "");
+    f = await finances(project);
+    expect(f.client_payments.total).toBe("1234.56");
+    expect(f.client_payments.records[0].created_by).toBe(ids.bdm);
+    expect(f.client_payments.records[0].history[0].actor_id).toBe(ids.bdm);
+    await denied(() => payment(project, paymentB, "supplier"), "ACCESS_DENIED");
+    await denied(
+      () =>
+        payment(project, paymentA, "client", 1, paidData("10"), "Correction"),
+      "ACCESS_DENIED",
+    );
+    await denied(
+      () => payment(project, paymentA, "client", 1, {}, "Void reason", "void"),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.otherBdm);
+    await denied(() => payment(project, paymentB), "ACCESS_DENIED");
+    await denied(() => finances(project), "ACCESS_DENIED");
+    await actor(ids.designer);
+    expect((await finances(project)).can_record_client_payments).toBe(false);
+    await denied(() => payment(project, paymentB), "ACCESS_DENIED");
+    await actor(ids.lead);
+    await payment(
+      project,
+      paymentA,
+      "client",
+      1,
+      paidData("1250.25"),
+      "Verified corrected receipt",
+    );
+    expect((await finances(project)).client_payments.total).toBe("1250.25");
+  });
+  it("rejects future dates, stale versions, direct writes and receipts on Lost or cancelled projects", async () => {
+    const project = await spaceProject();
+    await actor(ids.bdm);
+    await denied(
+      () =>
+        payment(project, paymentA, "client", 0, {
+          ...paidData(),
+          payment_date: "2099-01-01",
+        }),
+      "INVALID_PAYMENT",
+    );
+    await denied(
+      () => payment(project, paymentA, "client", 1),
+      "ACCESS_DENIED",
+    );
+    await denied(
+      () =>
+        db.query(
+          "insert into public.project_payments(id,project_id,kind,payment_date,amount,method,created_by,updated_by) values($1,$2,'client',current_date,10,'Cash',$3,$3)",
+          [paymentA, project, ids.bdm],
+        ),
+      "permission denied",
+    );
+    await db.exec("reset role");
+    await db.query("update public.projects set is_cancelled=true where id=$1", [
+      project,
+    ]);
+    await actor(ids.bdm);
+    expect((await finances(project)).can_record_client_payments).toBe(false);
+    await denied(() => payment(project, paymentA), "ACCESS_DENIED");
+    await db.exec("reset role");
+    await db.query(
+      "update public.projects set is_cancelled=false,commercial_status='Lost',lost_at=now(),lost_reason='Client did not proceed' where id=$1",
+      [project],
+    );
+    await actor(ids.bdm);
+    expect((await finances(project)).can_record_client_payments).toBe(false);
+    await denied(() => payment(project, paymentA), "ACCESS_DENIED");
+  });
+});
+
+describe("Payment direction separation", () => {
+  it("Ops writes supplier payments against Raw, never client receipts; BDM writes client receipts against Sale", async () => {
+    const project = await spaceProject();
+    await actor(ids.bdm);
+    await financialValue(project, "Sale", "1000");
+    await payment(project, paymentA, "client", 0, paidData("250"), "");
+    await actor(ids.lead);
+    await financialValue(project, "Raw", "600");
+    await db.exec("reset role");
+    await db.query(
+      "update public.projects set commercial_status='Closed' where id=$1",
+      [project],
+    );
+    await actor(ids.ops);
+    let f = await finances(project);
+    expect(f.can_manage_payments).toBe(false);
+    expect(f.can_manage_client_payments).toBe(false);
+    expect(f.can_manage_supplier_payments).toBe(true);
+    expect(f.can_record_client_payments).toBe(false);
+    expect(f).not.toHaveProperty("sale");
+    expect(f.raw?.amount).toBe("600.00");
+    await denied(
+      () => payment(project, "90000000-0000-4000-8000-000000000001", "client"),
+      "ACCESS_DENIED",
+    );
+    await denied(
+      () =>
+        payment(project, paymentA, "client", 1, paidData("300"), "Correction"),
+      "ACCESS_DENIED",
+    );
+    await denied(
+      () => payment(project, paymentA, "client", 1, {}, "Void", "void"),
+      "ACCESS_DENIED",
+    );
+    await payment(project, paymentB, "supplier", 0, paidData("100"));
+    f = await finances(project);
+    expect(f.supplier_payments.total).toBe("100.00");
+    expect(f.supplier_payments.outstanding).toBe("500.00");
+    expect(f.client_payments.total).toBe("250.00");
+    await payment(
+      project,
+      paymentB,
+      "supplier",
+      1,
+      paidData("125.50"),
+      "Correct supplier receipt",
+    );
+    expect((await finances(project)).supplier_payments.outstanding).toBe(
+      "474.50",
+    );
+    await payment(
+      project,
+      paymentB,
+      "supplier",
+      2,
+      {},
+      "Duplicate supplier receipt",
+      "void",
+    );
+    expect((await finances(project)).supplier_payments.outstanding).toBe(
+      "600.00",
+    );
+    await actor(ids.bdm);
+    f = await finances(project);
+    expect(f.client_payments.outstanding).toBe("750.00");
+    expect(f.can_manage_supplier_payments).toBe(false);
+    await denied(
+      () =>
+        payment(project, "90000000-0000-4000-8000-000000000002", "supplier"),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.lead);
+    expect((await finances(project)).can_manage_client_payments).toBe(true);
+    await payment(
+      project,
+      paymentA,
+      "client",
+      1,
+      paidData("275"),
+      "Verified client receipt",
+    );
+    await actor(ids.admin);
+    expect((await finances(project)).can_manage_supplier_payments).toBe(true);
+    expect((await finances(project)).client_payments.outstanding).toBe(
+      "725.00",
+    );
+    await actor(ids.otherBdm);
+    await denied(() => payment(project), "ACCESS_DENIED");
   });
 });

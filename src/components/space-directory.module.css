@@ -1,0 +1,149 @@
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.heading h2 {
+  margin: 0;
+}
+.history {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand-link);
+  font-size: 12px;
+}
+.scroll {
+  overflow: auto;
+  border-radius: 10px;
+  max-width: 100%;
+}
+.table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+}
+.table th {
+  padding: 13px 16px;
+  text-align: left;
+  font-weight: 500;
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+.table th:nth-child(1) {
+  width: 24%;
+}
+.table th:nth-child(2) {
+  width: 24%;
+}
+.table th:nth-child(3) {
+  width: 17%;
+}
+.table th:nth-child(4) {
+  width: 17%;
+}
+.table th:nth-child(5) {
+  width: 18%;
+}
+.table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--brand-border);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.table tbody tr:hover {
+  background: var(--brand-selected);
+}
+.name {
+  display: block;
+  color: var(--brand-text);
+  font-weight: 500;
+  padding: 7px 0;
+}
+.designer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--brand-muted);
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-selected);
+  color: var(--brand-link);
+  font-size: 11px;
+}
+.date {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--brand-muted);
+}
+.date svg {
+  flex-shrink: 0;
+}
+.table time {
+  color: var(--brand-muted);
+  font-size: 11px;
+}
+.mobile {
+  display: none;
+}
+.close {
+  color: var(--brand-link);
+  font-size: 12px;
+}
+.scroll:focus-visible,
+.name:focus-visible,
+.mobileRow:focus-visible,
+.history:focus-visible {
+  outline: 2px solid var(--brand-link);
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .scroll {
+    display: none;
+  }
+  .mobile {
+    display: grid;
+  }
+  .mobileRow {
+    display: grid;
+    gap: 10px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--brand-border);
+    color: var(--brand-text);
+    text-decoration: none;
+  }
+  .mobileRow > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .mobileRow strong {
+    overflow-wrap: anywhere;
+  }
+  .mobileRow dl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 0;
+    font-size: 11px;
+  }
+  .mobileRow dt {
+    color: var(--brand-muted);
+  }
+  .mobileRow dd {
+    margin: 4px 0 0;
+  }
+}

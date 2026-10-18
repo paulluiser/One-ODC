@@ -28,6 +28,23 @@ export async function GET(request: NextRequest) {
   try {
     if (action === "search")
       return response({ error: "Global search is no longer available." }, 404);
+    if (action === "discussionUnread") {
+      const [counts, notifications] = await Promise.all([
+        client.rpc("discussion_unread"),
+        client
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .is("read_at", null),
+      ]);
+      const records = read(counts) as { project_id: string; unread: number }[];
+      read(notifications);
+      return response({
+        projects: Object.fromEntries(
+          records.map((r) => [r.project_id, Number(r.unread)]),
+        ),
+        notifications: notifications.count ?? 0,
+      });
+    }
     if (action === "shortcuts") {
       const records = read(
         await client
@@ -89,7 +106,7 @@ export async function GET(request: NextRequest) {
         client
           .from("project_comments")
           .select(
-            "id,space_id,author_id,body,version,created_at,updated_at,comment_mentions(recipient_id)",
+            "id,space_id,author_id,body,version,created_at,updated_at,space:spaces(name),comment_mentions(recipient_id)",
           )
           .eq("project_id", project)
           .order("created_at", { ascending: false })
@@ -104,6 +121,24 @@ export async function GET(request: NextRequest) {
           .limit(200),
       ]);
       const records = read(comments) ?? [];
+      const message = params.get("message");
+      if (
+        message &&
+        uuid.safeParse(message).success &&
+        !records.slice(0, 20).some((c) => c.id === message)
+      ) {
+        const target = read(
+          await client
+            .from("project_comments")
+            .select(
+              "id,space_id,author_id,body,version,created_at,updated_at,space:spaces(name),comment_mentions(recipient_id)",
+            )
+            .eq("project_id", project)
+            .eq("id", message)
+            .maybeSingle(),
+        );
+        if (target) records.unshift(target);
+      }
       const team = read(people) as { id: string; display_name: string }[];
       const members = manager
         ? (read(await client.rpc("project_team", { p_project: project })) as {
@@ -162,6 +197,11 @@ export async function GET(request: NextRequest) {
 }
 const mutation = z.discriminatedUnion("action", [
   z.object({
+    action: z.literal("readDiscussion"),
+    project: uuid,
+    comments: z.array(uuid).max(100),
+  }),
+  z.object({
     action: z.literal("remember"),
     project: uuid,
     favorite: z.boolean().nullable(),
@@ -218,7 +258,12 @@ export async function POST(request: NextRequest) {
     return response({ error: recoveryMessage("VALIDATION_ERROR") }, 400);
   const p = parsed.data;
   let result;
-  if (p.action === "remember")
+  if (p.action === "readDiscussion")
+    result = await client.rpc("read_project_comments", {
+      p_project: p.project,
+      p_comments: p.comments,
+    });
+  else if (p.action === "remember")
     result = await client.rpc("remember_project", {
       p_project: p.project,
       p_favorite: p.favorite,

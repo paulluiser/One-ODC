@@ -5,9 +5,13 @@ export async function productivityRequest<T>(
 ): Promise<T> {
   const post =
     !!params.action &&
-    ["remember", "saveTemplate", "applyTemplate", "comment"].includes(
-      String(params.action),
-    );
+    [
+      "remember",
+      "saveTemplate",
+      "applyTemplate",
+      "comment",
+      "readDiscussion",
+    ].includes(String(params.action));
   const url =
     "/api/productivity" +
     (post

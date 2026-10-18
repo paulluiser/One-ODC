@@ -1,5 +1,6 @@
 "use client";
 /* eslint jsx-a11y/no-noninteractive-tabindex: ["error", {"roles": ["region"]}] -- The labeled scroll region needs keyboard scrolling. */
+import { DiscussionBadge } from "../productivity/discussion-sync";
 import Link from "next/link";
 import {
   useEffect,
@@ -129,11 +130,14 @@ function Value({
   if (column === "project")
     return (
       <span className={styles.project}>
-        <FullText
-          text={row.name}
-          tooltipId={`project-${row.id}-tooltip`}
-          tooltipText={`${row.name} · Lead Designer: ${row.designer} · Operations: ${row.operations}`}
-        />
+        <span className={styles.projectName}>
+          <DiscussionBadge project={row.id} dot />
+          <FullText
+            text={row.name}
+            tooltipId={`project-${row.id}-tooltip`}
+            tooltipText={`${row.name} · Lead Designer: ${row.designer} · Operations: ${row.operations}`}
+          />
+        </span>
         <small title={row.reference}>{row.reference}</small>
       </span>
     );
@@ -270,7 +274,10 @@ export function ProjectDirectoryList({
           >
             <div className={styles.mobileHeading}>
               <span className={styles.project}>
-                <span>{row.name}</span>
+                <span className={styles.projectName}>
+                  <DiscussionBadge project={row.id} dot />
+                  <span>{row.name}</span>
+                </span>
                 <small title={row.reference}>{row.reference}</small>
               </span>
               <ChevronRight size={18} aria-hidden="true" />

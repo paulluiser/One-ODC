@@ -36,7 +36,11 @@ export async function financeAction(
   const { client } = await requireRole(
     intent === "value" && kind === "Sale"
       ? ["bdm", "system_administrator"]
-      : ["lead_designer", "operations_admin", "system_administrator"],
+      : kind === "client" && intent === "save" && v.version === 0
+        ? ["bdm", "lead_designer", "system_administrator"]
+        : kind === "client"
+          ? ["lead_designer", "system_administrator"]
+          : ["lead_designer", "operations_admin", "system_administrator"],
   );
   let endpoint: string, args: Record<string, unknown>;
   if (intent === "value") {

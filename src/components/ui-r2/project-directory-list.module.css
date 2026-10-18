@@ -346,3 +346,9 @@ a:focus-visible .tooltip {
     padding: 14px 16px;
   }
 }
+
+.projectName {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
