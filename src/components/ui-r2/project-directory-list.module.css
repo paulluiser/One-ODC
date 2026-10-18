@@ -14,17 +14,16 @@
   border-collapse: separate;
   border-spacing: 0;
   color: var(--r-text);
-  font-size: 12px;
+  font-size: 13px;
 }
 .table th {
   position: sticky;
   top: 0;
   z-index: 3;
-  height: 42px;
-  padding: 0 10px;
+  padding: 14px 16px;
   background: var(--r-surface);
   color: var(--r-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   text-align: left;
   white-space: nowrap;
@@ -34,17 +33,17 @@
   width: 220px;
 }
 .table th[data-column="stage"] {
-  width: 132px;
+  width: 152px;
 }
 .table th[data-column="operations"] {
   width: 142px;
 }
 .table th[data-column="progress"] {
-  width: 112px;
+  width: 132px;
 }
 .table th[data-column="deadline"],
 .table th[data-column="handoff"] {
-  width: 108px;
+  width: 128px;
 }
 .table th[data-column="designer"] {
   width: 128px;
@@ -53,7 +52,7 @@
   width: 106px;
 }
 .table th:last-child {
-  width: 36px;
+  width: 48px;
 }
 .table th a {
   display: flex;
@@ -63,8 +62,7 @@
 }
 .table td {
   padding: 0;
-  height: 56px;
-  vertical-align: middle;
+  vertical-align: top;
   border: 0;
   border-bottom: 1px solid var(--r-line);
 }
@@ -78,9 +76,7 @@
 .table td > a {
   display: flex;
   align-items: center;
-  min-height: 56px;
-  height: 100%;
-  padding: 6px 10px;
+  padding: 14px 16px;
   color: var(--r-text);
   text-decoration: none;
 }
