@@ -29,6 +29,9 @@ test("3E Notes/links persist through real conversion; optimized PDF and three in
   test.setTimeout(240000);
   await login(page, "BDM");
   await page.goto("/dashboard/leads/new");
+  await page
+    .getByLabel("Lead Designer", { exact: false })
+    .selectOption(actors.find((actor) => actor.actor === "LEAD")!.id);
   await openWorkspacePanels(page);
   const name = `3E browser ${randomUUID()}`;
   await page

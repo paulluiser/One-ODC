@@ -20,6 +20,7 @@ const ids = {
 };
 const leadId = "20000000-0000-4000-8000-000000000001";
 const payload = {
+  assigned_lead_designer_id: ids.lead,
   project_name: "Database test residence",
   address: "Test address",
   brand: "Stosa",
@@ -40,6 +41,30 @@ async function submit(id = leadId) {
     id,
     JSON.stringify(payload),
   ]);
+}
+// Test setup only: represent a file uploaded before requests became links-only.
+// No production endpoint or RLS bypass is granted to application users.
+async function legacyLeadFile(ready = true) {
+  await db.exec("reset role");
+  const a = (
+    await db.query<{ id: string }>(
+      "insert into public.attachments(lead_id,classification,created_by) values($1,'general',$2) returning id",
+      [leadId, ids.bdm],
+    )
+  ).rows[0].id;
+  const v = (
+    await db.query<{ id: string; attachment_id: string; object_path: string }>(
+      "insert into public.attachment_versions(attachment_id,object_path,original_name,mime_type,expected_size,created_by,ready_at,actual_size) values($1::uuid,'leads/'||$2||'/attachments/'||($1::uuid)::text||'/versions/'||gen_random_uuid(),'legacy.txt','text/plain',10,$3,case when $4 then now() else null end,case when $4 then 10 else null end) returning id,attachment_id,object_path",
+      [a, leadId, ids.bdm, ready],
+    )
+  ).rows[0];
+  if (ready)
+    await db.query(
+      "insert into storage.objects(bucket_id,name,metadata) values('one-odc-attachments',$1,'{\"size\":10}')",
+      [v.object_path],
+    );
+  await actor(ids.bdm);
+  return v;
 }
 async function accept(primary = ids.designer, ops: string[] = []) {
   await actor(ids.lead);
@@ -445,15 +470,11 @@ describe("Phase 1 PostgreSQL integration", () => {
     ).rejects.toThrow("STORAGE_SIZE_LIMIT");
   });
   it("only accepts reserved object paths and verifies size before completion", async () => {
-    await actor(ids.bdm);
-    await db.query("select public.save_lead($1,0,$2,false,'')", [
-      leadId,
-      payload,
-    ]);
+    const project = await spaceProject();
     const v = (
       await db.query<{ v: { id: string; object_path: string } }>(
-        "select public.reserve_attachment(null,$1,null,'general','plan.pdf','application/pdf',10) as v",
-        [leadId],
+        "select public.reserve_attachment(null,null,$1,'general','plan.pdf','application/pdf',10) as v",
+        [project],
       )
     ).rows[0].v;
     await db.query(
@@ -476,15 +497,11 @@ describe("Phase 1 PostgreSQL integration", () => {
     ).rejects.toThrow(/row-level security/);
   });
   it("cannot mark a missing storage object as uploaded", async () => {
-    await actor(ids.bdm);
-    await db.query("select public.save_lead($1,0,$2,false,'')", [
-      leadId,
-      payload,
-    ]);
+    const project = await spaceProject();
     const v = (
       await db.query<{ v: { id: string } }>(
-        "select public.reserve_attachment(null,$1,null,'general','plan.pdf','application/pdf',10) as v",
-        [leadId],
+        "select public.reserve_attachment(null,null,$1,'general','plan.pdf','application/pdf',10) as v",
+        [project],
       )
     ).rows[0].v;
     await expect(
@@ -492,16 +509,12 @@ describe("Phase 1 PostgreSQL integration", () => {
     ).rejects.toThrow("STORAGE_OBJECT_NOT_VERIFIED");
   });
   it("replacement reserves a new path and archive/restore retain bytes and history", async () => {
-    await actor(ids.bdm);
-    await db.query("select public.save_lead($1,0,$2,false,'')", [
-      leadId,
-      payload,
-    ]);
+    const project = await spaceProject();
     type V = { id: string; attachment_id: string; object_path: string };
     const v = (
       await db.query<{ v: V }>(
-        "select public.reserve_attachment(null,$1,null,'general','plan.pdf','application/pdf',10) as v",
-        [leadId],
+        "select public.reserve_attachment(null,null,$1,'general','plan.pdf','application/pdf',10) as v",
+        [project],
       )
     ).rows[0].v;
     await db.query(
@@ -574,34 +587,26 @@ describe("Phase 1 PostgreSQL integration", () => {
       0,
     );
   });
-  it("lead attachment limit serializes three reservations", async () => {
-    await actor(ids.bdm);
-    await db.query("select public.save_lead($1,0,$2,false,'')", [
-      leadId,
-      payload,
-    ]);
+  it("project attachment limit serializes three reservations", async () => {
+    const project = await spaceProject();
     for (let i = 0; i < 3; i++)
       await db.query(
-        "select public.reserve_attachment(null,$1,null,'general','plan.pdf','application/pdf',10)",
-        [leadId],
+        "select public.reserve_attachment(null,null,$1,'general','plan.pdf','application/pdf',10)",
+        [project],
       );
     await expect(
       db.query(
-        "select public.reserve_attachment(null,$1,null,'general','sixth.pdf','application/pdf',10)",
-        [leadId],
+        "select public.reserve_attachment(null,null,$1,'general','sixth.pdf','application/pdf',10)",
+        [project],
       ),
     ).rejects.toThrow("ATTACHMENT_COUNT_LIMIT");
   });
   it("completion rejects provider-reported size differing from the reservation", async () => {
-    await actor(ids.bdm);
-    await db.query("select public.save_lead($1,0,$2,false,'')", [
-      leadId,
-      payload,
-    ]);
+    const project = await spaceProject();
     const v = (
       await db.query<{ v: { id: string; object_path: string } }>(
-        "select public.reserve_attachment(null,$1,null,'general','plan.pdf','application/pdf',10) as v",
-        [leadId],
+        "select public.reserve_attachment(null,null,$1,'general','plan.pdf','application/pdf',10) as v",
+        [project],
       )
     ).rows[0].v;
     await db.query(
@@ -2388,12 +2393,7 @@ describe("Phase 3E resource amendments", () => {
           [replacement, lead, project],
         )
       ).rows[0].v;
-    const inherited = await reserve(leadId, null);
-    await db.query(
-      "insert into storage.objects(bucket_id,name,metadata) values('one-odc-attachments',$1,'{\"size\":10}')",
-      [inherited.object_path],
-    );
-    await db.query("select public.complete_attachment($1)", [inherited.id]);
+    const inherited = await legacyLeadFile();
     await db.query("select public.save_lead($1,1,$2,true,'')", [
       leadId,
       payload,
@@ -4661,5 +4661,461 @@ describe("Revised commercial workflow", () => {
         ]),
       "PROJECT_LOST_READ_ONLY",
     );
+  });
+});
+
+describe("Lead Designer routing and isolation", () => {
+  async function secondLead() {
+    await db.exec("reset role");
+    await db.query(
+      "update public.profiles set role='lead_designer' where id=$1",
+      [ids.stranger],
+    );
+  }
+  it("requires a selected active Lead Designer on submission but permits unassigned drafts", async () => {
+    await actor(ids.bdm);
+    await denied(
+      () =>
+        db.query("select public.save_lead($1,0,$2,true,'')", [
+          leadId,
+          { ...payload, assigned_lead_designer_id: null },
+        ]),
+      "INVALID_LEAD_DESIGNER",
+    );
+    await denied(
+      () =>
+        db.query("select public.save_lead($1,0,$2,true,'')", [
+          leadId,
+          { ...payload, assigned_lead_designer_id: ids.ops },
+        ]),
+      "INVALID_LEAD_DESIGNER",
+    );
+    await db.query("select public.save_lead($1,0,$2,false,'')", [
+      leadId,
+      { ...payload, assigned_lead_designer_id: null },
+    ]);
+    await db.exec("reset role");
+    await db.query("update public.profiles set active=false where id=$1", [
+      ids.lead,
+    ]);
+    await actor(ids.bdm);
+    await denied(
+      () =>
+        db.query("select public.save_lead($1,1,$2,true,'')", [leadId, payload]),
+      "INVALID_LEAD_DESIGNER",
+    );
+  });
+  it("lists active Lead Designers only without granting BDM profile-directory access", async () => {
+    await secondLead();
+    await actor(ids.bdm);
+    const people = await db.query<{ id: string; role: string }>(
+      "select * from public.list_lead_designers()",
+    );
+    expect(people.rows.map((x) => x.id).sort()).toEqual(
+      [ids.lead, ids.stranger].sort(),
+    );
+    expect(people.rows.every((x) => x.role === "lead_designer")).toBe(true);
+    await actor(ids.ops);
+    await denied(
+      () => db.query("select * from public.list_lead_designers()"),
+      "ACCESS_DENIED",
+    );
+  });
+  it("targets notifications and snapshots, and blocks another Lead Designer from lead/history/files/review/analytics", async () => {
+    await secondLead();
+    await submit();
+    await db.exec("reset role");
+    expect(
+      (
+        await db.query<{ recipient_id: string }>(
+          "select recipient_id from public.notifications where lead_id=$1",
+          [leadId],
+        )
+      ).rows,
+    ).toEqual([{ recipient_id: ids.lead }]);
+    expect(
+      (
+        await db.query<{ snapshot: { assigned_lead_designer_id: string } }>(
+          "select snapshot from public.lead_submissions where lead_id=$1",
+          [leadId],
+        )
+      ).rows[0].snapshot.assigned_lead_designer_id,
+    ).toBe(ids.lead);
+    await actor(ids.stranger);
+    for (const table of ["leads", "lead_submissions", "lead_reviews"])
+      expect(
+        (await db.query(`select * from public.${table}`)).rows,
+      ).toHaveLength(0);
+    await denied(
+      () =>
+        db.query(
+          "select public.review_lead($1,1,'Rejected','Not my request')",
+          [leadId],
+        ),
+      "ACCESS_DENIED",
+    );
+    await denied(
+      () =>
+        db.query(
+          "select public.reserve_attachment(null,$1,null,'general','test.txt','text/plain',10)",
+          [leadId],
+        ),
+      "ACCESS_DENIED",
+    );
+    const report = await analytics();
+    expect(JSON.stringify(report)).not.toContain(payload.project_name);
+    await actor(ids.lead);
+    expect(
+      (await db.query("select * from public.leads where id=$1", [leadId])).rows,
+    ).toHaveLength(1);
+  });
+  it("denies another Lead Designer direct Storage reads and download authorization", async () => {
+    await secondLead();
+    await actor(ids.bdm);
+    await db.query("select public.save_lead($1,0,$2,false,'')", [
+      leadId,
+      payload,
+    ]);
+    const v = await legacyLeadFile();
+    await db.query("select public.save_lead($1,1,$2,true,'')", [
+      leadId,
+      payload,
+    ]);
+    await actor(ids.stranger);
+    expect(
+      (
+        await db.query("select id from storage.objects where name=$1", [
+          v.object_path,
+        ])
+      ).rows,
+    ).toHaveLength(0);
+    expect(
+      (
+        await db.query(
+          "select id from public.attachment_versions where id=$1",
+          [v.id],
+        )
+      ).rows,
+    ).toHaveLength(0);
+    await denied(
+      () => db.query("select public.record_attachment_download($1)", [v.id]),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.lead);
+    expect(
+      (
+        await db.query("select id from storage.objects where name=$1", [
+          v.object_path,
+        ])
+      ).rows,
+    ).toHaveLength(1);
+    await db.query("select public.record_attachment_download($1)", [v.id]);
+  });
+  it("preserves recipient through clarification, resubmission and exactly-once acceptance", async () => {
+    await submit();
+    await actor(ids.lead);
+    await db.query(
+      "select public.review_lead($1,1,'Returned for Clarification','Add details')",
+      [leadId],
+    );
+    await actor(ids.bdm);
+    await db.query("select public.save_lead($1,2,$2,true,'')", [
+      leadId,
+      payload,
+    ]);
+    await actor(ids.admin);
+    const args = [leadId, ids.designer, ids.lead];
+    const query =
+      "select public.review_lead($1,3,'Accepted','Admin review',$2,'{}','{}',$3) id";
+    const first = await db.query<{ id: string }>(query, args);
+    expect((await db.query<{ id: string }>(query, args)).rows[0].id).toBe(
+      first.rows[0].id,
+    );
+    expect(
+      (
+        await db.query<{ lead_designer_id: string }>(
+          "select lead_designer_id from public.projects",
+        )
+      ).rows,
+    ).toEqual([{ lead_designer_id: ids.lead }]);
+  });
+  it("rejects incompatible/inactive Lead Designers and preserves Lost-project read-only enforcement", async () => {
+    await secondLead();
+    await submit();
+    const project = await accept();
+    await actor(ids.lead);
+    await denied(
+      () =>
+        db.query(
+          "select public.assign_project_lead_designer($1,$2,$3,'Invalid role')",
+          [project, ids.lead, ids.ops],
+        ),
+      "INVALID_LEAD_DESIGNER",
+    );
+    await db.exec("reset role");
+    await db.query("update public.profiles set active=false where id=$1", [
+      ids.stranger,
+    ]);
+    await actor(ids.lead);
+    await denied(
+      () =>
+        db.query(
+          "select public.assign_project_lead_designer($1,$2,$3,'Inactive')",
+          [project, ids.lead, ids.stranger],
+        ),
+      "INVALID_LEAD_DESIGNER",
+    );
+    await actor(ids.bdm);
+    await db.query(
+      "select public.transition_commercial_stage($1,'For Quotation','Lost','Client declined',true)",
+      [project],
+    );
+    await actor(ids.lead);
+    await denied(
+      () =>
+        db.query(
+          "select public.assign_project_lead_designer($1,$2,$3,'Must not edit Lost project')",
+          [project, ids.lead, ids.stranger],
+        ),
+      "PROJECT_LOST_READ_ONLY",
+    );
+  });
+  it("admin cannot silently change recipient while accepting", async () => {
+    await secondLead();
+    await submit();
+    await actor(ids.admin);
+    await denied(
+      () =>
+        db.query(
+          "select public.review_lead($1,1,'Accepted','',$2,'{}','{}',$3)",
+          [leadId, ids.designer, ids.stranger],
+        ),
+      "INVALID_LEAD_DESIGNER",
+    );
+  });
+  it("recovers legacy unassigned requests with an audited, versioned administrator assignment", async () => {
+    await submit();
+    await db.exec("reset role");
+    await db.query(
+      "update public.leads set assigned_lead_designer_id=null where id=$1",
+      [leadId],
+    );
+    await actor(ids.lead);
+    expect((await db.query("select id from public.leads")).rows).toHaveLength(
+      0,
+    );
+    await actor(ids.admin);
+    await denied(
+      () =>
+        db.query("select public.route_lead($1,1,$2,'')", [leadId, ids.lead]),
+      "REASON_REQUIRED",
+    );
+    await db.query("select public.route_lead($1,1,$2,'Route legacy request')", [
+      leadId,
+      ids.lead,
+    ]);
+    await denied(
+      () =>
+        db.query("select public.route_lead($1,1,$2,'Stale tab')", [
+          leadId,
+          ids.lead,
+        ]),
+      "STALE_VERSION",
+    );
+    await actor(ids.lead);
+    expect(
+      (await db.query<{ version: number }>("select version from public.leads"))
+        .rows[0].version,
+    ).toBe(2);
+    await db.exec("reset role");
+    expect(
+      (
+        await db.query(
+          "select id from public.audit_events where action='lead.recipient_changed'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+  });
+  it("transfers project oversight atomically with one Lead Designer, audit/history, notifications and inherited lead visibility", async () => {
+    await secondLead();
+    await submit();
+    const project = await accept();
+    await actor(ids.otherBdm);
+    await denied(
+      () =>
+        db.query(
+          "select public.assign_project_lead_designer($1,$2,$3,'Denied')",
+          [project, ids.lead, ids.stranger],
+        ),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.stranger);
+    await denied(
+      () =>
+        db.query(
+          "select public.assign_project_lead_designer($1,$2,$3,'Denied')",
+          [project, ids.lead, ids.stranger],
+        ),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.lead);
+    await denied(
+      () =>
+        db.query("select public.assign_project_lead_designer($1,$2,$3,'')", [
+          project,
+          ids.lead,
+          ids.stranger,
+        ]),
+      "REASON_REQUIRED",
+    );
+    await db.query(
+      "select public.assign_project_lead_designer($1,$2,$3,'Team expansion')",
+      [project, ids.lead, ids.stranger],
+    );
+    expect(
+      (await db.query("select id from public.projects where id=$1", [project]))
+        .rows,
+    ).toHaveLength(0);
+    expect(
+      (await db.query("select id from public.leads where id=$1", [leadId]))
+        .rows,
+    ).toHaveLength(0);
+    await denied(
+      () =>
+        db.query("select public.review_lead($1,1,'Accepted','',$2)", [
+          leadId,
+          ids.designer,
+        ]),
+      "ACCESS_DENIED",
+    );
+    await actor(ids.stranger);
+    expect(
+      (await db.query("select id from public.projects where id=$1", [project]))
+        .rows,
+    ).toHaveLength(1);
+    expect(
+      (await db.query("select id from public.leads where id=$1", [leadId]))
+        .rows,
+    ).toHaveLength(1);
+    await denied(
+      () =>
+        db.query(
+          "select public.assign_project_lead_designer($1,$2,$3,'Stale assignment')",
+          [project, ids.lead, ids.lead],
+        ),
+      "STALE_VERSION",
+    );
+    await db.exec("reset role");
+    expect(
+      (
+        await db.query<{ user_id: string }>(
+          "select user_id from public.project_memberships where project_id=$1 and membership_role='lead_designer'",
+          [project],
+        )
+      ).rows,
+    ).toEqual([{ user_id: ids.stranger }]);
+    expect(
+      (
+        await db.query(
+          "select id from public.audit_events where action='project.lead_designer_changed'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+    expect(
+      (
+        await db.query(
+          "select id from public.project_assignment_events where project_id=$1",
+          [project],
+        )
+      ).rows,
+    ).toHaveLength(2);
+    await actor(ids.ops);
+    expect((await db.query("select id from public.leads")).rows).toHaveLength(
+      0,
+    );
+  });
+});
+
+describe("Links-only quotation requests", () => {
+  it("blocks direct reservations and replacement, keeps legacy download/archive, and preserves links through acceptance", async () => {
+    await actor(ids.bdm);
+    const links = [
+      { id: spaceId, url: "https://example.com/design-brief" },
+      { id: secondSpace, url: "https://example.com/photos" },
+    ];
+    const request = { ...payload, resource_links: links };
+    await db.query("select public.save_lead($1,0,$2,false,'')", [
+      leadId,
+      request,
+    ]);
+    const legacy = await legacyLeadFile();
+    const pending = await legacyLeadFile(false);
+    await denied(
+      () =>
+        db.query(
+          "select public.reserve_attachment(null,$1,null,'general','new.pdf','application/pdf',10)",
+          [leadId],
+        ),
+      "LEAD_LINKS_ONLY",
+    );
+    await denied(
+      () =>
+        db.query(
+          "select public.reserve_attachment($1,null,null,'general','replacement.pdf','application/pdf',10)",
+          [legacy.attachment_id],
+        ),
+      "LEAD_LINKS_ONLY",
+    );
+    await denied(
+      () =>
+        db.query(
+          "insert into storage.objects(bucket_id,name,metadata) values('one-odc-attachments',$1,'{\"size\":10}')",
+          [pending.object_path],
+        ),
+      "row-level security",
+    );
+    await db.query("select public.record_attachment_download($1)", [legacy.id]);
+    expect(
+      (
+        await db.query("select id from storage.objects where name=$1", [
+          legacy.object_path,
+        ])
+      ).rows,
+    ).toHaveLength(1);
+    await db.query(
+      "select public.archive_attachment($1,true,'Archive unfinished legacy upload; use resource links')",
+      [pending.attachment_id],
+    );
+    await db.query("select public.save_lead($1,1,$2,true,'')", [
+      leadId,
+      request,
+    ]);
+    await actor(ids.lead);
+    const project = (
+      await db.query<{ id: string }>(
+        "select public.review_lead($1,2,'Accepted','',$2) id",
+        [leadId, ids.designer],
+      )
+    ).rows[0].id;
+    expect(
+      (
+        await db.query<{ resource_links: unknown }>(
+          "select resource_links from public.leads where id=$1",
+          [leadId],
+        )
+      ).rows[0].resource_links,
+    ).toEqual(links);
+    await db.query(
+      "select public.reserve_attachment(null,null,$1,'design','project.pdf','application/pdf',10)",
+      [project],
+    );
+    expect(
+      (
+        await db.query(
+          "select id from public.attachment_versions where id=$1",
+          [legacy.id],
+        )
+      ).rows,
+    ).toHaveLength(1);
   });
 });

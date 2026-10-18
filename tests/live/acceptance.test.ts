@@ -54,6 +54,7 @@ it("2D real JWT security matrix, cross-project bindings, duplicate prevention, a
       p_id: id,
       p_expected_version: 0,
       p_payload: {
+        assigned_lead_designer_id: ids.LEAD,
         project_name: `2D acceptance ${id}`,
         address: `Synthetic security ${id}`,
         brand: "Stosa",

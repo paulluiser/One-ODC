@@ -45,6 +45,7 @@ async function save(id: string, version: number, submit: boolean, suffix = "") {
     p_id: id,
     p_expected_version: version,
     p_payload: {
+      assigned_lead_designer_id: identities.LEAD,
       ...payload,
       project_name: payload.project_name + suffix,
       address: payload.address + suffix,
@@ -144,7 +145,7 @@ describe("authorized live One ODC staging", () => {
     const denied = await clients.OPS.rpc("save_lead", {
       p_id: id,
       p_expected_version: 1,
-      p_payload: payload,
+      p_payload: { ...payload, assigned_lead_designer_id: identities.LEAD },
       p_submit: true,
       p_duplicate_reason: "",
     });
@@ -385,6 +386,7 @@ describe("authorized live One ODC staging", () => {
       p_id: id,
       p_expected_version: 0,
       p_payload: {
+        assigned_lead_designer_id: identities.LEAD,
         ...payload,
         project_name: payload.project_name + " other BDM access",
         address: "Other BDM staging address",
@@ -414,7 +416,10 @@ describe("authorized live One ODC staging", () => {
           await clients.OTHER_BDM.rpc("save_lead", {
             p_id: id,
             p_expected_version: 1,
-            p_payload: payload,
+            p_payload: {
+              ...payload,
+              assigned_lead_designer_id: identities.LEAD,
+            },
             p_submit: false,
             p_duplicate_reason: "",
           })
@@ -446,6 +451,7 @@ describe("authorized live One ODC staging", () => {
       p_id: id,
       p_expected_version: 1,
       p_payload: {
+        assigned_lead_designer_id: identities.LEAD,
         ...payload,
         project_name: payload.project_name + " storage",
         address: payload.address + " storage",

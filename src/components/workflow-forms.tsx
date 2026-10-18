@@ -1,32 +1,29 @@
 "use client";
 import { OperationSummary } from "./ui-r4/primitives";
-import { Disclosure } from "./ui-r2/primitives";
 import r2 from "./ui-r2/ui-r2.module.css";
 import { OperationFeedback } from "./operation-feedback";
 import { FormPending } from "./form-pending";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   LeadFields,
   ReviewFields,
   AssignmentFields,
-  AttachmentList,
   type LeadValues,
 } from "./lead-fields";
 import {
   emptyLead,
-  attachmentSchema,
   roleLabels,
   type FormState,
   type Lead,
   type Person,
   type Profile,
   type Member,
-  type Attachment,
 } from "@/lib/phase1";
 import { roles } from "@/lib/domain";
 import {
+  changeLeadDesigner,
   saveLead,
   reviewLead,
   assignPersonnel,
@@ -35,6 +32,18 @@ import {
 } from "@/app/dashboard/actions";
 import { ResourceLinks } from "./resource-links";
 const initial: FormState = { error: null };
+// Confirm a successful save before navigating, so the existing unsaved-change guard
+// cannot cancel a server-action redirect after ownership or form contents changed.
+function useSavedNavigation(state: FormState) {
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!state.redirectTo || state.error) return;
+    form.current?.dispatchEvent(new Event("one-odc:saved", { bubbles: true }));
+    window.location.assign(state.redirectTo);
+  }, [state]);
+  return form;
+}
+
 export function ActionStatus({ state }: { state: FormState }) {
   return <OperationFeedback error={state.error} success={state.success} />;
 }
@@ -49,17 +58,18 @@ function Pending({ pending, label }: { pending: boolean; label: string }) {
 export function LeadForm({
   id,
   bdmName,
+  leadDesigners = [],
   lead,
-  resourcesEnabled = false,
   rebuild = false,
 }: {
   id: string;
   bdmName: string;
+  leadDesigners?: Person[];
   lead?: Lead;
-  resourcesEnabled?: boolean;
   rebuild?: boolean;
 }) {
   const [state, action, pending] = useActionState(saveLead, initial);
+  const formRef = useSavedNavigation(state);
   const base = lead ?? emptyLead;
   const [values, setValues] = useState<LeadValues>({
     ...base,
@@ -67,20 +77,59 @@ export function LeadForm({
       base.cabinetry_count === null ? "" : String(base.cabinetry_count),
   });
   const [links, setLinks] = useState(base.resource_links ?? []);
-  const [files, setFiles] = useState<Attachment[]>(base.attachment_metadata);
-  const [fileError, setFileError] = useState("");
   const [reason, setReason] = useState("");
   useEffect(() => {
     const first = Object.keys(state.fields ?? {})[0];
     if (first) document.getElementById(first)?.focus();
   }, [state]);
   const fields = (
-    <LeadFields
-      values={values}
-      errors={state.fields}
-      disabled={pending}
-      onValue={(k, v) => setValues({ ...values, [k]: v })}
-    />
+    <>
+      <LeadFields
+        values={values}
+        errors={state.fields}
+        disabled={pending}
+        onValue={(k, v) => setValues({ ...values, [k]: v })}
+      />
+      <div className="live-field">
+        <label htmlFor="assigned_lead_designer_id">Lead Designer *</label>
+        <select
+          id="assigned_lead_designer_id"
+          name="assigned_lead_designer_id"
+          value={values.assigned_lead_designer_id ?? ""}
+          onChange={(e) =>
+            setValues({
+              ...values,
+              assigned_lead_designer_id: e.target.value || null,
+            })
+          }
+          disabled={pending}
+          aria-invalid={!!state.fields?.assigned_lead_designer_id}
+          aria-describedby="lead-designer-hint"
+        >
+          <option value="">Choose a Lead Designer</option>
+          {leadDesigners.map((person) => (
+            <option key={person.id} value={person.id}>
+              {person.display_name}
+            </option>
+          ))}
+        </select>
+        <p id="lead-designer-hint" className="field-hint">
+          Required to submit. Only the selected Lead Designer receives this
+          request for review.
+        </p>
+        {!leadDesigners.length && (
+          <p role="status" className="field-hint">
+            No active Lead Designers are available. Save a draft and contact
+            your System Administrator.
+          </p>
+        )}
+        {state.fields?.assigned_lead_designer_id && (
+          <span className="field-error">
+            {state.fields.assigned_lead_designer_id}
+          </span>
+        )}
+      </div>
+    </>
   );
   const resources = (
     <>
@@ -88,72 +137,17 @@ export function LeadForm({
       <div className="lead-files-guidance">
         <h3 className="form-section-label">03 · Files and references</h3>
         <p>
-          Save your draft to upload up to three active files, each up to 50 MiB.
-          Use Files and Resources links for additional documents.
+          Paste HTTPS links to drawings, photographs, and other files. Direct
+          file uploads are not available for quotation requests.
         </p>
       </div>
-      {resourcesEnabled && (
-        <ResourceLinks
-          links={links}
-          onChange={setLinks}
-          disabled={pending}
-          error={state.fields?.resource_links}
-        />
-      )}
-    </>
-  );
-  const metadata = (
-    <div className="live-field">
-      <label htmlFor="supporting-files">Supporting file metadata</label>
-      <p className="field-hint" id="file-note">
-        Files selected here are recorded by name, type, and size only. Their
-        contents are not uploaded or stored. Save a draft to upload actual files
-        in the private attachments panel. Metadata does not consume
-        uploaded-file slots.
-      </p>
-      <input
-        id="supporting-files"
-        type="file"
-        multiple
+      <ResourceLinks
+        links={links}
+        onChange={setLinks}
         disabled={pending}
-        aria-describedby="file-note"
-        onChange={(e) => {
-          const selected = [...(e.target.files ?? [])].map((f) => ({
-            name: f.name,
-            size: f.size,
-            mime_type: f.type,
-            state: "not_uploaded" as const,
-          }));
-          if (
-            selected.length > 5 ||
-            selected.some((f) => !attachmentSchema.safeParse(f).success)
-          ) {
-            setFileError(
-              "Choose up to five files, each no larger than 50 MiB. No file contents have been uploaded.",
-            );
-            return;
-          }
-          setFiles(selected);
-          setFileError("");
-        }}
+        error={state.fields?.resource_links}
       />
-      {fileError && (
-        <p className="field-error" role="alert">
-          {fileError}
-        </p>
-      )}
-      <AttachmentList files={files} />
-      {files.length > 0 && (
-        <button
-          type="button"
-          className="text-link"
-          onClick={() => setFiles([])}
-          disabled={pending}
-        >
-          Clear file metadata
-        </button>
-      )}
-    </div>
+    </>
   );
   const duplicateReview = (
     <>
@@ -193,13 +187,17 @@ export function LeadForm({
     </>
   );
   return (
-    <form action={action} className="surface live-form lead-request-form">
+    <form
+      ref={formRef}
+      action={action}
+      className="surface live-form lead-request-form"
+    >
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="expected_version" value={lead?.version ?? 0} />
       <input
         type="hidden"
         name="attachment_metadata"
-        value={JSON.stringify(files)}
+        value={JSON.stringify(base.attachment_metadata)}
       />
       <div className="form-heading">
         <h2>Project Quotation Request</h2>
@@ -212,9 +210,6 @@ export function LeadForm({
           <div>{fields}</div>
           <aside>
             {resources}
-            <Disclosure title="File metadata (not uploaded)">
-              {metadata}
-            </Disclosure>
             {duplicateReview}
           </aside>
         </div>
@@ -222,18 +217,12 @@ export function LeadForm({
         <>
           {fields}
           {resources}
-          {metadata}
           {duplicateReview}
         </>
       )}
       <ActionStatus state={state} />
       <div className="form-actions">
-        <Button
-          type="submit"
-          name="intent"
-          value="submit"
-          disabled={pending || !!fileError}
-        >
+        <Button type="submit" name="intent" value="submit" disabled={pending}>
           <Pending
             pending={pending}
             label={lead?.first_submitted_at ? "Resubmit lead" : "Submit lead"}
@@ -245,7 +234,7 @@ export function LeadForm({
           name="intent"
           value="draft"
           formNoValidate
-          disabled={pending || !!fileError}
+          disabled={pending}
         >
           Save draft
         </Button>
@@ -267,6 +256,7 @@ export function ReviewForm({
   profile: Profile;
 }) {
   const [state, action, pending] = useActionState(reviewLead, initial);
+  const formRef = useSavedNavigation(state);
   const [decision, setDecision] = useState("");
   const [remarks, setRemarks] = useState("");
   const [primary, setPrimary] = useState(
@@ -274,9 +264,13 @@ export function ReviewForm({
   );
   const [support, setSupport] = useState<string[]>([]);
   const [ops, setOps] = useState<string[]>([]);
-  const [leadDesigner, setLeadDesigner] = useState("");
+  const [leadDesigner] = useState(lead.assigned_lead_designer_id ?? "");
   return (
-    <form action={action} className="surface live-form lead-review-form">
+    <form
+      ref={formRef}
+      action={action}
+      className="surface live-form lead-review-form"
+    >
       <input type="hidden" name="id" value={lead.id} />
       <input type="hidden" name="expected_version" value={lead.version} />
       <h2>Lead Designer review</h2>
@@ -294,33 +288,13 @@ export function ReviewForm({
             Acceptance creates one Project and preserves this Lead and its
             history.
           </p>
-          {profile.role === "system_administrator" ? (
-            <div className="live-field">
-              <label htmlFor="lead_designer">Lead Designer *</label>
-              <select
-                name="lead_designer"
-                id="lead_designer"
-                value={leadDesigner}
-                onChange={(e) => setLeadDesigner(e.target.value)}
-                required
-                disabled={pending}
-              >
-                <option value="">Choose a Lead Designer</option>
-                {people
-                  .filter((p) => p.role === "lead_designer")
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.display_name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          ) : (
-            <p className="field-hint">
-              Lead Designer: {profile.display_name}. You may assign yourself to
-              design work.
-            </p>
-          )}
+          <input type="hidden" name="lead_designer" value={leadDesigner} />
+          <p className="field-hint">
+            Lead Designer:{" "}
+            {people.find((person) => person.id === leadDesigner)
+              ?.display_name ??
+              "Not assigned — assign a Lead Designer before acceptance."}
+          </p>
           <AssignmentFields
             people={people}
             primary={primary}
@@ -575,6 +549,74 @@ export function InvitationForm({
         <Pending pending={pending} label="Send invitation" />
       </Button>
       <FormPending />
+    </form>
+  );
+}
+
+export function LeadDesignerAssignmentForm({
+  id,
+  current,
+  version,
+  kind,
+  people,
+}: {
+  id: string;
+  current?: string | null;
+  version?: number;
+  kind: "lead" | "project";
+  people: Person[];
+}) {
+  const [state, action, pending] = useActionState(changeLeadDesigner, initial);
+  const formRef = useSavedNavigation(state);
+  return (
+    <form
+      ref={formRef}
+      action={action}
+      className="live-form"
+      aria-busy={pending}
+    >
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="kind" value={kind} />
+      <input type="hidden" name="expected_designer" value={current ?? ""} />
+      <input type="hidden" name="expected_version" value={version ?? ""} />
+      <div className="live-field">
+        <label htmlFor={`designer-${id}`}>Lead Designer *</label>
+        <select
+          id={`designer-${id}`}
+          name="designer"
+          defaultValue={current ?? ""}
+          required
+          disabled={pending}
+        >
+          <option value="">Choose a Lead Designer</option>
+          {people
+            .filter((p) => p.role === "lead_designer")
+            .map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.display_name}
+              </option>
+            ))}
+        </select>
+      </div>
+      <div className="live-field">
+        <label htmlFor={`assignment-reason-${id}`}>Assignment reason *</label>
+        <textarea
+          id={`assignment-reason-${id}`}
+          name="reason"
+          rows={2}
+          maxLength={2000}
+          required
+          disabled={pending}
+        />
+      </div>
+      <p className="field-hint">
+        The new Lead Designer receives a notification. Access follows the new
+        assignment; history is preserved.
+      </p>
+      <ActionStatus state={state} />
+      <Button type="submit" disabled={pending || !people.length}>
+        <Pending pending={pending} label="Assign Lead Designer" />
+      </Button>
     </form>
   );
 }

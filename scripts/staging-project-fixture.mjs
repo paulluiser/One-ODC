@@ -34,6 +34,7 @@ try {
       p_id: id,
       p_expected_version: 0,
       p_payload: {
+        assigned_lead_designer_id: (await lead.auth.getUser()).data.user.id,
         project_name: name,
         address: name,
         brand: "Stosa",

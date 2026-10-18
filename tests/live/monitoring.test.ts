@@ -56,6 +56,7 @@ it("staging monitoring: progress/revisions, deadline history, concurrent hold/re
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `Monitoring staging ${lead}`,
       address: `Synthetic monitoring ${lead}`,
       brand: "Stosa",

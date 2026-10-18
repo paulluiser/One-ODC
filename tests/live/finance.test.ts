@@ -56,6 +56,7 @@ it("staging: independent exact finance, payment corrections/voids, concurrent re
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `3C finance ${lead}`,
       address: `Synthetic ${lead}`,
       brand: "Stosa",

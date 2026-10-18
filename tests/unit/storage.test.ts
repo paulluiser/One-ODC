@@ -175,3 +175,22 @@ it("replacement reaches the authoritative reservation endpoint without consuming
   );
   expect(rpc).toHaveBeenCalledOnce();
 });
+
+it("rejects quotation-request file reservations before making any remote request", async () => {
+  const rpc = vi.fn();
+  const provider = supabaseStorageProvider(
+    { rpc } as unknown as SupabaseClient,
+    "https://project.supabase.co",
+    "publishable",
+  );
+  await expect(
+    provider.reserve({
+      association: { kind: "lead", id: "request" },
+      classification: "general",
+      name: "brief.pdf",
+      mimeType: "application/pdf",
+      size: 10,
+    }),
+  ).rejects.toThrow("Files and Resources");
+  expect(rpc).not.toHaveBeenCalled();
+});

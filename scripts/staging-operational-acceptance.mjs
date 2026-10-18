@@ -63,6 +63,7 @@ try {
       { id: randomUUID(), url: "https://example.com/4d-specifications" },
     ];
   const payload = {
+    assigned_lead_designer_id: ids.LEAD,
     project_name: `4D acceptance ${lead}`,
     address: `Synthetic acceptance ${lead}`,
     brand: "Stosa",

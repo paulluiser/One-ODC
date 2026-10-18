@@ -49,6 +49,7 @@ async function create(k, name) {
       p_id: id(k),
       p_expected_version: 0,
       p_payload: {
+        assigned_lead_designer_id: users.LEAD,
         project_name: name,
         address: `${name} · Fictional address, Metro Manila`,
         brand: "Stosa",

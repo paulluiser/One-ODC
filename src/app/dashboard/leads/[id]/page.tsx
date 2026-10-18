@@ -19,7 +19,11 @@ import {
   type Submission,
   type Review,
 } from "@/lib/phase1";
-import { LeadForm, ReviewForm } from "@/components/workflow-forms";
+import {
+  LeadForm,
+  ReviewForm,
+  LeadDesignerAssignmentForm,
+} from "@/components/workflow-forms";
 import { AttachmentList } from "@/components/lead-fields";
 import {
   LeadAttachments,
@@ -48,6 +52,8 @@ export default async function LeadDetail({
   checkDatabase(record.error);
   if (!record.data) notFound();
   const lead = leadSchema.parse(record.data);
+  const designers = await client.rpc("list_lead_designers");
+  checkDatabase(designers.error);
   const storageEnabled = process.env.ONE_ODC_ATTACHMENTS_ENABLED === "true";
   const [submissions, reviews, origin, peopleResult, attached, slots] =
     await Promise.all([
@@ -105,14 +111,27 @@ export default async function LeadDetail({
   const brief = editable ? (
     <LeadForm
       rebuild={rebuild}
-      resourcesEnabled={process.env.ONE_ODC_RESOURCES_ENABLED === "true"}
       id={id}
       lead={lead}
+      leadDesigners={designers.data ?? []}
       bdmName={profile.display_name}
     />
   ) : (
     <section className="surface live-form lead-brief">
       <h2>Request details</h2>
+      {mayReview(profile.role) &&
+        ["Submitted", "Returned for Clarification"].includes(lead.status) && (
+          <details className="workspace-disclosure">
+            <DisclosureSummary>Assign Lead Designer</DisclosureSummary>
+            <LeadDesignerAssignmentForm
+              id={id}
+              kind="lead"
+              current={lead.assigned_lead_designer_id}
+              version={lead.version}
+              people={designers.data ?? []}
+            />
+          </details>
+        )}
       <dl className="record-details">
         <div>
           <dt>Primary BDM account</dt>
@@ -125,6 +144,19 @@ export default async function LeadDetail({
               <DisclosureSummary>Account reference</DisclosureSummary>
               {lead.bdm_id}
             </details>
+          </dd>
+        </div>
+        <div>
+          <dt>Request Lead Designer</dt>
+          <dd>
+            {designers.data?.find(
+              (p: Person) => p.id === lead.assigned_lead_designer_id,
+            )?.display_name ??
+              (lead.assigned_lead_designer_id
+                ? "Inactive Lead Designer"
+                : lead.status === "Accepted"
+                  ? "See accepted Project"
+                  : "Awaiting assignment")}
           </dd>
         </div>
         <div>
@@ -150,9 +182,7 @@ export default async function LeadDetail({
           </dd>
         </div>
       </dl>
-      {process.env.ONE_ODC_RESOURCES_ENABLED === "true" && (
-        <SavedResources links={lead.resource_links} />
-      )}
+      <SavedResources links={lead.resource_links} />
       <AttachmentList files={lead.attachment_metadata} />
       {lead.attachment_metadata.length > 0 && (
         <p className="field-hint">
@@ -161,9 +191,10 @@ export default async function LeadDetail({
       )}
     </section>
   );
-  const files = storageEnabled && (
+  const files = storageEnabled && !!attached.data?.length && (
     <LeadAttachments
       leadId={id}
+      allowUploads={false}
       slots={slots.data}
       editable={editable}
       userId={profile.id}

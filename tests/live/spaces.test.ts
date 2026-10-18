@@ -50,6 +50,7 @@ it("staging: spaces, duplicate names, assigned edits, atomic bulk, completion/re
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `Space verification ${lead}`,
       address: `Synthetic staging ${lead}`,
       brand: "Stosa",

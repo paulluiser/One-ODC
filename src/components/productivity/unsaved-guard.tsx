@@ -85,6 +85,15 @@ export function UnsavedChangesGuard() {
     const navigate = (event: Event) => {
       const e = event as NavigationEvent;
       if (!e.canIntercept || !e.cancelable) return;
+      // Next updates history state while the current record is being saved.
+      // Like same-page links, these updates and hash changes do not leave it.
+      const destination = new URL(e.destination.url);
+      if (
+        destination.origin === location.origin &&
+        destination.pathname === location.pathname &&
+        destination.search === location.search
+      )
+        return;
       if (e.destination.url === confirmed) {
         confirmed = "";
         return;

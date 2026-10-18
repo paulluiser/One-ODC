@@ -1,5 +1,4 @@
 "use server";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { roles } from "@/lib/domain";
@@ -36,6 +35,9 @@ export async function saveLead(
     submit: value(data, "intent") === "submit",
     duplicate_reason: value(data, "duplicate_reason"),
     payload: {
+      assigned_lead_designer_id: nullable(
+        value(data, "assigned_lead_designer_id"),
+      ),
       project_name: value(data, "project_name"),
       address: value(data, "address"),
       brand: nullable(value(data, "brand")),
@@ -96,8 +98,11 @@ export async function saveLead(
       error: workflowError(error.message),
       duplicates: duplicates ?? [],
     };
-  revalidatePath("/dashboard", "layout");
-  redirect(`/dashboard/leads/${v.id}`);
+  return {
+    error: null,
+    success: "Quotation request saved.",
+    redirectTo: `/dashboard/leads/${v.id}`,
+  };
 }
 export async function reviewLead(
   _state: FormState,
@@ -136,10 +141,13 @@ export async function reviewLead(
     p_lead_designer: v.assignments.lead_designer ?? null,
   });
   if (error) return { error: workflowError(error.message) };
-  revalidatePath("/dashboard", "layout");
-  redirect(
-    project ? `/dashboard/projects/${project}` : `/dashboard/leads/${v.id}`,
-  );
+  return {
+    error: null,
+    success: "Review recorded.",
+    redirectTo: project
+      ? `/dashboard/projects/${project}`
+      : `/dashboard/leads/${v.id}`,
+  };
 }
 export async function assignPersonnel(
   _state: FormState,
@@ -297,4 +305,64 @@ export async function markRead(data: FormData) {
   });
   if (error) throw new Error(workflowError(error.message));
   revalidatePath("/dashboard", "layout");
+}
+
+export async function changeLeadDesigner(
+  _state: FormState,
+  data: FormData,
+): Promise<FormState> {
+  const { client } = await requireRole([
+    "lead_designer",
+    "system_administrator",
+  ]);
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      designer: z.uuid(),
+      expected_designer: z.uuid().optional(),
+      expected_version: z.number().int().positive().optional(),
+      reason: z.string().trim().min(1).max(2000),
+      kind: z.enum(["lead", "project"]),
+    })
+    .safeParse({
+      id: value(data, "id"),
+      designer: value(data, "designer"),
+      expected_designer: value(data, "expected_designer") || undefined,
+      expected_version: value(data, "expected_version")
+        ? Number(value(data, "expected_version"))
+        : undefined,
+      reason: value(data, "reason"),
+      kind: value(data, "kind"),
+    });
+  if (!parsed.success)
+    return {
+      error: "Choose an active Lead Designer and enter a reason.",
+      fields: fieldErrors(parsed.error),
+    };
+  const v = parsed.data;
+  if (
+    (v.kind === "lead" && !v.expected_version) ||
+    (v.kind === "project" && !v.expected_designer)
+  )
+    return { error: "Reload this record before changing its Lead Designer." };
+  const { error } =
+    v.kind === "lead"
+      ? await client.rpc("route_lead", {
+          p_lead: v.id,
+          p_expected_version: v.expected_version,
+          p_designer: v.designer,
+          p_reason: v.reason,
+        })
+      : await client.rpc("assign_project_lead_designer", {
+          p_project: v.id,
+          p_expected_designer: v.expected_designer,
+          p_designer: v.designer,
+          p_reason: v.reason,
+        });
+  if (error) return { error: workflowError(error.message) };
+  return {
+    error: null,
+    success: "Lead Designer assigned.",
+    redirectTo: v.kind === "lead" ? "/dashboard/leads" : "/dashboard/projects",
+  };
 }

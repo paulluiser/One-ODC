@@ -50,6 +50,9 @@ test("UI-R2: BDM draft/files/clarification, acceptance, Designer updates, comple
 }) => {
   await login(page, "BDM");
   await page.goto("/dashboard/leads/new");
+  await page
+    .getByLabel("Lead Designer", { exact: false })
+    .selectOption(id("LEAD"));
   await settled(page);
   await page.getByRole("button", { name: "Submit lead", exact: true }).click();
   expect(

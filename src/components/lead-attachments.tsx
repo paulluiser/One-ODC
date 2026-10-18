@@ -54,6 +54,7 @@ export function LeadAttachments({
   projectId,
   slots,
   editable,
+  allowUploads = true,
   userId,
   attachments,
   versions,
@@ -62,6 +63,7 @@ export function LeadAttachments({
   projectId?: string;
   slots?: { uploaded: number; reserved: number; remaining: number };
   editable: boolean;
+  allowUploads?: boolean;
   userId: string;
   attachments: StoredAttachment[];
   versions: StoredVersion[];
@@ -102,6 +104,10 @@ export function LeadAttachments({
   const input = useRef<HTMLInputElement | null>(null);
   const selection = useRef(0);
   async function upload(existing?: StoredVersion, replacementOf?: string) {
+    if (!allowUploads) {
+      setError("Use Files and Resources links for quotation requests.");
+      return;
+    }
     if (!provider || !file) {
       setError("Choose the file to upload or resume.");
       return;
@@ -208,35 +214,47 @@ export function LeadAttachments({
       className="surface live-form"
       aria-labelledby="stored-files-heading"
     >
-      <h2 id="stored-files-heading">Private attachments</h2>
-      <p className="field-hint">
-        Saved files are private, with a 50 MiB limit and up to three active
-        attachments. Existing metadata-only selections are not uploaded files.
-      </p>
-      <p role="status">
-        {slots?.uploaded ??
-          attachments.filter(
-            (a) =>
-              !a.archived_at &&
-              versions.some((v) => v.attachment_id === a.id && v.ready_at),
-          ).length}{" "}
-        / 3 active uploaded files ·{" "}
-        {slots?.reserved ??
-          attachments.filter(
-            (a) =>
-              !a.archived_at &&
-              !versions.some((v) => v.attachment_id === a.id && v.ready_at),
-          ).length}{" "}
-        upload reservations ·{" "}
-        {slots?.remaining ??
-          Math.max(
-            0,
-            3 - attachments.filter((a) => !a.archived_at).length,
-          )}{" "}
-        slots remaining. Provide additional files through Files and Resources
-        links.
-      </p>
-      {editable && (
+      <h2 id="stored-files-heading">
+        {allowUploads ? "Private attachments" : "Previously uploaded files"}
+      </h2>
+      {allowUploads ? (
+        <>
+          <p className="field-hint">
+            Saved files are private, with a 50 MiB limit and up to three active
+            attachments. Existing metadata-only selections are not uploaded
+            files.
+          </p>
+          <p role="status">
+            {slots?.uploaded ??
+              attachments.filter(
+                (a) =>
+                  !a.archived_at &&
+                  versions.some((v) => v.attachment_id === a.id && v.ready_at),
+              ).length}{" "}
+            / 3 active uploaded files ·{" "}
+            {slots?.reserved ??
+              attachments.filter(
+                (a) =>
+                  !a.archived_at &&
+                  !versions.some((v) => v.attachment_id === a.id && v.ready_at),
+              ).length}{" "}
+            upload reservations ·{" "}
+            {slots?.remaining ??
+              Math.max(
+                0,
+                3 - attachments.filter((a) => !a.archived_at).length,
+              )}{" "}
+            slots remaining. Provide additional files through Files and
+            Resources links.
+          </p>
+        </>
+      ) : (
+        <p className="field-hint">
+          Existing files are retained. Add new files through Files and Resources
+          links. Archive unfinished uploads before submitting.
+        </p>
+      )}
+      {editable && allowUploads && (
         <>
           <div className="live-field">
             <label htmlFor="private-file">File to upload or resume</label>
@@ -327,16 +345,18 @@ export function LeadAttachments({
             pending={busy}
             label={uploading ? "Uploading file…" : "Working…"}
           />
-          <div className="live-field">
-            <label htmlFor="attachment-reason">Archive / restore reason</label>
-            <input
-              id="attachment-reason"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              disabled={busy}
-            />
-          </div>
         </>
+      )}
+      {editable && (
+        <div className="live-field">
+          <label htmlFor="attachment-reason">Archive / restore reason</label>
+          <input
+            id="attachment-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={busy}
+          />
+        </div>
       )}
       {error && (
         <p role="alert" className="form-error">
@@ -396,6 +416,7 @@ export function LeadAttachments({
                 {!v.ready_at &&
                   !a.archived_at &&
                   editable &&
+                  allowUploads &&
                   v.created_by === userId && (
                     <Button
                       type="button"
@@ -409,6 +430,7 @@ export function LeadAttachments({
               </div>
             ))}
           {editable &&
+            allowUploads &&
             !a.archived_at &&
             versions.some((v) => v.attachment_id === a.id && v.ready_at) && (
               <Button

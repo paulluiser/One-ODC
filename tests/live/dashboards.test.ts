@@ -67,6 +67,7 @@ it("5A staging: accurate role KPIs, multi-assignment, cancelled/completed scope,
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `5A dashboard ${lead}`,
       address: `5A synthetic ${lead}`,
       brand: "Stosa",

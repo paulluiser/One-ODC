@@ -51,6 +51,7 @@ it("4A staging: real closure, concurrent transitions, Ops redaction/activation, 
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `4A closure ${lead}`,
       address: `Synthetic ${lead}`,
       brand: "Stosa",
@@ -327,6 +328,7 @@ it("4A staging: System Administrator cannot close deals; BDM closure has no admi
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `4A admin ${lead}`,
       address: `Synthetic ${lead}`,
       brand: "Stosa",

@@ -11,12 +11,14 @@ export const projectSchema = z.object({
   name: z.string(),
   lead_designer_id: z.uuid(),
   commercial_status: z.enum(commercialStages),
+  is_cancelled: z.boolean().optional(),
+  is_operationally_completed: z.boolean().optional(),
   awaiting_handoff: z.boolean().optional(),
   expected_handoff: z.string().nullable(),
   created_at: z.string(),
 });
 export const projectColumns =
-  "id,reference,name,lead_designer_id,commercial_status,awaiting_handoff,expected_handoff,created_at";
+  "id,reference,name,lead_designer_id,commercial_status,is_cancelled,is_operationally_completed,awaiting_handoff,expected_handoff,created_at";
 export function projectDirectoryOptions(input: Record<string, unknown>) {
   const text = (key: string) =>
     typeof input[key] === "string" ? (input[key] as string) : "";

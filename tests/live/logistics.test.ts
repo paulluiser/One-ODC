@@ -53,6 +53,7 @@ it("4B staging: supplier duplicates/inactivity, acknowledged logistics, concurre
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `4B live ${lead}`,
       address: `Synthetic ${lead}`,
       brand: "Stosa",

@@ -205,6 +205,7 @@ try {
         p_id: leadId,
         p_expected_version: 0,
         p_payload: {
+          assigned_lead_designer_id: actors.LEAD,
           project_name: name,
           address,
           brand,

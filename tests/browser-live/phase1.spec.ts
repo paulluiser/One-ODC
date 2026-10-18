@@ -28,6 +28,9 @@ test("real BDM draft attachment upload/download/archive/restore, submission and 
   test.setTimeout(180000);
   await login(page, "BDM");
   await page.goto("/dashboard/leads/new");
+  await page
+    .getByLabel("Lead Designer", { exact: false })
+    .selectOption(actors.find((actor) => actor.actor === "LEAD")!.id);
   await openWorkspacePanels(page);
   await accessible(page, "BDM lead creation form");
   const name = `Staging browser ${randomUUID()}`;

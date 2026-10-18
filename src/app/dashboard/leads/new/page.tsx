@@ -2,19 +2,22 @@ import { Scope, Heading } from "@/components/ui-r2/primitives";
 import { randomUUID } from "node:crypto";
 import { requireRole } from "@/lib/workspace-session";
 import { LeadForm } from "@/components/workflow-forms";
+import { checkDatabase } from "@/lib/live-data";
 import { PageIntro } from "@/components/live-data";
 export default async function NewLead() {
-  const { profile } = await requireRole(["bdm"]);
+  const { profile, client } = await requireRole(["bdm"]);
+  const designers = await client.rpc("list_lead_designers");
+  checkDatabase(designers.error);
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
     return (
       <Scope>
         <Heading
           title="New quotation request"
-          description="Start with the client’s brief. Save your draft before adding private files."
+          description="Start with the client’s brief. Paste links to drawings and other files."
         />
         <LeadForm
+          leadDesigners={designers.data ?? []}
           rebuild
-          resourcesEnabled={process.env.ONE_ODC_RESOURCES_ENABLED === "true"}
           id={randomUUID()}
           bdmName={profile.display_name}
         />
@@ -24,10 +27,10 @@ export default async function NewLead() {
     <>
       <PageIntro
         title="New quotation request"
-        description="Start with the client's brief. Save a draft or submit it for review."
+        description="Start with the client's brief. Add file links, then save a draft or submit it for review."
       />
       <LeadForm
-        resourcesEnabled={process.env.ONE_ODC_RESOURCES_ENABLED === "true"}
+        leadDesigners={designers.data ?? []}
         id={randomUUID()}
         bdmName={profile.display_name}
       />

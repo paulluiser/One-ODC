@@ -54,6 +54,7 @@ it("4C real JWT: installation, prerequisites, concurrent completion, immutable c
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `4C live ${lead}`,
       address: `Synthetic ${lead}`,
       brand: "Stosa",

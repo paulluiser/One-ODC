@@ -51,12 +51,14 @@ export function supabaseStorageProvider(
   }
   return {
     async reserve(input) {
+      if (input.association.kind === "lead")
+        throw new Error(
+          "Use Files and Resources links for quotation requests. Direct uploads are disabled.",
+        );
       if (!input.replacementOf) {
         const slots = await client.rpc("get_attachment_slots", {
-          p_lead:
-            input.association.kind === "lead" ? input.association.id : null,
-          p_project:
-            input.association.kind === "project" ? input.association.id : null,
+          p_lead: null,
+          p_project: input.association.id,
         });
         if (slots.error) throw new Error(slots.error.message);
         if (!slots.data || slots.data.remaining < 1)
@@ -66,9 +68,8 @@ export function supabaseStorageProvider(
       }
       const { data, error } = await client.rpc("reserve_attachment", {
         p_attachment: input.replacementOf ?? null,
-        p_lead: input.association.kind === "lead" ? input.association.id : null,
-        p_project:
-          input.association.kind === "project" ? input.association.id : null,
+        p_lead: null,
+        p_project: input.association.id,
         p_class: input.classification,
         p_name: input.name,
         p_mime: input.mimeType,

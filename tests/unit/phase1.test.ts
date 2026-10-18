@@ -35,6 +35,7 @@ describe("Phase 1 validation", () => {
         submit: true,
         payload: {
           ...emptyLead,
+          assigned_lead_designer_id: id,
           project_name: "Home",
           address: "Manila",
           cabinetry_count: 2,
@@ -128,4 +129,26 @@ describe("Phase 1 validation", () => {
       expect(safeNext(value)).toBe("/dashboard");
     expect(safeNext("/dashboard/leads")).toBe("/dashboard/leads");
   });
+});
+
+it("requires a Lead Designer for submission, including valid otherwise-complete requests", () => {
+  const request = {
+    id,
+    expected_version: 0,
+    duplicate_reason: "",
+    submit: true,
+    payload: {
+      ...emptyLead,
+      project_name: "Home",
+      address: "Manila",
+      cabinetry_count: 2,
+    },
+  };
+  expect(saveLeadSchema.safeParse(request).success).toBe(false);
+  expect(
+    saveLeadSchema.safeParse({
+      ...request,
+      payload: { ...request.payload, assigned_lead_designer_id: id },
+    }).success,
+  ).toBe(true);
 });

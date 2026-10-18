@@ -51,6 +51,7 @@ it("staging: exact draft pricing, atomic concurrent saves, scoped JWT/RLS, lifec
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `3A quotation verification ${lead}`,
       address: `Synthetic ${lead}`,
       brand: "Stosa",

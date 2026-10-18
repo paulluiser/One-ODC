@@ -30,7 +30,10 @@ import { checkDatabase } from "@/lib/live-data";
 import { roleLabels, formatTime, type Member, type Person } from "@/lib/phase1";
 import { PageIntro } from "@/components/live-data";
 import { projectColumns, projectSchema } from "@/lib/project-workspace";
-import { AssignmentForm } from "@/components/workflow-forms";
+import {
+  AssignmentForm,
+  LeadDesignerAssignmentForm,
+} from "@/components/workflow-forms";
 import { ProjectResources } from "@/components/project-resources";
 import { Section } from "@/components/workspace-skeleton";
 async function ProjectDetail({
@@ -443,6 +446,18 @@ async function ProjectDetail({
     checkDatabase(x.error);
   const team = (teamResult.data ?? []) as Member[];
   const people: Person[] = assignable.data ?? [];
+  const leadDesignerAssignment = editable &&
+    !project.is_cancelled &&
+    !project.is_operationally_completed && (
+      <Disclosure title="Change Lead Designer">
+        <LeadDesignerAssignmentForm
+          id={id}
+          kind="project"
+          current={project.lead_designer_id}
+          people={people}
+        />
+      </Disclosure>
+    );
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
     return (
       <Scope>
@@ -530,6 +545,7 @@ async function ProjectDetail({
                     <AssignmentForm id={id} people={people} team={team} />
                   </Disclosure>
                 )}
+              {leadDesignerAssignment}
             </section>
             {process.env.ONE_ODC_MONITORING_ENABLED === "true" && (
               <Section>
@@ -757,6 +773,7 @@ async function ProjectDetail({
             <AssignmentForm id={id} people={people} team={team} />
           </details>
         )}
+      {leadDesignerAssignment}
       {process.env.ONE_ODC_MONITORING_ENABLED === "true" && (
         <details
           className="surface workspace-disclosure"

@@ -34,6 +34,7 @@ const date = z.string().refine((v) => {
 }, "Use a valid date.");
 export const leadPayloadSchema = z
   .object({
+    assigned_lead_designer_id: z.uuid().nullable().optional(),
     project_name: z.string().trim().max(200),
     address: z.string().trim().max(2000),
     brand: z.enum(["SFY", "Stosa", "Both"]).nullable(),
@@ -54,6 +55,12 @@ export const saveLeadSchema = z
   })
   .superRefine((v, ctx) => {
     if (v.submit) {
+      if (!v.payload.assigned_lead_designer_id)
+        ctx.addIssue({
+          code: "custom",
+          path: ["payload", "assigned_lead_designer_id"],
+          message: "Choose the Lead Designer who will review this request.",
+        });
       for (const key of ["project_name", "address"] as const)
         if (!v.payload[key])
           ctx.addIssue({
@@ -171,8 +178,10 @@ export type FormState = {
   fields?: Record<string, string>;
   duplicates?: { id: string; reference: string; project_name: string }[];
   success?: string;
+  redirectTo?: string;
 };
 export const emptyLead: LeadPayload = {
+  assigned_lead_designer_id: null,
   project_name: "",
   address: "",
   brand: null,
@@ -230,6 +239,8 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
 }
 export function workflowError(message: string): string {
   const errors: Record<string, string> = {
+    LEAD_LINKS_ONLY:
+      "Use Files and Resources links for quotation requests. Direct uploads are disabled.",
     UPLOADS_PENDING:
       "Complete or archive pending attachments before submitting this lead.",
     STALE_VERSION:
@@ -241,6 +252,9 @@ export function workflowError(message: string): string {
       "Remarks are required when returning or rejecting a lead.",
     DUPLICATE_REASON_REQUIRED:
       "A possible duplicate exists. Add a reason to continue.",
+    REASON_REQUIRED: "Enter a reason for this assignment change.",
+    INVALID_PROJECT_STATE:
+      "Assignments cannot change on a cancelled or operationally completed project.",
     INVALID_ASSIGNEE:
       "An assigned person is inactive or has an incompatible role.",
     INVALID_BDM: "The primary BDM is inactive or no longer has the BDM role.",

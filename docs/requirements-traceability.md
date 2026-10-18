@@ -206,3 +206,11 @@ Implemented existing role-authorized Project/Space deadlines, expected handoff, 
 | Security / history / concurrency             | Existing RLS unchanged or narrowed, public invoker/private checked RPCs, no anonymous calls; local regression + dedicated seven-actor staging/browser evidence in `artifacts/verification/commercial-workflow/`. |
 
 This amendment replaces earlier Lead/Admin closure overrides and immediate BDM-triggered Ops handoff. Historical closure/assignment/audit records are preserved. Production migrations/deployment were not performed.
+
+### Multi-Lead Designer routing amendment
+
+A BDM selects one active Lead Designer before submitting a quotation request. Drafts may remain unassigned. That recipient alone receives/reviews the request; System Administrators retain oversight. Lead/history/attachment RLS and definer analytics use the same scope. Acceptance creates exactly one Project owned by the selected recipient. Current Project Lead Designers/System Administrators may transfer ownership with a mandatory reason, expected-owner concurrency check, preserved assignment/audit history and notifications; a Project has one Lead Designer membership. Other team roles and commercial/design/Operations workflows remain unchanged. Legacy unassigned pending requests require explicit admin routing, not guessed ownership. Evidence: `src/components/workflow-forms.tsx`, `src/app/dashboard/actions.ts`, migration `20261018074417_lead_designer_routing.sql`, routing unit/integration, live and browser tests.
+
+### BDM request files — links only
+
+The request form (draft, submission and clarification) uses optional multiple HTTPS Files and Resources links instead of uploads or file metadata pickers. This supersedes request-upload/optimization requirements; Project file storage remains unchanged. Existing files/history are retained and authorized users can view them; unfinished legacy uploads can be archived before submission. New Lead reservations, replacements and pending-object writes are denied server-side, while the three-file Project cap, size validation and RLS remain. Evidence: `workflow-forms.tsx`, `lead-attachments.tsx`, Storage provider, migration `20261018081835_lead_request_links_only.sql`, links-only SQL/provider tests and the live/browser Lead routing workflow.

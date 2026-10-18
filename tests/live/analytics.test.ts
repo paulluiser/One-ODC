@@ -72,6 +72,7 @@ it("5B staging analytics: real role isolation, cohorts, completion history, exac
     p_id: lead,
     p_expected_version: 0,
     p_payload: {
+      assigned_lead_designer_id: ids.LEAD,
       project_name: `5B analytics ${lead.slice(0, 8)}`,
       address: `Authorized staging acceptance ${lead}`,
       brand: "Stosa",

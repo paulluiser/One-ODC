@@ -52,6 +52,7 @@ it("3E staging: concurrent three-file cap, real inherited uploads/replacements, 
     { id: randomUUID(), url: "https://example.com/specifications" },
   ];
   const payload = {
+    assigned_lead_designer_id: ids.LEAD,
     project_name: `3E staging ${lead}`,
     address: `Synthetic ${lead}`,
     brand: "Stosa",
