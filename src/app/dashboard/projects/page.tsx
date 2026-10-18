@@ -37,7 +37,7 @@ export default async function Projects({
   const { data, error, count } = await query;
   if (error?.code === "PGRST103" && options.page > 1)
     redirect(
-      `${projectDirectoryUrl(options, 1)}&view=${parameters.view === "list" ? "list" : "grid"}`,
+      `${projectDirectoryUrl(options, 1)}&view=${parameters.view === "list" ? "list" : "grid"}${typeof parameters.columns === "string" ? `&columns=${encodeURIComponent(parameters.columns)}` : ""}`,
     );
   checkDatabase(error);
   const projects = projectSchema.array().parse(data ?? []);
@@ -63,6 +63,11 @@ export default async function Projects({
     checkDatabase(names.error);
     return (
       <ProjectDirectory
+        columns={
+          typeof parameters.columns === "string"
+            ? parameters.columns
+            : undefined
+        }
         view={parameters.view === "list" ? "list" : "grid"}
         projects={projects}
         options={options}

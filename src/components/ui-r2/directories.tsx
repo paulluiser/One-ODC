@@ -1,4 +1,12 @@
 import Link from "next/link";
+import {
+  ProjectColumnMenu,
+  ProjectDirectoryList,
+} from "./project-directory-list";
+import {
+  projectDirectoryRow,
+  visibleDirectoryColumns,
+} from "@/lib/project-directory-view";
 import { FilterBar } from "../filter-bar";
 import { filterOptions } from "../../lib/filter-toolbar";
 import {
@@ -153,6 +161,7 @@ export function LeadDirectory({
   );
 }
 export function ProjectDirectory({
+  columns,
   view = "grid",
   projects,
   options,
@@ -161,6 +170,7 @@ export function ProjectDirectory({
   ops,
   leads,
 }: {
+  columns?: string;
   view?: "grid" | "list";
   projects: Project[];
   options: ReturnType<typeof projectDirectoryOptions>;
@@ -170,7 +180,7 @@ export function ProjectDirectory({
   leads: Record<string, string>;
 }) {
   const viewUrl = (layout: "grid" | "list", page = options.page) =>
-    `${projectDirectoryUrl(options, page)}&view=${layout}`;
+    `${projectDirectoryUrl(options, page)}&view=${layout}${columns !== undefined ? `&columns=${encodeURIComponent(columns)}` : ""}`;
   return (
     <Scope>
       <Heading
@@ -190,6 +200,7 @@ export function ProjectDirectory({
             stage: options.stage,
             sort: options.sort,
             view,
+            ...(columns !== undefined ? { columns } : {}),
           }}
           config={{
             label: "Project filters",
@@ -237,6 +248,7 @@ export function ProjectDirectory({
             <span>
               {count} {count === 1 ? "project" : "projects"}
             </span>
+            {view === "list" && <ProjectColumnMenu />}
             <div
               className={styles.viewSwitch}
               role="group"
@@ -259,79 +271,94 @@ export function ProjectDirectory({
             </div>
           </div>
         </div>
-        <div
-          className={`${styles.projectGrid} ${view === "list" ? styles.projectList : ""}`}
-          data-project-view={view}
-        >
-          {projects.map((project) => {
-            const m = monitoring?.[project.id],
-              metric = m ? projectMetrics(m) : null;
-            const preview = ops && project.commercial_status !== "Closed";
-            return (
-              <Link
-                className={styles.projectCard}
-                key={project.id}
-                href={`/dashboard/projects/${project.id}`}
-              >
-                <div className={styles.cardTop}>
-                  <span className={styles.reference}>{project.reference}</span>
-                  <ArrowUpRight size={18} aria-hidden="true" />
-                </div>
-                <h3>{project.name}</h3>
-                <div className={styles.cardStatuses}>
-                  <Status>{project.commercial_status}</Status>
-                  {project.awaiting_handoff && (
-                    <Status>Awaiting Handoff</Status>
-                  )}
-                  {!preview && m && <span>{projectWorkState(m)}</span>}
-                </div>
-                {preview ? (
-                  <p className={styles.preview}>
-                    Limited pipeline preview. Project details open after
-                    commercial closure.
-                  </p>
-                ) : (
-                  <>
-                    <div className={styles.progressLabel}>
-                      <span>Design progress</span>
-                      <strong>{metric?.progress || "Not Available"}</strong>
-                    </div>
-                    {m && m.active_spaces > 0 && (
-                      <progress
-                        value={m.completed_spaces}
-                        max={m.active_spaces}
-                        aria-label={`${project.name} design progress`}
-                      />
+        {view === "list" && projects.length > 0 ? (
+          <ProjectDirectoryList
+            rows={projects.map((p) =>
+              projectDirectoryRow(
+                p,
+                monitoring?.[p.id],
+                ops,
+                leads[p.lead_designer_id],
+              ),
+            )}
+            columns={visibleDirectoryColumns(columns)}
+            sorted={options.sort === "name"}
+            sortUrl={`${projectDirectoryUrl({ ...options, sort: "name" }, 1)}&view=list${columns !== undefined ? `&columns=${encodeURIComponent(columns)}` : ""}`}
+          />
+        ) : (
+          <div className={styles.projectGrid} data-project-view={view}>
+            {projects.map((project) => {
+              const m = monitoring?.[project.id],
+                metric = m ? projectMetrics(m) : null;
+              const preview = ops && project.commercial_status !== "Closed";
+              return (
+                <Link
+                  className={styles.projectCard}
+                  key={project.id}
+                  href={`/dashboard/projects/${project.id}`}
+                >
+                  <div className={styles.cardTop}>
+                    <span className={styles.reference}>
+                      {project.reference}
+                    </span>
+                    <ArrowUpRight size={18} aria-hidden="true" />
+                  </div>
+                  <h3>{project.name}</h3>
+                  <div className={styles.cardStatuses}>
+                    <Status>{project.commercial_status}</Status>
+                    {project.awaiting_handoff && (
+                      <Status>Awaiting Handoff</Status>
                     )}
-                    <dl className={styles.cardFacts}>
-                      <div>
-                        <dt>Deadline</dt>
-                        <dd>{m?.deadline || "Not scheduled"}</dd>
+                    {!preview && m && <span>{projectWorkState(m)}</span>}
+                  </div>
+                  {preview ? (
+                    <p className={styles.preview}>
+                      Limited pipeline preview. Project details open after
+                      commercial closure.
+                    </p>
+                  ) : (
+                    <>
+                      <div className={styles.progressLabel}>
+                        <span>Design progress</span>
+                        <strong>{metric?.progress || "Not Available"}</strong>
                       </div>
-                      <div>
-                        <dt>Attention</dt>
-                        <dd>{metric?.risk || "Not Available"}</dd>
-                      </div>
-                      {!ops && (
-                        <div>
-                          <dt>Lead Designer</dt>
-                          <dd>
-                            {leads[project.lead_designer_id] ||
-                              "See project team"}
-                          </dd>
-                        </div>
+                      {m && m.active_spaces > 0 && (
+                        <progress
+                          value={m.completed_spaces}
+                          max={m.active_spaces}
+                          aria-label={`${project.name} design progress`}
+                        />
                       )}
-                      <div>
-                        <dt>Expected handoff</dt>
-                        <dd>{project.expected_handoff || "Not scheduled"}</dd>
-                      </div>
-                    </dl>
-                  </>
-                )}
-              </Link>
-            );
-          })}
-        </div>
+                      <dl className={styles.cardFacts}>
+                        <div>
+                          <dt>Deadline</dt>
+                          <dd>{m?.deadline || "Not scheduled"}</dd>
+                        </div>
+                        <div>
+                          <dt>Attention</dt>
+                          <dd>{metric?.risk || "Not Available"}</dd>
+                        </div>
+                        {!ops && (
+                          <div>
+                            <dt>Lead Designer</dt>
+                            <dd>
+                              {leads[project.lead_designer_id] ||
+                                "See project team"}
+                            </dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt>Expected handoff</dt>
+                          <dd>{project.expected_handoff || "Not scheduled"}</dd>
+                        </div>
+                      </dl>
+                    </>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        )}
         {!projects.length && (
           <div className={styles.empty}>
             <FolderOpen size={26} aria-hidden="true" />

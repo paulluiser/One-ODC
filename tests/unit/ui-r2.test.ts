@@ -1,7 +1,11 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/dashboard/projects",
+}));
 import {
   Disclosure,
   Scope,
@@ -99,7 +103,7 @@ it("Ops directory omits design and stakeholder details before commercial closure
   );
   expect(html).toContain("Limited pipeline preview");
   expect(html).not.toContain("Restricted person");
-  expect(html).not.toContain("25.0%");
+  expect(html).not.toContain("25%");
   expect(html).not.toContain("2026-11-15");
   expect(html).not.toContain("Design progress");
 });
@@ -186,6 +190,7 @@ it("project list mode preserves filters, pagination and the selected view in nav
       }),
       count: 70,
       view: "list",
+      columns: "project,stage,progress,handoff",
       ops: false,
       leads: {},
       monitoring: { [project.id]: m },
@@ -195,9 +200,14 @@ it("project list mode preserves filters, pagination and the selected view in nav
   expect(html).toContain('aria-label="Project view"');
   expect(html).toContain("stage=Under+Negotiation");
   expect(html).toContain("sort=name");
-  expect(html).toContain("page=3&amp;view=list");
+  expect(html).toContain(
+    "page=3&amp;view=list&amp;columns=project%2Cstage%2Cprogress%2Chandoff",
+  );
+  expect(html).toContain("Expected handoff");
+  expect(html).toContain("<table");
+  expect(html).toContain('aria-sort="ascending"');
   expect(html).toContain("Clear all");
-  expect(html).toContain("25.0%");
+  expect(html).toContain("25%");
 });
 it("list mode retains the Ops limited pipeline preview", () => {
   const html = renderToStaticMarkup(
@@ -212,7 +222,7 @@ it("list mode retains the Ops limited pipeline preview", () => {
     }),
   );
   expect(html).toContain('data-project-view="list"');
-  expect(html).toContain("Limited pipeline preview");
+  expect(html).toContain("Restricted preview");
   expect(html).not.toContain("Restricted person");
-  expect(html).not.toContain("25.0%");
+  expect(html).not.toContain("25%");
 });

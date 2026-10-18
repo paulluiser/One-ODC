@@ -933,3 +933,8 @@
   color: var(--brand-muted);
   background: var(--brand-soft);
 }
+
+/* Keep the compact table's horizontal scroll inside the directory grid item. */
+.directory:has([data-project-view="list"]) {
+  min-width: 0;
+}
