@@ -25,6 +25,7 @@ export function projectDirectoryOptions(input: Record<string, unknown>) {
   const parsed = Number.parseInt(text("page"), 10);
   return {
     q: text("q").trim().slice(0, 200),
+    favorites: text("favorites") === "true",
     searchBy:
       text("by") === "reference" ? ("reference" as const) : ("name" as const),
     stage: commercialStages.find((stage) => stage === text("stage")) ?? "",
@@ -43,6 +44,7 @@ export function projectDirectoryUrl(
     sort: options.sort,
     page: String(page),
   });
+  if (options.favorites) params.set("favorites", "true");
   return `/dashboard/projects?${params}`;
 }
 export function projectSearchPattern(value: string) {

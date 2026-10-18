@@ -14,7 +14,14 @@ it("normalizes untrusted filters to fixed columns, stages, sorting and bounded p
       sort: "raw_sql",
       page: "-99",
     }),
-  ).toEqual({ q: "", searchBy: "name", stage: "", sort: "newest", page: 1 });
+  ).toEqual({
+    q: "",
+    favorites: false,
+    searchBy: "name",
+    stage: "",
+    sort: "newest",
+    page: 1,
+  });
   expect(projectDirectoryOptions({ page: "Infinity" }).page).toBe(1);
   expect(projectDirectoryOptions({ page: "999999999999" }).page).toBe(100000);
   expect(
@@ -27,6 +34,7 @@ it("normalizes untrusted filters to fixed columns, stages, sorting and bounded p
     }),
   ).toEqual({
     q: "x",
+    favorites: false,
     searchBy: "reference",
     stage: "Closed",
     sort: "name",
@@ -65,4 +73,21 @@ it("validates actual status values instead of manufacturing lifecycle progress",
   expect(
     projectSchema.safeParse({ commercial_status: "Completed" }).success,
   ).toBe(false);
+});
+
+it("favorites are opt-in and survive directory pagination", () => {
+  expect(projectDirectoryOptions({ favorites: ["true"] }).favorites).toBe(
+    false,
+  );
+  expect(projectDirectoryOptions({ favorites: "false" }).favorites).toBe(false);
+  const options = projectDirectoryOptions({
+    favorites: "true",
+    q: "House",
+    stage: "Closed",
+  });
+  const url = new URL(projectDirectoryUrl(options, 3), "http://localhost");
+  expect(url.searchParams.get("favorites")).toBe("true");
+  expect(url.searchParams.get("page")).toBe("3");
+  expect(url.searchParams.get("q")).toBe("House");
+  expect(url.searchParams.get("stage")).toBe("Closed");
 });

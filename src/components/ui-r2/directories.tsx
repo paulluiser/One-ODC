@@ -162,7 +162,7 @@ export function LeadDirectory({
 }
 export function ProjectDirectory({
   columns,
-  view = "grid",
+  view = "list",
   projects,
   options,
   monitoring,
@@ -198,6 +198,7 @@ export function ProjectDirectory({
             q: options.q,
             by: options.searchBy,
             stage: options.stage,
+            favorites: options.favorites ? "true" : "",
             sort: options.sort,
             view,
             ...(columns !== undefined ? { columns } : {}),
@@ -229,6 +230,14 @@ export function ProjectDirectory({
                 options: [
                   { value: "name", label: "Project name" },
                   { value: "reference", label: "Reference" },
+                ],
+              },
+              {
+                key: "favorites",
+                label: "Favorites",
+                options: [
+                  { value: "", label: "All projects" },
+                  { value: "true", label: "Favorites only" },
                 ],
               },
               {
@@ -364,8 +373,9 @@ export function ProjectDirectory({
             <FolderOpen size={26} aria-hidden="true" />
             <h3>No matching projects</h3>
             <p>
-              Try another search or stage. Projects appear here after lead
-              acceptance and assignment.
+              {options.favorites
+                ? "No favorites match these filters. Mark a project as Favorite in its workspace, or clear the Favorites filter."
+                : "Try another search or stage. Projects appear here after lead acceptance and assignment."}
             </p>
           </div>
         )}

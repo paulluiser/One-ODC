@@ -93,6 +93,7 @@ it("original space article remains available outside rebuild", () => {
 it("Ops directory omits design and stakeholder details before commercial closure", () => {
   const html = renderToStaticMarkup(
     createElement(ProjectDirectory, {
+      view: "grid",
       projects: [project],
       options: projectDirectoryOptions({}),
       monitoring: { [project.id]: m },
@@ -110,6 +111,7 @@ it("Ops directory omits design and stakeholder details before commercial closure
 it("authorized project cards preserve equal-weighted design progress and escaped names", () => {
   const html = renderToStaticMarkup(
     createElement(ProjectDirectory, {
+      view: "grid",
       projects: [project],
       options: projectDirectoryOptions({ q: "Kitchen" }),
       monitoring: { [project.id]: m },
@@ -225,4 +227,19 @@ it("list mode retains the Ops limited pipeline preview", () => {
   expect(html).toContain("Restricted preview");
   expect(html).not.toContain("Restricted person");
   expect(html).not.toContain("25%");
+});
+
+it("project directory defaults to list and preserves the favorites filter in view links", () => {
+  const html = renderToStaticMarkup(
+    createElement(ProjectDirectory, {
+      projects: [project],
+      options: projectDirectoryOptions({ favorites: "true" }),
+      count: 1,
+      ops: false,
+      leads: {},
+    }),
+  );
+  expect(html).toContain('data-project-view="list"');
+  expect(html).toContain("Favorites only");
+  expect(html).toContain("favorites=true&amp;view=grid");
 });

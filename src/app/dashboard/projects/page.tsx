@@ -25,6 +25,20 @@ export default async function Projects({
   let query = client
     .from("projects")
     .select(projectColumns, { count: "exact" });
+  if (options.favorites) {
+    const favorites = await client
+      .from("project_shortcuts")
+      .select("project_id")
+      .eq("user_id", profile.id)
+      .eq("favorite", true);
+    checkDatabase(favorites.error);
+    query = query.in(
+      "id",
+      favorites.data?.length
+        ? favorites.data.map((record) => record.project_id)
+        : ["00000000-0000-0000-0000-000000000000"],
+    );
+  }
   if (options.q)
     query = query.ilike(options.searchBy, projectSearchPattern(options.q));
   if (options.stage) query = query.eq("commercial_status", options.stage);
@@ -37,7 +51,7 @@ export default async function Projects({
   const { data, error, count } = await query;
   if (error?.code === "PGRST103" && options.page > 1)
     redirect(
-      `${projectDirectoryUrl(options, 1)}&view=${parameters.view === "list" ? "list" : "grid"}${typeof parameters.columns === "string" ? `&columns=${encodeURIComponent(parameters.columns)}` : ""}`,
+      `${projectDirectoryUrl(options, 1)}&view=${parameters.view === "grid" ? "grid" : "list"}${typeof parameters.columns === "string" ? `&columns=${encodeURIComponent(parameters.columns)}` : ""}`,
     );
   checkDatabase(error);
   const projects = projectSchema.array().parse(data ?? []);
@@ -68,7 +82,7 @@ export default async function Projects({
             ? parameters.columns
             : undefined
         }
-        view={parameters.view === "list" ? "list" : "grid"}
+        view={parameters.view === "grid" ? "grid" : "list"}
         projects={projects}
         options={options}
         count={count ?? 0}
@@ -80,7 +94,7 @@ export default async function Projects({
       />
     );
   }
-  const filtered = !!options.q || !!options.stage;
+  const filtered = !!options.q || !!options.stage || options.favorites;
   return (
     <>
       <PageIntro
