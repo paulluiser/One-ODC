@@ -1,3 +1,4 @@
+import { validProductivityOrigin } from "@/lib/request-origin";
 import { NextRequest, NextResponse } from "next/server";
 import { requireWorkspace } from "@/lib/workspace-session";
 import { recoveryMessage } from "@/lib/productivity";
@@ -195,7 +196,16 @@ export async function POST(request: NextRequest) {
   if (process.env.ONE_ODC_UI_R0_ENABLED !== "true")
     return response({ error: "Unavailable" }, 404);
   // Route handlers do not inherit Server Action origin protection.
-  if (request.headers.get("origin") !== request.nextUrl.origin)
+  if (
+    !validProductivityOrigin(request.headers.get("origin"), request.url, {
+      appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      vercelUrl: process.env.VERCEL_URL,
+      branchUrl: process.env.VERCEL_BRANCH_URL,
+      productionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      vercel: process.env.VERCEL === "1",
+      fetchSite: request.headers.get("sec-fetch-site"),
+    })
+  )
     return response({ error: "Request origin denied." }, 403);
   let input: unknown;
   try {

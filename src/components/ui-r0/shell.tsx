@@ -1,5 +1,4 @@
 "use client";
-import { ProjectTools } from "../productivity/project-tools";
 import { UnsavedChangesGuard } from "../productivity/unsaved-guard";
 import {
   useState,
@@ -356,13 +355,6 @@ export function RebuildShell({
           </header>
           <main id="r0-main" tabIndex={-1} className={styles.content}>
             <UnsavedChangesGuard />
-            {/^\/dashboard\/projects\/[0-9a-f-]{36}$/.test(path) && (
-              <ProjectTools
-                key={path.split("/")[3]}
-                project={path.split("/")[3]}
-                profile={profile}
-              />
-            )}
             {children}
           </main>
           <span className={styles.srOnly} role="status">

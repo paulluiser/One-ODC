@@ -168,3 +168,68 @@
   display: block;
   transform: rotate(90deg);
 }
+.compactTools {
+  min-width: 0;
+  font-size: 12px;
+}
+.compactTools .row {
+  justify-content: flex-end;
+  gap: 8px;
+}
+.compactTools p:empty {
+  display: none;
+}
+.compactTools :global(.button) {
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.discussionFull {
+  min-width: 0;
+}
+.discussionFull :global(.live-form) {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--brand-border);
+}
+.discussionFull textarea {
+  transition: min-height 150ms ease;
+  resize: vertical;
+}
+.discussionFull form > div > * {
+  margin-bottom: 12px;
+}
+.discussionFull :global(.live-field) {
+  max-width: 620px;
+}
+.discussionPreview {
+  display: grid;
+  gap: 8px;
+  color: var(--brand-muted);
+  font-size: 12px;
+}
+.previewText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .discussionFull textarea {
+    transition: none;
+  }
+}
+.inlineMentions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+}
+.inlineMentions button {
+  padding: 8px 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: 8px;
+  background: var(--brand-surface);
+  color: var(--brand-link);
+}

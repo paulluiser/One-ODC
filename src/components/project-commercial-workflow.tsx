@@ -4,8 +4,10 @@ import { checkDatabase } from "@/lib/live-data";
 import { CommercialStageForm } from "./commercial-stage-form";
 export async function ProjectCommercialWorkflow({
   project,
+  compact = false,
 }: {
   project: string;
+  compact?: boolean;
 }) {
   if (
     process.env.ONE_ODC_UI_R0_ENABLED !== "true" ||
@@ -56,9 +58,9 @@ export async function ProjectCommercialWorkflow({
   );
   return (
     <section
-      className="surface live-form"
+      className={compact ? "commercial-workspace-actions" : "surface live-form"}
       aria-label="Project commercial workflow"
-      style={{ marginBottom: 20 }}
+      style={compact ? undefined : { marginBottom: 20 }}
     >
       <div
         style={{
@@ -70,10 +72,12 @@ export async function ProjectCommercialWorkflow({
         }}
       >
         <div>
-          <h2 style={{ fontSize: 16 }}>
-            Commercial status: {p.commercial_status}
-            {p.awaiting_handoff ? " · Awaiting Handoff" : ""}
-          </h2>
+          {!compact && (
+            <h2 style={{ fontSize: 16 }}>
+              Commercial status: {p.commercial_status}
+              {p.awaiting_handoff ? " · Awaiting Handoff" : ""}
+            </h2>
+          )}
           {p.commercial_status === "Lost" && (
             <p role="status">
               This project is read-only.

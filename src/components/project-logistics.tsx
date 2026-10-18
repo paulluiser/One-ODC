@@ -207,6 +207,10 @@ export async function ProjectLogistics({
           <FilterBar
             resultCount={visibleRecords.length}
             values={{
+              ...(typeof query.tab === "string" ? { tab: query.tab } : {}),
+              ...(typeof query.section === "string"
+                ? { section: query.section }
+                : {}),
               logistics_q: logisticsQ,
               logistics_status: logisticsStatus,
               logistics_brand: logisticsBrand,

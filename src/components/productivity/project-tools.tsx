@@ -28,9 +28,11 @@ type Discussion = {
 export function ProjectTools({
   project,
   profile,
+  compact = false,
 }: {
   project: string;
   profile: Profile;
+  compact?: boolean;
 }) {
   const [access, setAccess] = useState<{
       favorite: boolean;
@@ -94,7 +96,10 @@ export function ProjectTools({
     }
   }
   return (
-    <section className={styles.projectTools} aria-label="Project productivity">
+    <section
+      className={compact ? styles.compactTools : styles.projectTools}
+      aria-label="Project productivity"
+    >
       <div className={styles.row}>
         <button
           className="button button-outline"
@@ -125,24 +130,26 @@ export function ProjectTools({
           {copy}
         </p>
       )}
-      <ErrorNotice message={error} />
-      {access?.canDiscuss && (
+      <ErrorNotice message={error ? `Project shortcuts: ${error}` : ""} />
+      {!compact && access?.canDiscuss && (
         <DiscussionPanel project={project} profile={profile} />
       )}
-      {access?.canManage && <TemplatePanel project={project} />}
+      {!compact && access?.canManage && <TemplatePanel project={project} />}
     </section>
   );
 }
-function DiscussionPanel({
+export function DiscussionPanel({
   project,
   profile,
+  presentation = "disclosure",
 }: {
   project: string;
   profile: Profile;
+  presentation?: "disclosure" | "full" | "preview";
 }) {
   const [data, setData] = useState<Discussion | null>(null),
     [page, setPage] = useState(1),
-    [busy, setBusy] = useState(false),
+    [busy, setBusy] = useState(presentation !== "disclosure"),
     [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
@@ -150,7 +157,9 @@ function DiscussionPanel({
     [mentions, setMentions] = useState<string[]>([]),
     [space, setSpace] = useState(""),
     [reason, setReason] = useState(""),
-    [editing, setEditing] = useState<Comment | null>(null);
+    [editing, setEditing] = useState<Comment | null>(null),
+    [expanded, setExpanded] = useState(false),
+    [mentionSearch, setMentionSearch] = useState("");
   const operation = useRef(""),
     form = useRef<HTMLFormElement>(null);
   async function load(p = page) {
@@ -171,6 +180,27 @@ function DiscussionPanel({
       setBusy(false);
     }
   }
+  useEffect(() => {
+    if (presentation === "disclosure") return;
+    let current = true;
+    void productivityRequest<Discussion>({
+      action: "discussion",
+      project,
+      page: 1,
+    })
+      .then((value) => {
+        if (current) setData(value);
+      })
+      .catch((error) => {
+        if (current) setError(error.message);
+      })
+      .finally(() => {
+        if (current) setBusy(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [project, presentation]);
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (saving) return;
@@ -215,22 +245,56 @@ function DiscussionPanel({
     setReason("");
     setSuccess("");
   }
+  if (presentation === "preview")
+    return (
+      <div className={styles.discussionPreview}>
+        <ErrorNotice message={error} retry={() => void load(1)} />
+        {busy && <p role="status">Loading discussion…</p>}
+        {data &&
+          (data.records.length ? (
+            <>
+              <strong>
+                {data.people.find((p) => p.id === data.records[0].author_id)
+                  ?.display_name || "Project member"}
+              </strong>
+              <p className={styles.previewText}>{data.records[0].body}</p>
+              <small>
+                {new Date(data.records[0].created_at).toLocaleString("en-PH")}
+              </small>
+            </>
+          ) : (
+            <>
+              <MessageSquare size={24} aria-hidden="true" />
+              <p>No discussion yet</p>
+            </>
+          ))}
+      </div>
+    );
+  const inlineMention = body.match(/(?:^|\s)@([^@\n]*)$/)?.[1];
+  const Container = presentation === "full" ? "section" : "details";
   return (
-    <details
-      onToggle={(e) => {
-        if (
-          e.target === e.currentTarget &&
-          e.currentTarget.open &&
-          !data &&
-          !busy
-        )
-          void load();
-      }}
+    <Container
+      className={presentation === "full" ? styles.discussionFull : undefined}
+      onToggle={
+        presentation === "disclosure"
+          ? (e) => {
+              if (
+                e.target === e.currentTarget &&
+                (e.currentTarget as HTMLDetailsElement).open &&
+                !data &&
+                !busy
+              )
+                void load();
+            }
+          : undefined
+      }
     >
-      <DisclosureSummary className={styles.summary}>
-        <MessageSquare size={16} />
-        Discussion
-      </DisclosureSummary>
+      {presentation === "disclosure" && (
+        <DisclosureSummary className={styles.summary}>
+          <MessageSquare size={16} />
+          Discussion
+        </DisclosureSummary>
+      )}
       <p className="field-hint">
         Project discussion is visible to authorized project readers. Use
         @mentions for associated team members; this is not private messaging.
@@ -260,93 +324,149 @@ function DiscussionPanel({
                   onChange={(e) => setBody(e.target.value)}
                   required
                   maxLength={8000}
-                  rows={3}
+                  rows={expanded || body || editing ? 3 : 1}
+                  onFocus={() => setExpanded(true)}
                 />
               </label>
-              <label className="live-field">
-                Space (optional)
-                <select
-                  aria-label="Space (optional)"
-                  name="commentSpace"
-                  value={space}
-                  disabled={!!editing || saving}
-                  onChange={(e) => setSpace(e.target.value)}
+              {inlineMention !== undefined && (
+                <div
+                  className={styles.inlineMentions}
+                  role="group"
+                  aria-label="Mention suggestions"
                 >
-                  <option value="">Project discussion</option>
-                  {data.spaces.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <fieldset>
-                <legend>@Mention team members (optional, up to 20)</legend>
-                <div className={styles.mentions}>
-                  {data.people.map((p) => (
-                    <label key={p.id}>
-                      <input
-                        type="checkbox"
-                        name="mention"
-                        value={p.id}
+                  {data.people
+                    .filter((p) =>
+                      p.display_name
+                        .toLowerCase()
+                        .includes(inlineMention.toLowerCase()),
+                    )
+                    .slice(0, 6)
+                    .map((p) => (
+                      <button
+                        type="button"
+                        key={p.id}
                         disabled={
                           saving ||
                           (!mentions.includes(p.id) && mentions.length >= 20)
                         }
-                        checked={mentions.includes(p.id)}
-                        onChange={(e) =>
+                        onClick={() => {
                           setMentions((v) =>
-                            e.target.checked
-                              ? [...v, p.id]
-                              : v.filter((x) => x !== p.id),
-                          )
-                        }
-                      />
-                      @{p.display_name}
-                    </label>
-                  ))}
+                            v.includes(p.id) ? v : [...v, p.id],
+                          );
+                          setBody((v) =>
+                            v.replace(/@[^@\n]*$/, `@${p.display_name} `),
+                          );
+                          form.current?.querySelector("textarea")?.focus();
+                        }}
+                      >
+                        @{p.display_name}
+                      </button>
+                    ))}
                 </div>
-              </fieldset>
-              {editing && (
-                <label className="live-field">
-                  Correction reason
-                  <input
-                    name="commentReason"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    required
-                    maxLength={2000}
-                  />
-                </label>
               )}
-              <button
-                className="button button-primary"
-                type="submit"
-                disabled={saving}
+              <div
+                hidden={
+                  presentation === "full" && !expanded && !body && !editing
+                }
               >
-                {saving
-                  ? "Saving…"
-                  : editing
-                    ? "Save correction"
-                    : "Post comment"}
-              </button>
-              {editing && (
+                <label className="live-field">
+                  Space (optional)
+                  <select
+                    aria-label="Space (optional)"
+                    name="commentSpace"
+                    value={space}
+                    disabled={!!editing || saving}
+                    onChange={(e) => setSpace(e.target.value)}
+                  >
+                    <option value="">Project discussion</option>
+                    {data.spaces.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <fieldset>
+                  <legend>@Mention team members (optional, up to 20)</legend>
+                  <input
+                    aria-label="Find a team member to mention"
+                    placeholder="Search team members…"
+                    value={mentionSearch}
+                    onChange={(e) => setMentionSearch(e.target.value)}
+                  />
+                  <div className={styles.mentions}>
+                    {data.people
+                      .filter((p) =>
+                        p.display_name
+                          .toLowerCase()
+                          .includes(mentionSearch.toLowerCase()),
+                      )
+                      .map((p) => (
+                        <label key={p.id}>
+                          <input
+                            type="checkbox"
+                            name="mention"
+                            value={p.id}
+                            disabled={
+                              saving ||
+                              (!mentions.includes(p.id) &&
+                                mentions.length >= 20)
+                            }
+                            checked={mentions.includes(p.id)}
+                            onChange={(e) =>
+                              setMentions((v) =>
+                                e.target.checked
+                                  ? [...v, p.id]
+                                  : v.filter((x) => x !== p.id),
+                              )
+                            }
+                          />
+                          @{p.display_name}
+                        </label>
+                      ))}
+                  </div>
+                </fieldset>
+                {editing && (
+                  <label className="live-field">
+                    Correction reason
+                    <input
+                      name="commentReason"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      required
+                      maxLength={2000}
+                    />
+                  </label>
+                )}
                 <button
-                  className="button button-outline"
-                  type="button"
+                  className="button button-primary"
+                  type="submit"
                   disabled={saving}
-                  onClick={() => {
-                    if (!window.confirm("Discard this correction?")) return;
-                    setEditing(null);
-                    setBody("");
-                    setMentions([]);
-                    setSpace("");
-                    setReason("");
-                  }}
                 >
-                  Cancel correction
+                  {saving
+                    ? "Saving…"
+                    : editing
+                      ? "Save correction"
+                      : "Post comment"}
                 </button>
-              )}
+                {editing && (
+                  <button
+                    className="button button-outline"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => {
+                      if (!window.confirm("Discard this correction?")) return;
+                      setEditing(null);
+                      setBody("");
+                      setMentions([]);
+                      setSpace("");
+                      setReason("");
+                    }}
+                  >
+                    Cancel correction
+                  </button>
+                )}
+              </div>
               {success && (
                 <p className="form-success" role="status">
                   {success}
@@ -355,7 +475,7 @@ function DiscussionPanel({
             </form>
           </fieldset>
           <ol className={styles.comments}>
-            {data.records.map((c) => (
+            {[...data.records].reverse().map((c) => (
               <li key={c.id}>
                 <div className={styles.row}>
                   <strong>
@@ -427,11 +547,11 @@ function DiscussionPanel({
           </div>
         </>
       )}
-    </details>
+    </Container>
   );
 }
 type Template = { id: string; name: string; structure: { name: string }[] };
-function TemplatePanel({ project }: { project: string }) {
+export function TemplatePanel({ project }: { project: string }) {
   const router = useRouter();
   const panel = useRef<HTMLDetailsElement>(null);
   const [templates, setTemplates] = useState<Template[]>([]),

@@ -244,6 +244,10 @@ export async function ProjectInstallations({
             <FilterBar
               resultCount={visibleSpaces.length}
               values={{
+                ...(typeof query.tab === "string" ? { tab: query.tab } : {}),
+                ...(typeof query.section === "string"
+                  ? { section: query.section }
+                  : {}),
                 installation_q: installationQ,
                 installation_status: installationStatus,
                 installation_sort: installationSort,

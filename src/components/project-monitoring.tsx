@@ -1,3 +1,4 @@
+import { readableProjectEvent } from "@/lib/project-workspace-view";
 import { FilterBar } from "./filter-bar";
 import { projectIsLost } from "@/lib/workspace-session";
 import { DisclosureSummary } from "./ui-r2/primitives";
@@ -34,10 +35,12 @@ export async function ProjectMonitoring({
   manager,
   filters = {},
   nested = false,
+  unified = false,
 }: {
   project: string;
   manager: boolean;
   nested?: boolean;
+  unified?: boolean;
   filters?: Record<string, string | string[] | undefined>;
 }) {
   const { client, profile } = await requireWorkspace();
@@ -127,6 +130,17 @@ export async function ProjectMonitoring({
   const spaces = spacesResult.data || [];
   const activities = (activitiesResult.data || []) as Activity[];
   const timeline = (timelineResult.data || []) as TimelineEvent[];
+  const assignmentResult =
+    unified && profile.role !== "operations_admin"
+      ? await client
+          .from("project_assignment_events")
+          .select("id,previous_assignments,new_assignments,reason")
+          .eq("project_id", project)
+          .order("occurred_at", { ascending: false })
+          .limit(50)
+      : { data: [], error: null };
+  checkDatabase(assignmentResult.error);
+  const assignments = assignmentResult.data ?? [];
   const coordinators = coordinatorsResult.data || [];
   const attachments = (attachmentsResult.data || []).map((a) => ({
     id: a.id,
@@ -169,7 +183,7 @@ export async function ProjectMonitoring({
       ? profile.display_name
       : (team.data ?? []).find(
           (p: { user_id: string; display_name: string }) => p.user_id === id,
-        )?.display_name || `User ${id.slice(0, 8)}`;
+        )?.display_name || "Project member";
   const measures = (
     <>
       <details className="monitoring-measures">
@@ -327,7 +341,7 @@ export async function ProjectMonitoring({
     </>
   );
   const controls = !lost && manager && m.state !== "Cancelled" && (
-    <details>
+    <details id="project-controls">
       <DisclosureSummary>
         Project controls and deadline revisions
       </DisclosureSummary>
@@ -361,6 +375,10 @@ export async function ProjectMonitoring({
         resultCount={timeline.length}
         resultLabel="events on this page"
         values={{
+          ...(typeof filters.tab === "string" ? { tab: filters.tab } : {}),
+          ...(typeof filters.section === "string"
+            ? { section: filters.section }
+            : {}),
           category,
           from: date("from") || "",
           to: date("to") || "",
@@ -414,11 +432,29 @@ export async function ProjectMonitoring({
           <article className="history-entry" key={t.id}>
             <h3>
               {t.category === "System Event"
-                ? t.description.split(":")[0].replace(/[._]/g, " ")
+                ? readableProjectEvent(t.description)
                 : t.category}{" "}
               · {t.date}
             </h3>
-            <p className="activity-description">{t.description}</p>
+            <p className="activity-description">
+              {t.category === "System Event"
+                ? t.description.includes(":")
+                  ? t.description.slice(t.description.indexOf(":") + 1).trim()
+                  : readableProjectEvent(t.description)
+                : t.description}
+            </p>
+            {assignments.find((a) => a.id === t.id) && (
+              <details>
+                <DisclosureSummary>Assignment details</DisclosureSummary>
+                <pre className="history-json">
+                  {JSON.stringify(
+                    assignments.find((a) => a.id === t.id),
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
+            )}
             <p className="field-hint">
               {actorName(t.actor_id)} · Recorded {formatTime(t.recorded_at)}
               {t.space_id
@@ -504,8 +540,8 @@ export async function ProjectMonitoring({
                 .map((v) => (
                   <div key={v.number}>
                     <p>
-                      Version {v.number} · {v.reason} · Actor {v.actor_id} ·{" "}
-                      {formatTime(v.recorded_at)}
+                      Version {v.number} · {v.reason} · {actorName(v.actor_id)}{" "}
+                      · {formatTime(v.recorded_at)}
                     </p>
                     <pre className="history-json">
                       {JSON.stringify(v.snapshot, null, 2)}

@@ -148,6 +148,10 @@ export async function ProjectSpaces({
         <FilterBar
           resultCount={visibleSpaces.length}
           values={{
+            ...(typeof query.tab === "string" ? { tab: query.tab } : {}),
+            ...(typeof query.section === "string"
+              ? { section: query.section }
+              : {}),
             space_q: spaceQ,
             space_status: spaceStatus,
             space_scope: spaceScope,

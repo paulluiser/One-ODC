@@ -1,3 +1,4 @@
+import { UnifiedProjectWorkspace } from "@/components/project-workspace/unified";
 import { ProjectCommercialWorkflow } from "@/components/project-commercial-workflow";
 import {
   OperationsFrame,
@@ -55,6 +56,8 @@ async function ProjectDetail({
   if (!r.data) notFound();
   const project = projectSchema.parse(r.data);
   const query = await searchParams;
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    return <UnifiedProjectWorkspace project={project} query={query} />;
   const installationEnabled =
     process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true";
   const installationTab = installationEnabled && query.tab === "installation";
@@ -826,7 +829,9 @@ export default async function ProjectPage(
   const { id } = await props.params;
   return (
     <>
-      <ProjectCommercialWorkflow project={id} />
+      {process.env.ONE_ODC_UI_R0_ENABLED !== "true" && (
+        <ProjectCommercialWorkflow project={id} />
+      )}
       <ProjectDetail {...props} />
     </>
   );
