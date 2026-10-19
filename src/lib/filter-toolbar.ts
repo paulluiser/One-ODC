@@ -125,3 +125,18 @@ export function clearToolbarFilters(
     ),
   };
 }
+
+// A second interaction may happen before the first server navigation resolves.
+// Apply only its changes, so a sort/search cannot restore a just-cleared filter.
+export function mergePendingToolbarValues(
+  previous: Record<string, string>,
+  pending: Record<string, string>,
+  next: Record<string, string>,
+) {
+  return {
+    ...pending,
+    ...Object.fromEntries(
+      Object.entries(next).filter(([key, value]) => value !== previous[key]),
+    ),
+  };
+}

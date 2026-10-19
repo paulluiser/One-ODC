@@ -1,3 +1,10 @@
+import { OperationsDetailsSheet } from "./operations-details-sheet";
+import { LogisticsActionDialog } from "./logistics-action-dialog";
+import { operationDetail } from "@/lib/operations-workspace";
+import panel from "./installation-dialog.module.css";
+import { Truck, FileText, Clock3 } from "lucide-react";
+import { OperationsDirectory } from "./operations-directory";
+import styles from "./operations-workspace.module.css";
 import { Fragment } from "react";
 import { FilterBar } from "./filter-bar";
 import {
@@ -43,9 +50,11 @@ function skippedTransition(event: LogisticsEvent) {
 export async function ProjectLogistics({
   project,
   query = {},
+  unified = false,
 }: {
   project: string;
   query?: ToolbarQuery;
+  unified?: boolean;
 }) {
   const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
   const { client, profile } = await requireWorkspace();
@@ -111,11 +120,14 @@ export async function ProjectLogistics({
     logisticsSort = toolbarChoice(
       query,
       "logistics_sort",
-      ["created", "supplier"],
+      ["created", "supplier", "stage", "updated"],
       "created",
     );
   const visibleRecords = (
-    (records.data as (Logistics & { created_at: string })[]) ?? []
+    (records.data as (Logistics & {
+      created_at: string;
+      updated_at: string;
+    })[]) ?? []
   )
     .filter(
       (r) =>
@@ -130,7 +142,12 @@ export async function ProjectLogistics({
       (a, b) =>
         (logisticsSort === "supplier"
           ? a.supplier_name.localeCompare(b.supplier_name)
-          : a.created_at.localeCompare(b.created_at)) ||
+          : logisticsSort === "stage"
+            ? logisticsStatuses.indexOf(a.status) -
+              logisticsStatuses.indexOf(b.status)
+            : logisticsSort === "updated"
+              ? b.updated_at.localeCompare(a.updated_at)
+              : a.created_at.localeCompare(b.created_at)) ||
         a.id.localeCompare(b.id),
     );
   const permitted = manager || profile.role === "operations_admin",
@@ -148,31 +165,56 @@ export async function ProjectLogistics({
     : { data: [], error: null };
   checkDatabase(supplierResult.error);
   const suppliers = (supplierResult.data ?? []) as Supplier[];
-  const Frame = rebuild ? OperationsFrame : Fragment;
+  const selected = operationDetail(query, "logistics");
+  const Frame = rebuild && !unified ? OperationsFrame : Fragment;
   return (
     <Frame>
       <section
-        className="surface live-form logistics-workspace"
+        className={
+          unified
+            ? `surface ${styles.section}`
+            : "surface live-form logistics-workspace"
+        }
+        id="operations-logistics"
+        tabIndex={-1}
         aria-label="Supplier and logistics workspace"
       >
-        <h2>Supplier & Logistics</h2>
-        <details>
-          <OperationSummary>
-            Logistics terms and financial boundaries
-          </OperationSummary>
-          <p>
-            RFP means Request for Payment, tracked only; requests and approvals
-            occur outside One ODC. Landed means arrival in the destination
-            country. Delivery does not complete installation.
-          </p>
-        </details>
+        {unified ? (
+          <header className={`${styles.heading} ${styles.logisticsHeader}`}>
+            <h2>Supplier & Logistics</h2>
+            {writable && !held && (
+              <LogisticsActionDialog
+                id={randomUUID()}
+                project={project}
+                suppliers={suppliers}
+                manager={manager}
+                administrative={profile.role === "system_administrator"}
+                handoffAcknowledged={h.status === "Acknowledged"}
+              />
+            )}
+          </header>
+        ) : (
+          <>
+            <h2>Supplier & Logistics</h2>
+            <details>
+              <OperationSummary>
+                Logistics terms and financial boundaries
+              </OperationSummary>
+              <p>
+                RFP means Request for Payment, tracked only; requests and
+                approvals occur outside One ODC. Landed means arrival in the
+                destination country. Delivery does not complete installation.
+              </p>
+            </details>
+          </>
+        )}
         {!rebuild && (
           <p>
             Current handoff: {h.status}. Raw and supplier payments remain
             consolidated Project-level records.
           </p>
         )}
-        {permitted && (
+        {!unified && permitted && (
           <Link href="/dashboard/suppliers">Manage Supplier Masterlist</Link>
         )}
         {!writable && (
@@ -192,7 +234,7 @@ export async function ProjectLogistics({
             authorized metadata corrections remain available.
           </p>
         )}
-        {writable && !held && (
+        {!unified && writable && !held && (
           <OperationEditor enabled={rebuild} title="Add logistics record">
             <LogisticsForm
               rebuild={rebuild}
@@ -230,6 +272,8 @@ export async function ProjectLogistics({
                 options: [
                   { value: "created", label: "Creation order" },
                   { value: "supplier", label: "Supplier A–Z" },
+                  { value: "stage", label: "Current stage" },
+                  { value: "updated", label: "Recently updated" },
                 ],
               },
               fields: [
@@ -257,125 +301,338 @@ export async function ProjectLogistics({
         {rebuild && !!records.data?.length && !visibleRecords.length && (
           <p>No logistics records match these filters.</p>
         )}
+        {unified && (
+          <OperationsDirectory
+            kind="logistics"
+            columns={[
+              "Supplier",
+              "Current Stage",
+              "Requested Date",
+              "Expected Date",
+              "Status",
+              "Updated",
+            ]}
+            rows={visibleRecords.map((r) => ({
+              id: r.id,
+              name: r.supplier_name,
+              cells: [
+                r.supplier_name,
+                r.status,
+                "Not recorded",
+                "Not recorded",
+                r.status === "On Hold" || r.status === "Cancelled"
+                  ? r.status
+                  : "—",
+                formatTime(r.updated_at),
+              ],
+            }))}
+          />
+        )}
         <div className="operations-record-grid">
           {(rebuild
             ? visibleRecords
-            : ((records.data as (Logistics & { created_at: string })[]) ?? [])
-          ).map((r) => (
-            <article
-              className="surface live-form operations-record"
-              key={r.id}
-              id={`logistics-${r.id}`}
-              aria-label={`Logistics ${r.id}`}
-            >
-              <h3>
-                {r.supplier_name} · <RecordStatus>{r.status}</RecordStatus>
-              </h3>
-              <p>
-                {r.brand || "No brand"} · Reference:{" "}
-                {r.reference || "Not provided"}
-              </p>
-              <p className="field-hint">
-                Status recorded {formatTime(r.status_at)}
-              </p>
-              {rebuild ? (
-                <LogisticsTracker
-                  stages={logisticsStatuses.slice(0, 7)}
-                  current={r.status}
-                />
-              ) : (
-                <>
-                  <ol
-                    className="logistics-progression"
-                    aria-label="Logistics stage sequence"
-                  >
-                    {logisticsStatuses.slice(0, 7).map((stage) => (
-                      <li
-                        key={stage}
-                        aria-current={r.status === stage ? "step" : undefined}
-                      >
-                        {stage}
-                      </li>
-                    ))}
-                  </ol>
-                </>
-              )}
-              {r.held_status && (
-                <p className="exception-notice">On Hold from {r.held_status}</p>
-              )}
-              {((history.data as LogisticsEvent[]) ?? [])
-                .filter(
-                  (event) =>
-                    event.logistics_id === r.id && skippedTransition(event),
-                )
-                .map((event) => (
-                  <p className="exception-notice" key={event.id}>
-                    Skipped stages · {skippedTransition(event)} · {event.reason}
-                  </p>
-                ))}
-              <details>
-                <OperationSummary>Record reference</OperationSummary>
-                <p>
-                  Record {r.id} · Updated by {r.updated_by}
-                </p>
-              </details>
-              {(r.remarks || !rebuild) && (
-                <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-                  {r.remarks || "No remarks"}
-                </p>
-              )}
-              {writable && (
-                <OperationEditor
-                  enabled={rebuild}
-                  title="Edit logistics / change status"
-                >
-                  <LogisticsForm
-                    rebuild={rebuild}
+            : ((records.data as (Logistics & {
+                created_at: string;
+                updated_at: string;
+              })[]) ?? [])
+          )
+            .filter((r) => !unified || r.id === selected)
+            .map((r) => {
+              if (unified) {
+                const events = (
+                  (history.data as LogisticsEvent[]) ?? []
+                ).filter((e) => e.logistics_id === r.id);
+                return (
+                  <OperationsDetailsSheet
+                    key={r.id}
+                    kind="logistics"
                     id={r.id}
-                    project={project}
-                    suppliers={suppliers}
-                    record={r}
-                    held={held}
-                    manager={manager}
-                  />
-                </OperationEditor>
-              )}
-              <details>
-                <OperationSummary>
-                  Logistics status and audit history
-                </OperationSummary>
-                <ol>
+                    name={r.supplier_name}
+                    status={<RecordStatus>{r.status}</RecordStatus>}
+                    description={`${r.brand || "Brand not specified"} · Reference: ${r.reference || "Not provided"}`}
+                    records={visibleRecords.map((row) => ({
+                      id: row.id,
+                      name: `${row.supplier_name} · ${row.reference || "No reference"}`,
+                    }))}
+                  >
+                    <section>
+                      <h3>
+                        <FileText aria-hidden="true" />
+                        Record information
+                      </h3>
+                      <dl className={panel.logisticsFacts}>
+                        <div>
+                          <dt>Supplier</dt>
+                          <dd>{r.supplier_name}</dd>
+                        </div>
+                        <div>
+                          <dt>Supplier reference</dt>
+                          <dd>{r.reference || "Not provided"}</dd>
+                        </div>
+                        <div>
+                          <dt>Brand</dt>
+                          <dd>{r.brand || "Not specified"}</dd>
+                        </div>
+                        <div>
+                          <dt>Current stage</dt>
+                          <dd>
+                            <RecordStatus>{r.status}</RecordStatus>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Status recorded</dt>
+                          <dd>{formatTime(r.status_at)}</dd>
+                        </div>
+                        <div>
+                          <dt>Last updated</dt>
+                          <dd>{formatTime(r.updated_at)}</dd>
+                        </div>
+                      </dl>
+                    </section>
+                    <section>
+                      <h3>
+                        <Truck aria-hidden="true" />
+                        Logistics progress
+                      </h3>
+                      <ol
+                        className={panel.stageSequence}
+                        aria-label="Logistics stage sequence"
+                      >
+                        {logisticsStatuses.slice(0, 7).map((stage, index) => (
+                          <li
+                            key={stage}
+                            aria-current={
+                              r.status === stage ? "step" : undefined
+                            }
+                          >
+                            <span>{index + 1}</span>
+                            {stage}
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="field-hint">
+                        Sequence reference only. Earlier or skipped stages are
+                        not marked completed.
+                      </p>
+                      {r.held_status && <p>On Hold from {r.held_status}</p>}
+                      {events
+                        .filter((e) => skippedTransition(e))
+                        .map((e) => (
+                          <p key={e.id}>
+                            Skipped stages · {skippedTransition(e)} · {e.reason}
+                          </p>
+                        ))}
+                    </section>
+                    <section>
+                      <h3>
+                        <FileText aria-hidden="true" />
+                        Record reference & remarks
+                      </h3>
+                      <p
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {r.remarks || "No remarks recorded."}
+                      </p>
+                      <details>
+                        <OperationSummary>Audit references</OperationSummary>
+                        <p>Record ID: {r.id}</p>
+                        <p>Supplier ID: {r.supplier_id}</p>
+                        <p>Updated by: {r.updated_by}</p>
+                      </details>
+                    </section>
+                    <section>
+                      <h3>
+                        <Clock3 aria-hidden="true" />
+                        Recent activity
+                      </h3>
+                      {events.length ? (
+                        <ol className={panel.recent}>
+                          {events
+                            .slice()
+                            .sort(
+                              (a, b) =>
+                                b.occurred_at.localeCompare(a.occurred_at) ||
+                                b.version - a.version,
+                            )
+                            .slice(0, 3)
+                            .map((e) => (
+                              <li key={e.id}>
+                                <strong>
+                                  {e.action === "status_changed"
+                                    ? `Stage changed to ${(e.new_value as { status?: string })?.status || "recorded stage"}`
+                                    : e.action === "created"
+                                      ? "Record created"
+                                      : "Record details updated"}
+                                </strong>
+                                <time dateTime={e.occurred_at}>
+                                  {formatTime(e.occurred_at)}
+                                </time>
+                                <p>{e.reason}</p>
+                              </li>
+                            ))}
+                        </ol>
+                      ) : (
+                        <p>No authorized activity recorded.</p>
+                      )}
+                    </section>
+                    {writable && (
+                      <LogisticsActionDialog
+                        id={r.id}
+                        project={project}
+                        record={r}
+                        suppliers={suppliers}
+                        manager={manager}
+                        held={held}
+                        administrative={profile.role === "system_administrator"}
+                        handoffAcknowledged={h.status === "Acknowledged"}
+                      />
+                    )}
+                    <Link
+                      href={`/dashboard/projects/${project}?tab=activity&section=history&category=Supplier+Update`}
+                    >
+                      View logistics history in Activity →
+                    </Link>
+                  </OperationsDetailsSheet>
+                );
+              }
+              return (
+                <article
+                  className="surface live-form operations-record"
+                  key={r.id}
+                  id={`logistics-${r.id}`}
+                  aria-label={`Logistics ${r.id}`}
+                >
+                  <h3>
+                    {r.supplier_name} · <RecordStatus>{r.status}</RecordStatus>
+                  </h3>
+                  <p>
+                    {r.brand || "No brand"} · Reference:{" "}
+                    {r.reference || "Not provided"}
+                  </p>
+                  <p className="field-hint">
+                    Status recorded {formatTime(r.status_at)}
+                  </p>
+                  {rebuild ? (
+                    <LogisticsTracker
+                      stages={logisticsStatuses.slice(0, 7)}
+                      current={r.status}
+                    />
+                  ) : (
+                    <>
+                      <ol
+                        className="logistics-progression"
+                        aria-label="Logistics stage sequence"
+                      >
+                        {logisticsStatuses.slice(0, 7).map((stage) => (
+                          <li
+                            key={stage}
+                            aria-current={
+                              r.status === stage ? "step" : undefined
+                            }
+                          >
+                            {stage}
+                          </li>
+                        ))}
+                      </ol>
+                    </>
+                  )}
+                  {r.held_status && (
+                    <p className="exception-notice">
+                      On Hold from {r.held_status}
+                    </p>
+                  )}
                   {((history.data as LogisticsEvent[]) ?? [])
-                    .filter((e) => e.logistics_id === r.id)
-                    .map((e) => (
-                      <li key={e.id}>
-                        {e.action.replaceAll("_", " ")} ·{" "}
-                        {formatTime(e.occurred_at)} · {e.reason}
-                        {e.administrative_override
-                          ? " · Audited administrative override"
-                          : ""}
-                        <details>
-                          <OperationSummary>
-                            Preserved values and actor
-                          </OperationSummary>
-                          <p>Actor {e.actor_id}</p>
-                          <pre className="history-json">
-                            {JSON.stringify(
-                              {
-                                previous: e.previous_value,
-                                current: e.new_value,
-                              },
-                              null,
-                              2,
-                            )}
-                          </pre>
-                        </details>
-                      </li>
+                    .filter(
+                      (event) =>
+                        event.logistics_id === r.id && skippedTransition(event),
+                    )
+                    .map((event) => (
+                      <p className="exception-notice" key={event.id}>
+                        Skipped stages · {skippedTransition(event)} ·{" "}
+                        {event.reason}
+                      </p>
                     ))}
-                </ol>
-              </details>
-            </article>
-          ))}
+                  <details>
+                    <OperationSummary>Record reference</OperationSummary>
+                    <p>
+                      Record {r.id} · Updated by {r.updated_by}
+                    </p>
+                  </details>
+                  {(r.remarks || !rebuild) && (
+                    <p
+                      style={{
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {r.remarks || "No remarks"}
+                    </p>
+                  )}
+                  {writable && (
+                    <OperationEditor
+                      enabled={rebuild}
+                      title="Edit logistics / change status"
+                    >
+                      <LogisticsForm
+                        rebuild={rebuild}
+                        id={r.id}
+                        project={project}
+                        suppliers={suppliers}
+                        record={r}
+                        held={held}
+                        manager={manager}
+                      />
+                    </OperationEditor>
+                  )}
+                  {!unified && (
+                    <details>
+                      <OperationSummary>
+                        Logistics status and audit history
+                      </OperationSummary>
+                      <ol>
+                        {((history.data as LogisticsEvent[]) ?? [])
+                          .filter((e) => e.logistics_id === r.id)
+                          .map((e) => (
+                            <li key={e.id}>
+                              {e.action.replaceAll("_", " ")} ·{" "}
+                              {formatTime(e.occurred_at)} · {e.reason}
+                              {e.administrative_override
+                                ? " · Audited administrative override"
+                                : ""}
+                              <details>
+                                <OperationSummary>
+                                  Preserved values and actor
+                                </OperationSummary>
+                                <p>Actor {e.actor_id}</p>
+                                <pre className="history-json">
+                                  {JSON.stringify(
+                                    {
+                                      previous: e.previous_value,
+                                      current: e.new_value,
+                                    },
+                                    null,
+                                    2,
+                                  )}
+                                </pre>
+                              </details>
+                            </li>
+                          ))}
+                      </ol>
+                    </details>
+                  )}
+                  {unified && (
+                    <Link
+                      href={`/dashboard/projects/${project}?tab=activity&section=history&category=Supplier+Update`}
+                    >
+                      View logistics history in Activity →
+                    </Link>
+                  )}
+                </article>
+              );
+            })}
         </div>
         {permitted && (
           <Link href={`/dashboard/projects/${project}?tab=finance`}>

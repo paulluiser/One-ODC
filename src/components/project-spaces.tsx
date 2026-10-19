@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { SpaceDirectory } from "./space-directory";
+import { SpaceDetailsDrawer } from "./space-details-drawer";
+import { SpaceWorkspaceTools } from "./space-workspace-tools";
 import directoryStyles from "./space-directory.module.css";
 import { projectIsLost } from "@/lib/workspace-session";
 import { FilterBar } from "./filter-bar";
@@ -150,19 +149,12 @@ export async function ProjectSpaces({
     );
   return (
     <section className="surface live-form project-spaces" id="project-spaces">
-      <div className={directoryStyles.heading}>
-        <h2>Spaces</h2>
-        {rebuild && (
-          <Link
-            className={directoryStyles.history}
-            href={`/dashboard/projects/${project}?tab=activity&section=history&category=System+Event`}
-          >
-            View full space history in Activity tab{" "}
-            <ArrowRight size={15} aria-hidden="true" />
-          </Link>
-        )}
-      </div>
-      {canManage && (
+      {!rebuild && (
+        <div className={directoryStyles.heading}>
+          <h2>Spaces</h2>
+        </div>
+      )}
+      {!rebuild && canManage && (
         <details>
           <DisclosureSummary id="space-create">
             Create a space
@@ -178,60 +170,84 @@ export async function ProjectSpaces({
         </details>
       )}
       {rebuild && (
-        <FilterBar
-          resultCount={visibleSpaces.length}
-          values={{
-            ...(typeof query.tab === "string" ? { tab: query.tab } : {}),
-            ...(typeof query.section === "string"
-              ? { section: query.section }
-              : {}),
-            ...(typeof query.space_detail === "string"
-              ? { space_detail: query.space_detail }
-              : {}),
-            space_q: spaceQ,
-            space_status: spaceStatus,
-            space_scope: spaceScope,
-            space_sort: spaceSort,
-          }}
-          config={{
-            label: "Space filters",
-            search: {
-              key: "space_q",
-              label: "Search spaces",
-              placeholder: "Search spaces…",
-            },
-            sort: {
-              key: "space_sort",
-              label: "Sort spaces",
-              defaultValue: "created",
-              options: [
-                { value: "created", label: "Creation order" },
-                { value: "name", label: "Name A–Z" },
-                { value: "deadline", label: "Deadline first" },
+        <SpaceWorkspaceTools
+          project={project}
+          people={people}
+          canManage={canManage}
+          all={spaces.map((s) => ({
+            id: s.id,
+            name: s.name,
+            version: s.version,
+            primary: s.primary_designer_id,
+            support: supporters
+              .filter((a) => a.space_id === s.id)
+              .map((a) => a.user_id),
+            eligible: canManage && !s.cancelled_at,
+          }))}
+          rows={visibleSpaces.map((s) => ({
+            id: s.id,
+            name: s.name,
+            designer: name(s.primary_designer_id),
+            status: s.cancelled_at ? "Cancelled" : s.status,
+            deadline: s.deadline,
+            updated: s.updated_at,
+          }))}
+        >
+          <FilterBar
+            resultCount={visibleSpaces.length}
+            values={{
+              ...(typeof query.tab === "string" ? { tab: query.tab } : {}),
+              ...(typeof query.section === "string"
+                ? { section: query.section }
+                : {}),
+              ...(typeof query.space_detail === "string"
+                ? { space_detail: query.space_detail }
+                : {}),
+              space_q: spaceQ,
+              space_status: spaceStatus,
+              space_scope: spaceScope,
+              space_sort: spaceSort,
+            }}
+            config={{
+              label: "Space filters",
+              search: {
+                key: "space_q",
+                label: "Search spaces",
+                placeholder: "Search spaces…",
+              },
+              sort: {
+                key: "space_sort",
+                label: "Sort spaces",
+                defaultValue: "created",
+                options: [
+                  { value: "created", label: "Creation order" },
+                  { value: "name", label: "Name A–Z" },
+                  { value: "deadline", label: "Deadline first" },
+                ],
+              },
+              fields: [
+                {
+                  key: "space_status",
+                  label: "Design status",
+                  options: [
+                    { value: "", label: "All statuses" },
+                    ...filterOptions(spaceStatuses),
+                  ],
+                },
+                {
+                  key: "space_scope",
+                  label: "Scope",
+                  options: [
+                    { value: "", label: "All spaces" },
+                    { value: "active", label: "Active spaces" },
+                    { value: "cancelled", label: "Cancelled spaces" },
+                    { value: "mine", label: "Assigned to me" },
+                  ],
+                },
               ],
-            },
-            fields: [
-              {
-                key: "space_status",
-                label: "Design status",
-                options: [
-                  { value: "", label: "All statuses" },
-                  ...filterOptions(spaceStatuses),
-                ],
-              },
-              {
-                key: "space_scope",
-                label: "Scope",
-                options: [
-                  { value: "", label: "All spaces" },
-                  { value: "active", label: "Active spaces" },
-                  { value: "cancelled", label: "Cancelled spaces" },
-                  { value: "mine", label: "Assigned to me" },
-                ],
-              },
-            ],
-          }}
-        />
+            }}
+          />
+        </SpaceWorkspaceTools>
       )}
       {!rebuild && (
         <p className="field-hint">
@@ -253,23 +269,33 @@ export async function ProjectSpaces({
       {rebuild && !!spaces.length && !visibleSpaces.length && (
         <p>No spaces match these filters.</p>
       )}
-      {rebuild && visibleSpaces.length > 0 && (
-        <SpaceDirectory
-          rows={visibleSpaces.map((s) => ({
-            id: s.id,
-            name: s.name,
-            designer: name(s.primary_designer_id),
-            status: s.cancelled_at ? "Cancelled" : s.status,
-            deadline: s.deadline,
-            updated: s.updated_at,
-          }))}
-        />
-      )}
+      {rebuild &&
+        spaces
+          .filter((s) => s.id === toolbarText(query, "space_detail"))
+          .map((s) => (
+            <SpaceDetailsDrawer
+              key={s.id}
+              space={s}
+              support={supporters
+                .filter((a) => a.space_id === s.id)
+                .map((a) => a.user_id)}
+              people={people}
+              manager={manager}
+              admin={profile.role === "system_administrator"}
+              held={held}
+              editable={
+                !cancelled &&
+                (manager ||
+                  (["designer", "lead_designer"].includes(profile.role) &&
+                    (s.primary_designer_id === profile.id ||
+                      supporters.some(
+                        (a) => a.space_id === s.id && a.user_id === profile.id,
+                      ))))
+              }
+            />
+          ))}
       <div className="space-work-grid">
-        {(rebuild
-          ? spaces.filter((s) => s.id === toolbarText(query, "space_detail"))
-          : spaces
-        ).map((s) => {
+        {(!rebuild ? spaces : []).map((s) => {
           const roster = supporters.filter((a) => a.space_id === s.id);
           const latest = (activity.data ?? [])
             .filter(
@@ -422,7 +448,7 @@ export async function ProjectSpaces({
           );
         })}
       </div>
-      {canManage && spaces.some((s) => !s.cancelled_at) && (
+      {!rebuild && canManage && spaces.some((s) => !s.cancelled_at) && (
         <details>
           <DisclosureSummary>Bulk reassignment</DisclosureSummary>
           <BulkSpaceForm

@@ -1,3 +1,4 @@
+import { FinancialActivity } from "../financial-activity";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { z } from "zod";
@@ -33,20 +34,14 @@ import {
   workspaceUrl,
 } from "@/lib/project-workspace-view";
 import { Scope, Status } from "../ui-r2/primitives";
-import {
-  ProjectTools,
-  DiscussionPanel,
-  TemplatePanel,
-} from "../productivity/project-tools";
-import { AssignmentForm, LeadDesignerAssignmentForm } from "../workflow-forms";
-import { ContextPanel } from "../context-panel";
+import { ProjectTools, DiscussionPanel } from "../productivity/project-tools";
+import { ProjectTeamDialog } from "../project-team-dialog";
 import { ProjectCommercialWorkflow } from "../project-commercial-workflow";
 import { ProjectSpaces } from "../project-spaces";
 import { ProjectMonitoring } from "../project-monitoring";
-import { ProjectHandoff } from "../project-handoff";
-import { ProjectInstallations } from "../project-installations";
-import { ProjectLogistics } from "../project-logistics";
+import { UnifiedOperations } from "../unified-operations";
 import { ProjectQuotation } from "../project-quotation";
+import { QuotationActivity } from "../quotation-activity";
 import { ProjectFinancials } from "../project-financials";
 import { ProjectResources } from "../project-resources";
 import { WorkspaceNavigation, ProjectActionMenu } from "./navigation";
@@ -215,23 +210,16 @@ export async function UnifiedProjectWorkspace({
       ? "Inactive"
       : metric?.risk || "Not available";
   const assignments = manager ? (
-    <ContextPanel
-      title="Manage project team"
-      description="Update project assignments. Changes require a reason and remain in the audit history."
-      triggerLabel="Manage team"
-    >
-      {(!project.awaiting_handoff || profile.role === "lead_designer") && (
-        <AssignmentForm id={id} people={people} team={team} />
-      )}
-      {!project.is_cancelled && !project.is_operationally_completed && (
-        <LeadDesignerAssignmentForm
-          id={id}
-          kind="project"
-          current={project.lead_designer_id}
-          people={people}
-        />
-      )}
-    </ContextPanel>
+    <ProjectTeamDialog
+      id={id}
+      people={people}
+      team={team}
+      current={project.lead_designer_id}
+      closed={project.commercial_status === "Closed"}
+      canAssign={!project.awaiting_handoff || profile.role === "lead_designer"}
+      canTransfer={!project.is_cancelled && !project.is_operationally_completed}
+      viewer={{ id: profile.id, role: profile.role }}
+    />
   ) : null;
   const section = view.section;
   const next: { label: string; description: string; href: string }[] = [];
@@ -614,68 +602,14 @@ export async function UnifiedProjectWorkspace({
                       query={{ ...query, tab: "spaces" }}
                     />
                   </Suspense>
-                  {manager &&
-                    !project.is_cancelled &&
-                    !project.is_operationally_completed && (
-                      <TemplatePanel project={id} />
-                    )}
                 </>
               ) : (
                 <p>Space management is unavailable.</p>
               ))}
             {view.tab === "operations" && (
-              <>
-                <Subnav>
-                  {[
-                    ["handoff", "Handoff"],
-                    ["installation", "Installation"],
-                    ["logistics", "Supplier & Logistics"],
-                  ]
-                    .filter(([s]) =>
-                      s === "handoff"
-                        ? enabled("HANDOFF")
-                        : s === "installation"
-                          ? enabled("INSTALLATIONS")
-                          : enabled("LOGISTICS"),
-                    )
-                    .map(([s, label]) => (
-                      <Link
-                        key={s}
-                        href={url("operations", s)}
-                        aria-current={
-                          (section || "handoff") === s ? "page" : undefined
-                        }
-                      >
-                        {label}
-                      </Link>
-                    ))}
-                </Subnav>
-                <Suspense fallback={<Loading />}>
-                  {section === "installation" && enabled("INSTALLATIONS") ? (
-                    <ProjectInstallations
-                      project={id}
-                      query={{
-                        ...query,
-                        tab: "operations",
-                        section: "installation",
-                      }}
-                    />
-                  ) : section === "logistics" && enabled("LOGISTICS") ? (
-                    <ProjectLogistics
-                      project={id}
-                      query={{
-                        ...query,
-                        tab: "operations",
-                        section: "logistics",
-                      }}
-                    />
-                  ) : enabled("HANDOFF") ? (
-                    <ProjectHandoff project={id} />
-                  ) : (
-                    <p>Operational handoff is unavailable.</p>
-                  )}
-                </Suspense>
-              </>
+              <Suspense fallback={<Loading />}>
+                <UnifiedOperations project={id} query={query} />
+              </Suspense>
             )}
             {view.tab === "financials" && (
               <>
@@ -762,6 +696,26 @@ export async function UnifiedProjectWorkspace({
                 ) : (
                   <>
                     <Suspense fallback={<Loading />}>
+                      {enabled("QUOTATIONS") && !ops && (
+                        <QuotationActivity
+                          project={id}
+                          selected={
+                            typeof query.quotation_history === "string"
+                              ? query.quotation_history
+                              : undefined
+                          }
+                        />
+                      )}
+                      {enabled("FINANCE") && profile.role !== "designer" && (
+                        <FinancialActivity
+                          project={id}
+                          selected={
+                            typeof query.finance_history === "string"
+                              ? query.finance_history
+                              : undefined
+                          }
+                        />
+                      )}
                       {enabled("MONITORING") && (
                         <ProjectMonitoring
                           unified

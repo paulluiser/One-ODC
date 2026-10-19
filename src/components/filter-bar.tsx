@@ -7,6 +7,7 @@ import {
   clearToolbarFilters,
   toolbarUrl,
   validateToolbarValues,
+  mergePendingToolbarValues,
   type FilterConfig,
 } from "@/lib/filter-toolbar";
 import styles from "./filter-bar.module.css";
@@ -102,6 +103,7 @@ function Toolbar({
     };
   }, []);
   function apply(next: Record<string, string>) {
+    if (pending) next = mergePendingToolbarValues(values, retry.current, next);
     if (timer.current) clearTimeout(timer.current);
     const issues = {
       ...validateToolbarValues(config, next),

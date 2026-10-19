@@ -265,10 +265,36 @@ export async function ProjectFinancials({ project }: { project: string }) {
     if (f.sale) f.sale.editable = false;
     if (f.raw) f.raw.editable = false;
   }
-  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
+    const ids = [
+      ...new Set(
+        [...f.client_payments.records, ...f.supplier_payments.records].map(
+          (p) => p.created_by,
+        ),
+      ),
+    ];
+    const actors = ids.length
+      ? await client.from("profiles").select("id,display_name").in("id", ids)
+      : null;
+    checkDatabase(actors?.error ?? null);
+    const record = await client
+      .from("projects")
+      .select("name")
+      .eq("id", project)
+      .single();
+    checkDatabase(record.error);
     return (
-      <FinancialWorkspace project={project} financials={f} admin={admin} />
+      <FinancialWorkspace
+        project={project}
+        projectName={record.data?.name ?? "Project"}
+        financials={f}
+        admin={admin}
+        names={Object.fromEntries(
+          (actors?.data ?? []).map((p) => [p.id, p.display_name]),
+        )}
+      />
     );
+  }
   return (
     <>
       <section className="surface live-form financial-summary">

@@ -15,7 +15,18 @@ export type SpaceDirectoryRecord = {
   deadline: string | null;
   updated: string;
 };
-export function SpaceDirectory({ rows }: { rows: SpaceDirectoryRecord[] }) {
+export function SpaceDirectory({
+  rows,
+  selection,
+}: {
+  rows: SpaceDirectoryRecord[];
+  selection?: {
+    ids: string[];
+    eligible: string[];
+    toggle: (id: string, checked: boolean) => void;
+    togglePage: (checked: boolean) => void;
+  };
+}) {
   const path = usePathname(),
     query = useSearchParams(),
     router = useRouter();
@@ -61,13 +72,39 @@ export function SpaceDirectory({ rows }: { rows: SpaceDirectoryRecord[] }) {
         role="region"
         aria-label="Spaces directory"
       >
-        <table className={styles.table}>
+        <table className={styles.table} data-selectable={!!selection}>
           <caption className="sr-only">
             Project spaces. Open a space name to view details and authorized
             management controls.
           </caption>
           <thead>
             <tr>
+              {selection && (
+                <th scope="col">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all eligible Spaces on this page"
+                    checked={
+                      rows.some((s) => selection.eligible.includes(s.id)) &&
+                      rows
+                        .filter((s) => selection.eligible.includes(s.id))
+                        .every((s) => selection.ids.includes(s.id))
+                    }
+                    ref={(el) => {
+                      if (el)
+                        el.indeterminate =
+                          rows.some((s) => selection.ids.includes(s.id)) &&
+                          !rows
+                            .filter((s) => selection.eligible.includes(s.id))
+                            .every((s) => selection.ids.includes(s.id));
+                    }}
+                    onChange={(e) => selection.togglePage(e.target.checked)}
+                    disabled={
+                      !rows.some((s) => selection.eligible.includes(s.id))
+                    }
+                  />
+                </th>
+              )}
               {[
                 "Space",
                 "Assigned Designer",
@@ -84,10 +121,23 @@ export function SpaceDirectory({ rows }: { rows: SpaceDirectoryRecord[] }) {
           <tbody>
             {rows.map((s) => (
               <tr key={s.id}>
+                {selection && (
+                  <td>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${s.name}`}
+                      checked={selection.ids.includes(s.id)}
+                      disabled={!selection.eligible.includes(s.id)}
+                      onChange={(e) => selection.toggle(s.id, e.target.checked)}
+                    />
+                  </td>
+                )}
                 <td>
                   <Link
                     className={styles.name}
                     href={url(s.id)}
+                    scroll={false}
+                    data-space-id={s.id}
                     aria-label={`Open space ${s.name}`}
                   >
                     {s.name}
@@ -113,37 +163,47 @@ export function SpaceDirectory({ rows }: { rows: SpaceDirectoryRecord[] }) {
       </div>
       <div className={styles.mobile}>
         {rows.map((s) => (
-          <Link
-            key={s.id}
-            href={url(s.id)}
-            className={styles.mobileRow}
-            aria-label={`Open space ${s.name}`}
-          >
-            <div>
-              <strong>{s.name}</strong>
-              <Status>{s.status}</Status>
-            </div>
-            {designer(s)}
-            <dl>
+          <article key={s.id} className={styles.mobileSelection}>
+            {selection && (
+              <label>
+                <input
+                  type="checkbox"
+                  aria-label={`Select ${s.name}`}
+                  checked={selection.ids.includes(s.id)}
+                  disabled={!selection.eligible.includes(s.id)}
+                  onChange={(e) => selection.toggle(s.id, e.target.checked)}
+                />
+                Select space
+              </label>
+            )}
+            <Link
+              href={url(s.id)}
+              scroll={false}
+              data-space-id={s.id}
+              className={styles.mobileRow}
+              aria-label={`Open space ${s.name}`}
+            >
               <div>
-                <dt>Deadline</dt>
-                <dd>{directoryDate(s.deadline)}</dd>
+                <strong>{s.name}</strong>
+                <Status>{s.status}</Status>
               </div>
-              <div>
-                <dt>Updated</dt>
-                <dd>
-                  <time dateTime={s.updated}>{formatTime(s.updated)}</time>
-                </dd>
-              </div>
-            </dl>
-          </Link>
+              {designer(s)}
+              <dl>
+                <div>
+                  <dt>Deadline</dt>
+                  <dd>{directoryDate(s.deadline)}</dd>
+                </div>
+                <div>
+                  <dt>Updated</dt>
+                  <dd>
+                    <time dateTime={s.updated}>{formatTime(s.updated)}</time>
+                  </dd>
+                </div>
+              </dl>
+            </Link>
+          </article>
         ))}
       </div>
-      {query.get("space_detail") && (
-        <Link className={styles.close} href={url(null)}>
-          Close space details
-        </Link>
-      )}
     </>
   );
 }

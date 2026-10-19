@@ -1,6 +1,17 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
+vi.mock("../../src/app/dashboard/projects/quotation-actions", () => ({
+  reviewQuotationAction: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/dashboard/projects/project",
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+vi.mock("../../src/components/financial-action-dialog", () => ({
+  FinancialActionDialog: () => null,
+}));
 vi.mock("../../src/components/finance-form", () => ({
   FinanceForm: () => null,
   PaymentHeading: ({ children }: { children: string }) =>
@@ -34,7 +45,7 @@ it("Ops-redacted financial DTO never creates quotation or Sale content, but pres
       admin: false,
     }),
   );
-  expect(html).not.toContain("Approved quotation");
+  expect(html).not.toContain("Approved Quotation");
   expect(html).not.toContain("Sale management");
   expect(html).not.toContain("Adjust Sale");
   expect(html).toContain("possible overpayment");
@@ -61,8 +72,8 @@ it("allowed financial values remain distinct and decimal safe without implying p
     }),
   );
   expect(html).toContain("₱1,234,567,890,123.45");
-  expect(html).toContain("Sale minus Raw");
-  expect(html).toContain("Excludes other expenses and taxes");
+  expect(html).toContain("Gross Difference");
+  expect(html).toContain("excludes other expenses and taxes");
   expect(html).not.toContain("net profit");
   expect(html).toContain("tab=quotation&amp;version=q1");
 });
@@ -137,7 +148,6 @@ it("locked historical spaces and items render their snapshots, escaped, with acc
   expect(html).toContain("₱0.11");
   expect(html).not.toContain("Edit items for");
   expect(html).not.toContain("Submit for Review</button>");
-  expect(html).toContain("lucide-chevron-right");
 });
 it("BDM receipt capability reveals only the client add control and respects locked projects", () => {
   const html = renderToStaticMarkup(

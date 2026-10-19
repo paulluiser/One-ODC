@@ -1,3 +1,4 @@
+import { OperationsHistory } from "./operations-history";
 import { readableProjectEvent } from "@/lib/project-workspace-view";
 import { FilterBar } from "./filter-bar";
 import { projectIsLost } from "@/lib/workspace-session";
@@ -155,6 +156,25 @@ export async function ProjectMonitoring({
       : { data: [], error: null };
   checkDatabase(spaceEventResult.error);
   const spaceEventDetails = spaceEventResult.data ?? [];
+  const timelineIds = timeline
+    .filter((t) => t.kind === "system")
+    .map((t) => t.id);
+  const operationalResult =
+    unified && timelineIds.length
+      ? await Promise.all(
+          ["installation_events", "logistics_events"].map((table) =>
+            client
+              .from(table)
+              .select(
+                "id,actor_id,reason,previous_value,new_value,administrative_override",
+              )
+              .eq("project_id", project)
+              .in("id", timelineIds),
+          ),
+        )
+      : [];
+  for (const result of operationalResult) checkDatabase(result.error);
+  const operationalDetails = operationalResult.flatMap((r) => r.data ?? []);
 
   const coordinators = coordinatorsResult.data || [];
   const attachments = (attachmentsResult.data || []).map((a) => ({
@@ -458,6 +478,20 @@ export async function ProjectMonitoring({
                   : readableProjectEvent(t.description)
                 : t.description}
             </p>
+            {operationalDetails.find((event) => event.id === t.id) && (
+              <details>
+                <DisclosureSummary>
+                  Operational change details
+                </DisclosureSummary>
+                <pre className="history-json">
+                  {JSON.stringify(
+                    operationalDetails.find((event) => event.id === t.id),
+                    null,
+                    2,
+                  )}
+                </pre>
+              </details>
+            )}
             {spaceEventDetails.find((event) => event.id === t.id) && (
               <details>
                 <DisclosureSummary>Space change details</DisclosureSummary>
@@ -596,6 +630,9 @@ export async function ProjectMonitoring({
         <>
           {record}
           {timelineSection}
+          {unified && process.env.ONE_ODC_HANDOFF_ENABLED === "true" && (
+            <OperationsHistory project={project} query={filters} />
+          )}
           {controls}
           {measures}
           {corrections}

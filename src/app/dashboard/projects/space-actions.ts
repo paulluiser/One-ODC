@@ -41,6 +41,12 @@ export async function mutateSpace(
       return {
         error:
           "Check the name, deadline, assignments and reason. Your entries have been kept.",
+        fields: Object.fromEntries(
+          parsed.error.issues.map((issue) => [
+            String(issue.path[0] ?? "support"),
+            issue.message,
+          ]),
+        ),
       };
     const v = parsed.data;
     endpoint = "save_space";

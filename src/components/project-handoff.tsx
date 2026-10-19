@@ -1,3 +1,5 @@
+import Link from "next/link";
+import styles from "./operations-workspace.module.css";
 import { Fragment } from "react";
 import {
   OperationSummary,
@@ -10,7 +12,13 @@ import { formatTime } from "@/lib/phase1";
 import { financialAmount } from "@/lib/finance";
 import type { CommercialHandoff } from "@/lib/handoff";
 import { HandoffForm } from "./handoff-form";
-export async function ProjectHandoff({ project }: { project: string }) {
+export async function ProjectHandoff({
+  project,
+  unified = false,
+}: {
+  project: string;
+  unified?: boolean;
+}) {
   const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
   const { client } = await requireWorkspace();
   const result = await client.rpc("get_commercial_handoff", {
@@ -18,6 +26,60 @@ export async function ProjectHandoff({ project }: { project: string }) {
   });
   checkDatabase(result.error);
   const data = result.data as CommercialHandoff;
+  if (unified)
+    return (
+      <section
+        className={`surface ${styles.section}`}
+        id="operations-handoff"
+        tabIndex={-1}
+        aria-label="Commercial handoff"
+      >
+        <header className={styles.heading}>
+          <h2>Commercial handoff</h2>
+          <Link
+            href={`/dashboard/projects/${project}?tab=activity&section=history&category=System+Event`}
+          >
+            View full handoff history in Activity →
+          </Link>
+        </header>
+        <dl className={styles.facts}>
+          <div>
+            <dt>Commercial stage</dt>
+            <dd>{data.commercial_status}</dd>
+          </div>
+          <div>
+            <dt>Handoff status</dt>
+            <dd>{data.status}</dd>
+          </div>
+          <div>
+            <dt>Commercially closed</dt>
+            <dd>
+              {data.closed_at ? formatTime(data.closed_at) : "Not closed"}
+            </dd>
+          </div>
+          <div>
+            <dt>Handoff age</dt>
+            <dd>
+              {data.age_days === null
+                ? "Not applicable"
+                : `${data.age_days} calendar days`}
+            </dd>
+          </div>
+        </dl>
+        {data.can_close && (
+          <OperationEditor
+            enabled
+            title="Commercial closure"
+            description="Confirm the existing Sale and Operations assignment before closing."
+          >
+            <HandoffForm rebuild data={data} intent="close" />
+          </OperationEditor>
+        )}
+        {data.can_acknowledge && (
+          <HandoffForm rebuild data={data} intent="acknowledge" />
+        )}
+      </section>
+    );
   const Frame = rebuild ? OperationsFrame : Fragment;
   return (
     <Frame>

@@ -81,6 +81,7 @@ export async function ProjectQuotation({
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
     return (
       <QuotationWorkspace
+        key={quotation?.id ?? "empty"}
         project={project}
         quotation={quotation}
         versions={versions}

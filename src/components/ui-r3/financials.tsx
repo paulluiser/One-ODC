@@ -1,380 +1,404 @@
+"use client";
 import Link from "next/link";
-import { randomUUID } from "node:crypto";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ChevronRight, Plus, X } from "lucide-react";
 import {
   financialAmount,
   canManagePayment,
   type Financials,
-  type FinancialValue,
+  type Payment,
   type PaymentGroup,
-} from "../../lib/finance";
-import { formatTime } from "../../lib/phase1";
-import { ContextPanel } from "../context-panel";
-import { FinanceForm, PaymentHeading } from "../finance-form";
-import { AmountFields } from "../financial-fields";
-import { RecordTable } from "../record-table";
-import { Disclosure, Status } from "../ui-r2/primitives";
-import styles from "./ui-r3.module.css";
-function Value({
-  project,
-  kind,
-  value,
-  admin,
-}: {
-  project: string;
-  kind: "Sale" | "Raw";
-  value: FinancialValue;
-  admin: boolean;
-}) {
+} from "@/lib/finance";
+import {
+  FinancialActionDialog,
+  type FinancialAction,
+} from "../financial-action-dialog";
+
+import { directoryDate } from "@/lib/project-directory-view";
+import styles from "../financial-workspace.module.css";
+function PaymentStatus({ voided }: { voided: boolean }) {
   return (
-    <section
-      className={`surface live-form ${styles.value}`}
-      aria-label={`${kind} management`}
-    >
-      <div className={styles.sectionHeader}>
-        <h2>{kind}</h2>
-        <span className={styles.muted}>
-          {value.editable ? "Authorized adjustment" : "Read-only"}
-        </span>
-      </div>
-      <strong className={styles.amount}>
-        {value.amount === null ? "Not recorded" : financialAmount(value.amount)}
-      </strong>
-      {value.editable && (
-        <ContextPanel
-          title={`Adjust ${kind}`}
-          description={`Changes preserve the previous ${kind} and require an audit reason where applicable.`}
-          panelClassName={styles.dialog}
-          guardUnsaved
-          resetOnClose
-        >
-          <FinanceForm
-            rebuild
-            project={project}
-            id={project}
-            kind={kind}
-            version={value.version}
-            intent="value"
-            label={`Save ${kind}`}
-            reasonRequired={kind === "Raw" || value.version > 0 || admin}
-          >
-            <label className="live-field" htmlFor={`${project}-${kind}`}>
-              {kind} amount (PHP)
-              <input
-                id={`${project}-${kind}`}
-                name="amount"
-                inputMode="decimal"
-                pattern="(0|[1-9][0-9]{0,25})([.][0-9]{1,2})?"
-                defaultValue={value.amount ?? ""}
-                required
-              />
-            </label>
-          </FinanceForm>
-        </ContextPanel>
-      )}
-      <Disclosure title={`${kind} history`}>
-        {value.history.length ? (
-          <ol className={styles.history}>
-            {value.history.map((e) => (
-              <li key={e.id}>
-                <strong>{financialAmount(e.new_amount)}</strong>
-                <small>
-                  {formatTime(e.occurred_at)} · Revision {e.version}
-                </small>
-                <p>
-                  {e.previous_amount === null
-                    ? "Not recorded"
-                    : financialAmount(e.previous_amount)}{" "}
-                  → {financialAmount(e.new_amount)}
-                </p>
-                <p>{e.reason}</p>
-                <Disclosure title="Actor reference">
-                  <p>{e.actor_id}</p>
-                </Disclosure>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p>No {kind} history yet.</p>
-        )}
-      </Disclosure>
-    </section>
+    <span className={styles.paymentStatus} data-voided={voided || undefined}>
+      {voided ? "Voided" : "Posted"}
+    </span>
   );
 }
-function Ledger({
+export function FinancialWorkspace({
   project,
-  kind,
-  group,
-  f,
+  projectName = "Project",
+  financials: f,
   admin,
+  names = {},
 }: {
   project: string;
-  kind: "client" | "supplier";
-  group: PaymentGroup;
-  f: Financials;
+  projectName?: string;
+  financials: Financials;
   admin: boolean;
+  names?: Record<string, string>;
 }) {
-  const title = kind === "client" ? "Client" : "Supplier",
-    createId = randomUUID();
-  return (
-    <section className="surface live-form" aria-label={`${title} payments`}>
-      <div className={styles.sectionHeader}>
+  const [action, setAction] = useState<FinancialAction | null>(null),
+    [notice, setNotice] = useState("");
+  const path = usePathname(),
+    query = useSearchParams(),
+    router = useRouter(),
+    rowFocus = useRef<string | null>(null);
+  const all = [...f.client_payments.records, ...f.supplier_payments.records];
+  const selected = all.find((p) => p.id === query.get("payment_detail"));
+  const url = (id: string | null) => {
+    const next = new URLSearchParams(query.toString());
+    if (id) next.set("payment_detail", id);
+    else next.delete("payment_detail");
+    return `${path}?${next}`;
+  };
+  const history = (id: string) =>
+    `/dashboard/projects/${project}?tab=activity&section=history&finance_history=${id}#financial-history`;
+  const close = () => {
+    rowFocus.current = selected?.id ?? null;
+    router.push(url(null), { scroll: false });
+  };
+  const recorder = (p: Payment) => names[p.created_by] ?? "Name unavailable";
+  const details = (p: Payment) => (
+    <Link
+      href={url(p.id)}
+      scroll={false}
+      data-payment-id={p.id}
+      className={styles.recordLink}
+      aria-label={`View ${p.kind} payment ${p.payment_date} ${financialAmount(p.amount)}`}
+    >
+      <span className="sr-only">View payment</span>
+      <ChevronRight size={18} aria-hidden="true" />
+    </Link>
+  );
+  const ledger = (kind: "client" | "supplier", group: PaymentGroup) => (
+    <section
+      className={`surface ${styles.section}`}
+      aria-label={`${kind === "client" ? "Client" : "Supplier"} payments`}
+    >
+      <header className={styles.sectionHeader}>
         <div>
-          <h2>{title} payments</h2>
-          <p className={styles.muted}>Actual recorded payments · PHP</p>
+          <h2>{kind === "client" ? "Client" : "Supplier"} payments</h2>
+          <p>
+            {kind === "client"
+              ? "Client receipts to ODC"
+              : "ODC payments to suppliers / manufacturers"}{" "}
+            · PHP
+          </p>
         </div>
-        {(canManagePayment(f, kind) ||
-          (kind === "client" && f.can_record_client_payments)) &&
-          !f.cancelled && (
-            <ContextPanel
-              title={`Add ${kind} payment`}
-              description="Record an actual payment. Confirm the amount, date and payment reference before saving."
-              panelClassName={styles.dialog}
-              guardUnsaved
-              resetOnClose
+        {!f.cancelled &&
+          (canManagePayment(f, kind) ||
+            (kind === "client" && f.can_record_client_payments)) && (
+            <button
+              className="button button-primary"
+              onClick={() => setAction({ kind })}
             >
-              <FinanceForm
-                rebuild
-                project={project}
-                id={createId}
-                kind={kind}
-                version={0}
-                intent="save"
-                label={`Record ${kind} payment`}
-                reasonRequired={admin}
-              >
-                <AmountFields id={createId} today={f.today} />
-              </FinanceForm>
-            </ContextPanel>
+              <Plus size={16} aria-hidden="true" />
+              Add {kind} payment
+            </button>
           )}
-      </div>
-      <div className={styles.ledgerSummary}>
+      </header>
+      <div className={styles.totals}>
         <div>
-          <span>Valid {kind} payments</span>
+          <small>Valid {kind} payments</small>
           <strong>{financialAmount(group.total)}</strong>
         </div>
         {"outstanding" in group && (
           <div>
-            <span>{title} outstanding</span>
+            <small>
+              {kind === "client" ? "Client" : "Supplier"} outstanding
+            </small>
             <strong>{financialAmount(group.outstanding)}</strong>
           </div>
         )}
       </div>
       {group.outstanding?.startsWith("-") && (
-        <p role="status" className={styles.notice}>
-          Negative balance: discrepancy or possible overpayment. Review the
-          preserved records.
+        <p role="status" className={styles.warning}>
+          Negative balance: review for a discrepancy or possible overpayment.
         </p>
       )}
       {!group.records.length ? (
-        <div className={styles.empty}>
-          <p>No {kind} payments recorded.</p>
-        </div>
+        <p className={styles.empty}>No {kind} payments recorded.</p>
       ) : (
-        <RecordTable label={`${title} payment ledger`}>
-          <table className={`live-table ${styles.ledger}`}>
-            <caption className="sr-only">{title} payment ledger</caption>
-            <thead>
-              <tr>
-                <th scope="col">Date / status</th>
-                <th scope="col">Method / reference</th>
-                <th scope="col">Amount (PHP)</th>
-                <th scope="col">Manage record</th>
-              </tr>
-            </thead>
-            <tbody>
-              {group.records.map((p) => (
-                <tr
-                  key={p.id}
-                  aria-label={`${title} payment ${p.id}`}
-                  data-voided={p.voided || undefined}
-                >
-                  <th scope="row">
-                    <PaymentHeading id={p.id} voided={p.voided}>
-                      {p.payment_date}
-                      {p.voided ? " · Voided" : ""}
-                    </PaymentHeading>
-                  </th>
-                  <td>
-                    <p>{p.method}</p>
-                    {p.reference && <small>{p.reference}</small>}
-                    {p.remarks && <p>{p.remarks}</p>}
-                  </td>
-                  <td className={styles.number}>{financialAmount(p.amount)}</td>
-                  <td>
-                    <div className={styles.recordActions}>
-                      {canManagePayment(f, kind) && !p.voided && (
-                        <>
-                          <ContextPanel
-                            title={`Correct ${kind} payment`}
-                            description={`${p.payment_date} · ${financialAmount(p.amount)}. A correction preserves the original record.`}
-                            panelClassName={styles.dialog}
-                            guardUnsaved
-                            resetOnClose
-                          >
-                            <FinanceForm
-                              rebuild
-                              project={project}
-                              id={p.id}
-                              kind={kind}
-                              version={p.version}
-                              intent="save"
-                              label={`Correct ${kind} payment`}
-                              reasonRequired
-                            >
-                              <AmountFields
-                                id={p.id}
-                                payment={p}
-                                today={f.today}
-                              />
-                            </FinanceForm>
-                          </ContextPanel>
-                          <ContextPanel
-                            title={`Void ${kind} payment`}
-                            description="Voiding excludes the payment from totals while preserving its history. This cannot be reversed."
-                            panelClassName={styles.dialog}
-                            guardUnsaved
-                            resetOnClose
-                          >
-                            <FinanceForm
-                              rebuild
-                              project={project}
-                              id={p.id}
-                              kind={kind}
-                              version={p.version}
-                              intent="void"
-                              label={`Void ${kind} payment`}
-                              reasonRequired
-                            />
-                          </ContextPanel>
-                        </>
-                      )}
-                    </div>
-                    <Disclosure title="Payment audit history">
-                      <p>Recorded {formatTime(p.created_at)}</p>
-                      <Disclosure title="Record reference">
-                        <p>
-                          Account {p.created_by} · Payment {p.id}
-                        </p>
-                      </Disclosure>
-                      <ol className={styles.history}>
-                        {p.history.map((e) => (
-                          <li key={e.id}>
-                            <strong>{e.action}</strong>
-                            <small>{formatTime(e.occurred_at)}</small>
-                            <p>{e.reason}</p>
-                            <Disclosure title="Preserved values">
-                              <p>Account: {e.actor_id}</p>
-                              <pre className="history-json">
-                                {JSON.stringify(
-                                  {
-                                    previous: e.previous_value,
-                                    current: e.new_value,
-                                  },
-                                  null,
-                                  2,
-                                )}
-                              </pre>
-                            </Disclosure>
-                          </li>
-                        ))}
-                      </ol>
-                    </Disclosure>
-                  </td>
+        <>
+          <div
+            className={styles.tableScroll}
+            role="region"
+            aria-label={`${kind} payment directory`}
+          >
+            <table className={styles.table}>
+              <caption className="sr-only">{kind} payments</caption>
+              <thead>
+                <tr>
+                  {[
+                    "Date",
+                    "Method / Reference",
+                    "Amount (PHP)",
+                    "Status",
+                    "Recorded by",
+                    "Details",
+                  ].map((h) => (
+                    <th scope="col" key={h}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </RecordTable>
+              </thead>
+              <tbody>
+                {group.records.map((p) => (
+                  <tr key={p.id} data-voided={p.voided || undefined}>
+                    <td>{directoryDate(p.payment_date)}</td>
+                    <td>
+                      <span>{p.method}</span>
+                      {p.reference && <small>{p.reference}</small>}
+                    </td>
+                    <td className={styles.money}>
+                      {financialAmount(p.amount)}
+                    </td>
+                    <td>
+                      <PaymentStatus voided={p.voided} />
+                    </td>
+                    <td>{recorder(p)}</td>
+                    <td>{details(p)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={styles.mobileRecords}>
+            {group.records.map((p) => (
+              <article key={p.id}>
+                <div>
+                  <strong>{financialAmount(p.amount)}</strong>
+                  <PaymentStatus voided={p.voided} />
+                  {details(p)}
+                </div>
+                <span>
+                  {directoryDate(p.payment_date)} · {p.method}
+                </span>
+                {p.reference && <small>{p.reference}</small>}
+                <small>Recorded by {recorder(p)}</small>
+              </article>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );
-}
-export function FinancialWorkspace({
-  project,
-  financials: f,
-  admin,
-}: {
-  project: string;
-  financials: Financials;
-  admin: boolean;
-}) {
   return (
     <div className={styles.workspace}>
       <section
-        className={`surface live-form ${styles.financeHeader}`}
+        className={`surface ${styles.section}`}
         aria-label="Financial summary"
       >
-        <div className={styles.sectionHeader}>
+        <header className={styles.sectionHeader}>
           <div>
-            <span className={styles.eyebrow}>PROJECT FINANCIALS</span>
             <h2>Financial summary</h2>
-            <p className={styles.muted}>
-              PHP · Quotation, commercial values and actual payments
-            </p>
+            <p>PHP · Commercial values and recorded payments</p>
           </div>
-          <Status>{f.cancelled ? "Project cancelled" : "Live records"}</Status>
-        </div>
+        </header>
         {f.cancelled && (
-          <p className={styles.notice}>
-            New entries and value adjustments are frozen. Authorized historical
+          <p className={styles.warning}>
+            New records and adjustments are frozen. Authorized historical
             payment corrections remain available.
           </p>
         )}
-        <div className={styles.summaryGrid}>
+        <div className={styles.summary}>
           {"approved_quotation" in f && (
             <div>
-              <span>Approved quotation</span>
-              {f.approved_quotation ? (
-                <>
-                  <strong>{financialAmount(f.approved_quotation.total)}</strong>
-                  <Link
-                    href={`/dashboard/projects/${project}?tab=quotation&version=${f.approved_quotation.id}`}
-                  >
-                    View version {f.approved_quotation.number}
-                  </Link>
-                </>
-              ) : (
-                <strong>Not available</strong>
+              <small>Approved Quotation</small>
+              <strong>{financialAmount(f.approved_quotation?.total)}</strong>
+              {f.approved_quotation && (
+                <Link
+                  href={`/dashboard/projects/${project}?tab=quotation&version=${f.approved_quotation.id}`}
+                >
+                  View version {f.approved_quotation.number}
+                </Link>
               )}
             </div>
           )}
-          {"quotation_vs_sale" in f && (
+          {f.sale && (
             <div>
-              <span>Sale − quotation</span>
-              <strong>{financialAmount(f.quotation_vs_sale)}</strong>
+              <small>Sale</small>
+              <strong>{financialAmount(f.sale.amount)}</strong>
+            </div>
+          )}
+          {f.raw && (
+            <div>
+              <small>Raw Cost</small>
+              <strong>{financialAmount(f.raw.amount)}</strong>
             </div>
           )}
           {"sale_minus_raw" in f && (
             <div>
-              <span>Sale minus Raw</span>
+              <small>Gross Difference</small>
               <strong>{financialAmount(f.sale_minus_raw)}</strong>
-              <small>Excludes other expenses and taxes.</small>
+              <small>Sale − Raw; excludes other expenses and taxes.</small>
             </div>
           )}
         </div>
       </section>
-      <div className={styles.values}>
-        {f.sale && (
-          <Value project={project} kind="Sale" value={f.sale} admin={admin} />
-        )}{" "}
-        {f.raw && (
-          <Value project={project} kind="Raw" value={f.raw} admin={admin} />
-        )}
-      </div>
-      <Ledger
-        project={project}
-        kind="client"
-        group={f.client_payments}
-        f={f}
-        admin={admin}
-      />
-      <Ledger
-        project={project}
-        kind="supplier"
-        group={f.supplier_payments}
-        f={f}
-        admin={admin}
-      />
+      {(f.sale || f.raw) && (
+        <section
+          className={`surface ${styles.section}`}
+          aria-label="Commercial values"
+        >
+          <header className={styles.sectionHeader}>
+            <h2>Commercial Values</h2>
+          </header>
+          {(["Sale", "Raw"] as const).map((kind) => {
+            const value = kind === "Sale" ? f.sale : f.raw;
+            return (
+              value && (
+                <div className={styles.valueRow} key={kind}>
+                  <strong>{kind}</strong>
+                  <span>{financialAmount(value.amount)}</span>
+                  <Link href={history(kind)}>View history</Link>
+                  {value.editable && (
+                    <button
+                      className="button button-outline"
+                      onClick={() => setAction({ kind, value })}
+                    >
+                      Adjust {kind}
+                    </button>
+                  )}
+                </div>
+              )
+            );
+          })}
+        </section>
+      )}
+      {query.has("payment_detail") && !selected && (
+        <p role="alert" className={styles.error}>
+          This payment is unavailable to your account.{" "}
+          <Link href={url(null)} scroll={false}>
+            Return to the payment directory
+          </Link>
+        </p>
+      )}
+      {notice && (
+        <p role="status" className={styles.success}>
+          {notice}
+        </p>
+      )}
+      {ledger("client", f.client_payments)}
+      {ledger("supplier", f.supplier_payments)}
+      {selected && (
+        <Dialog.Root
+          open
+          onOpenChange={(open) => {
+            if (!open) close();
+          }}
+        >
+          <Dialog.Portal>
+            <Dialog.Overlay className={styles.sheetOverlay} />
+            <Dialog.Content
+              className={styles.sheet}
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                requestAnimationFrame(() => {
+                  Array.from(
+                    document.querySelectorAll<HTMLElement>(
+                      `a[data-payment-id="${rowFocus.current ?? selected.id}"]`,
+                    ),
+                  )
+                    .find((el) => el.getClientRects().length)
+                    ?.focus({ preventScroll: true });
+                });
+              }}
+            >
+              <header className={styles.modalHeader}>
+                <div>
+                  <Dialog.Title>
+                    {selected.kind === "client" ? "Client" : "Supplier"} payment
+                  </Dialog.Title>
+                  <Dialog.Description>
+                    Recorded payment details
+                  </Dialog.Description>
+                </div>
+                <Dialog.Close
+                  className={styles.close}
+                  aria-label="Close payment details"
+                >
+                  <X size={20} />
+                </Dialog.Close>
+              </header>
+              <div className={styles.sheetBody}>
+                <div className={styles.paymentAmount}>
+                  <strong>{financialAmount(selected.amount)}</strong>
+                  <PaymentStatus voided={selected.voided} />
+                </div>
+                <dl className={styles.description}>
+                  {[
+                    ["Payment date", directoryDate(selected.payment_date)],
+                    ["Method", selected.method],
+                    ["Reference", selected.reference || "Not provided"],
+                    ["Remarks", selected.remarks || "Not provided"],
+                    ["Recorded by", recorder(selected)],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <Link href={history(selected.id)}>
+                  View Payment History in Activity →
+                </Link>
+              </div>
+              <footer className={styles.sheetFooter}>
+                {canManagePayment(f, selected.kind) && !selected.voided && (
+                  <>
+                    <button
+                      className="button button-outline"
+                      onClick={() =>
+                        setAction({ kind: selected.kind, payment: selected })
+                      }
+                    >
+                      Correct payment
+                    </button>
+                    <button
+                      className={`button button-outline ${styles.dangerOutline}`}
+                      onClick={() =>
+                        setAction({
+                          kind: selected.kind,
+                          payment: selected,
+                          void: true,
+                        })
+                      }
+                    >
+                      Void payment
+                    </button>
+                  </>
+                )}
+                <button className="button button-outline" onClick={close}>
+                  Close
+                </button>
+              </footer>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      )}
+      {action && (
+        <FinancialActionDialog
+          project={project}
+          projectName={projectName}
+          today={f.today}
+          admin={admin}
+          action={action}
+          onClose={() => {
+            setAction(null);
+          }}
+          onSaved={() =>
+            setNotice("Financial record saved. Totals and history updated.")
+          }
+          key={
+            "value" in action
+              ? action.kind
+              : (action.payment?.id ?? `new-${action.kind}`)
+          }
+        />
+      )}
     </div>
   );
 }
