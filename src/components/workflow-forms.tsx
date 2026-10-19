@@ -58,12 +58,14 @@ function Pending({ pending, label }: { pending: boolean; label: string }) {
 export function LeadForm({
   id,
   bdmName,
+  bdms,
   leadDesigners = [],
   lead,
   rebuild = false,
 }: {
   id: string;
   bdmName: string;
+  bdms?: Person[];
   leadDesigners?: Person[];
   lead?: Lead;
   rebuild?: boolean;
@@ -84,6 +86,33 @@ export function LeadForm({
   }, [state]);
   const fields = (
     <>
+      {bdms && (
+        <label className="live-field" htmlFor="bdm_id">
+          Responsible BDM *
+          <select
+            id="bdm_id"
+            name="bdm_id"
+            required
+            defaultValue={lead?.bdm_id ?? ""}
+            disabled={pending || !!lead}
+          >
+            <option value="">Choose a BDM</option>
+            {bdms.map((p) => (
+              <option value={p.id} key={p.id}>
+                {p.display_name}
+              </option>
+            ))}
+          </select>
+          {lead && <input type="hidden" name="bdm_id" value={lead.bdm_id} />}
+          <small className="field-hint">
+            The BDM owns the client relationship and subsequent commercial
+            steps. Your administrator account is recorded as the author.
+          </small>
+          {state.fields?.bdm_id && (
+            <span className="field-error">Choose an active BDM.</span>
+          )}
+        </label>
+      )}
       <LeadFields
         values={values}
         errors={state.fields}
@@ -202,7 +231,17 @@ export function LeadForm({
       <div className="form-heading">
         <h2>Project Quotation Request</h2>
         <p>
-          BDM: <strong>{bdmName}</strong> · derived from your signed-in account.
+          {bdms ? (
+            <>
+              Created by <strong>{bdmName}</strong> · on behalf of the selected
+              BDM.
+            </>
+          ) : (
+            <>
+              BDM: <strong>{bdmName}</strong> · derived from your signed-in
+              account.
+            </>
+          )}
         </p>
       </div>
       {rebuild ? (

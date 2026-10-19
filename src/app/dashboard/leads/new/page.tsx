@@ -5,9 +5,22 @@ import { LeadForm } from "@/components/workflow-forms";
 import { checkDatabase } from "@/lib/live-data";
 import { PageIntro } from "@/components/live-data";
 export default async function NewLead() {
-  const { profile, client } = await requireRole(["bdm"]);
+  const { profile, client } = await requireRole([
+    "bdm",
+    "system_administrator",
+  ]);
   const designers = await client.rpc("list_lead_designers");
   checkDatabase(designers.error);
+  const bdms =
+    profile.role === "system_administrator"
+      ? await client
+          .from("profiles")
+          .select("id,display_name,role")
+          .eq("active", true)
+          .eq("role", "bdm")
+          .order("display_name")
+      : null;
+  checkDatabase(bdms?.error ?? null);
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
     return (
       <Scope>
@@ -16,6 +29,7 @@ export default async function NewLead() {
           description="Start with the client’s brief. Paste links to drawings and other files."
         />
         <LeadForm
+          bdms={bdms?.data?.filter((p: { role: string }) => p.role === "bdm")}
           leadDesigners={designers.data ?? []}
           rebuild
           id={randomUUID()}
@@ -30,6 +44,7 @@ export default async function NewLead() {
         description="Start with the client's brief. Add file links, then save a draft or submit it for review."
       />
       <LeadForm
+        bdms={bdms?.data?.filter((p: { role: string }) => p.role === "bdm")}
         leadDesigners={designers.data ?? []}
         id={randomUUID()}
         bdmName={profile.display_name}

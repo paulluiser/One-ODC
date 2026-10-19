@@ -21,7 +21,10 @@ export async function saveLead(
   _state: FormState,
   data: FormData,
 ): Promise<FormState> {
-  const { client } = await requireRole(["bdm"]);
+  const { client, profile } = await requireRole([
+    "bdm",
+    "system_administrator",
+  ]);
   let attachments: unknown;
   try {
     attachments = JSON.parse(value(data, "attachment_metadata") || "[]");
@@ -35,6 +38,9 @@ export async function saveLead(
     submit: value(data, "intent") === "submit",
     duplicate_reason: value(data, "duplicate_reason"),
     payload: {
+      ...(profile.role === "system_administrator"
+        ? { bdm_id: value(data, "bdm_id") }
+        : {}),
       assigned_lead_designer_id: nullable(
         value(data, "assigned_lead_designer_id"),
       ),

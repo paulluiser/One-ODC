@@ -39,6 +39,7 @@ export function LeadDirectory({
   page,
   count,
   bdm,
+  canCreate = bdm,
   sort = "updated",
 }: {
   leads: Lead[];
@@ -47,6 +48,7 @@ export function LeadDirectory({
   page: number;
   count: number;
   bdm: boolean;
+  canCreate?: boolean;
   sort?: string;
 }) {
   const url = (p: number) =>
@@ -61,7 +63,7 @@ export function LeadDirectory({
             : "Review the brief, resolve questions, and bring the right projects forward."
         }
         action={
-          bdm && (
+          canCreate && (
             <Link className="button button-primary" href="/dashboard/leads/new">
               <Plus size={16} aria-hidden="true" />
               New request

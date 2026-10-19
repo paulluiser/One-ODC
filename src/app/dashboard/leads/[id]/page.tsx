@@ -91,9 +91,22 @@ export default async function LeadDetail({
   for (const r of [submissions, reviews, origin, peopleResult, attached, slots])
     checkDatabase(r.error);
   const people: Person[] = peopleResult.data ?? [];
+  const author =
+    profile.role === "system_administrator"
+      ? await client
+          .from("audit_events")
+          .select("actor_id")
+          .eq("entity_type", "lead")
+          .eq("entity_id", id)
+          .in("action", ["lead.draft_saved", "lead.submitted"])
+          .eq("new_value->>version", "1")
+          .maybeSingle()
+      : null;
+  checkDatabase(author?.error ?? null);
   const editable =
-    profile.role === "bdm" &&
-    lead.bdm_id === profile.id &&
+    ((profile.role === "bdm" && lead.bdm_id === profile.id) ||
+      (profile.role === "system_administrator" &&
+        author?.data?.actor_id === profile.id)) &&
     ["Draft", "Returned for Clarification"].includes(lead.status);
   const versions = attached.data?.length
     ? await client
@@ -113,6 +126,11 @@ export default async function LeadDetail({
       rebuild={rebuild}
       id={id}
       lead={lead}
+      bdms={
+        profile.role === "system_administrator"
+          ? [{ id: lead.bdm_id, display_name: "Assigned BDM", role: "bdm" }]
+          : undefined
+      }
       leadDesigners={designers.data ?? []}
       bdmName={profile.display_name}
     />

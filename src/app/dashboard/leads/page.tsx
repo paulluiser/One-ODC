@@ -71,6 +71,7 @@ export default async function Leads({
         page={page}
         count={count ?? 0}
         bdm={profile.role === "bdm"}
+        canCreate={["bdm", "system_administrator"].includes(profile.role)}
       />
     );
   return (
@@ -79,7 +80,7 @@ export default async function Leads({
         title={profile.role === "bdm" ? "My Leads" : "Lead review"}
         description="Quotation requests, review decisions, and submission history."
       >
-        {profile.role === "bdm" && (
+        {["bdm", "system_administrator"].includes(profile.role) && (
           <Button asChild>
             <Link href="/dashboard/leads/new">New request</Link>
           </Button>

@@ -5530,3 +5530,140 @@ describe("Payment direction separation", () => {
     await denied(() => payment(project), "ACCESS_DENIED");
   });
 });
+
+describe("Administrator quotation request creation", () => {
+  it("creates and edits on behalf of a BDM, preserves audit authorship, routes and accepts normally", async () => {
+    await actor(ids.admin);
+    const input = { ...payload, bdm_id: ids.bdm };
+    await db.query("select public.save_lead($1,0,$2::jsonb,false,'')", [
+      leadId,
+      JSON.stringify(input),
+    ]);
+    expect(
+      (await db.query("select id from public.leads where id=$1", [leadId]))
+        .rows,
+    ).toHaveLength(1);
+    await actor(ids.lead);
+    expect(
+      (await db.query("select id from public.leads where id=$1", [leadId]))
+        .rows,
+    ).toHaveLength(0);
+    await actor(ids.admin);
+    await db.query("select public.save_lead($1,1,$2::jsonb,true,'')", [
+      leadId,
+      JSON.stringify(input),
+    ]);
+    expect(
+      (
+        await db.query<{ bdm_id: string; status: string }>(
+          "select bdm_id,status from public.leads where id=$1",
+          [leadId],
+        )
+      ).rows[0],
+    ).toEqual({ bdm_id: ids.bdm, status: "Submitted" });
+    expect(
+      (
+        await db.query<{ submitted_by: string }>(
+          "select submitted_by from public.lead_submissions where lead_id=$1",
+          [leadId],
+        )
+      ).rows[0].submitted_by,
+    ).toBe(ids.admin);
+    expect(
+      (
+        await db.query<{ actor_id: string }>(
+          "select actor_id from public.audit_events where entity_id=$1",
+          [leadId],
+        )
+      ).rows.every((e) => e.actor_id === ids.admin),
+    ).toBe(true);
+    await actor(ids.otherBdm);
+    expect(
+      (await db.query("select id from public.leads where id=$1", [leadId]))
+        .rows,
+    ).toHaveLength(0);
+    await actor(ids.bdm);
+    expect(
+      (await db.query("select id from public.leads where id=$1", [leadId]))
+        .rows,
+    ).toHaveLength(1);
+    await actor(ids.lead);
+    const p = (
+      await db.query<{ id: string }>(
+        "select public.review_lead($1,2,'Accepted','',$2,'{}','{}',null) as id",
+        [leadId, ids.designer],
+      )
+    ).rows[0].id;
+    expect(
+      (
+        await db.query<{ primary_bdm_id: string }>(
+          "select primary_bdm_id from public.project_origins where project_id=$1",
+          [p],
+        )
+      ).rows[0].primary_bdm_id,
+    ).toBe(ids.bdm);
+  });
+  it("rejects missing/ineligible owners, forged BDM ownership and unauthorized roles", async () => {
+    await actor(ids.admin);
+    await denied(
+      () =>
+        db.query("select public.save_lead($1,0,$2::jsonb,false,'')", [
+          leadId,
+          JSON.stringify(payload),
+        ]),
+      "INVALID_BDM",
+    );
+    await denied(
+      () =>
+        db.query("select public.save_lead($1,0,$2::jsonb,false,'')", [
+          leadId,
+          JSON.stringify({ ...payload, bdm_id: ids.designer }),
+        ]),
+      "INVALID_BDM",
+    );
+    for (const id of [ids.designer, ids.ops, ids.lead]) {
+      await actor(id);
+      await denied(
+        () =>
+          db.query("select public.save_lead($1,0,$2::jsonb,true,'')", [
+            leadId,
+            JSON.stringify({ ...payload, bdm_id: ids.bdm }),
+          ]),
+        "ACCESS_DENIED",
+      );
+    }
+    await actor(ids.bdm);
+    await denied(
+      () =>
+        db.query("select public.save_lead($1,0,$2::jsonb,true,'')", [
+          leadId,
+          JSON.stringify({ ...payload, bdm_id: ids.otherBdm }),
+        ]),
+      "ACCESS_DENIED",
+    );
+  });
+  it("keeps existing BDM drafts immutable to creation-only admin access and detects duplicates", async () => {
+    await actor(ids.bdm);
+    await db.query("select public.save_lead($1,0,$2::jsonb,false,'')", [
+      leadId,
+      JSON.stringify(payload),
+    ]);
+    await actor(ids.admin);
+    expect(
+      (
+        await db.query(
+          "select * from public.find_duplicate_leads($1,$2,null)",
+          [payload.project_name, payload.address],
+        )
+      ).rows,
+    ).toHaveLength(1);
+    await denied(
+      () =>
+        db.query("select public.save_lead($1,1,$2::jsonb,true,'')", [
+          leadId,
+          JSON.stringify({ ...payload, bdm_id: ids.bdm }),
+        ]),
+      "ACCESS_DENIED",
+    );
+  });
+});

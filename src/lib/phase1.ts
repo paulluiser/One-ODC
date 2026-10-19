@@ -34,6 +34,7 @@ const date = z.string().refine((v) => {
 }, "Use a valid date.");
 export const leadPayloadSchema = z
   .object({
+    bdm_id: z.uuid().optional(),
     assigned_lead_designer_id: z.uuid().nullable().optional(),
     project_name: z.string().trim().max(200),
     address: z.string().trim().max(2000),

@@ -55,7 +55,7 @@ describe("Phase 1 validation", () => {
     expect(
       saveLeadSchema.safeParse({
         ...draft,
-        payload: { ...emptyLead, bdm_id: id },
+        payload: { ...emptyLead, unsupported_owner: id },
       }).success,
     ).toBe(false);
   });
