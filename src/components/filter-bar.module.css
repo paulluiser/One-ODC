@@ -267,3 +267,23 @@
     max-width: 190px;
   }
 }
+
+.bar.compact {
+  padding: 10px 12px;
+}
+.compact .toolbar {
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+.compact .count {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.bar.unframed {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}

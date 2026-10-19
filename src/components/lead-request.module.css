@@ -1,0 +1,122 @@
+.request.request {
+  padding: 24px;
+  gap: 18px;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(260px, 3fr);
+  gap: 24px;
+  align-items: start;
+}
+.main {
+  min-width: 0;
+}
+.main h2 {
+  margin: 0 0 20px;
+  font-size: 19px;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
+  align-items: start;
+}
+.fullWidth {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.request .fields textarea {
+  min-height: 80px;
+}
+.references {
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  min-width: 0;
+}
+.links {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
+.links legend {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 0 0 10px;
+  color: var(--brand-text);
+}
+.links > p {
+  margin: 0;
+}
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  border-radius: 9px;
+  min-width: 0;
+}
+.linkRow > svg {
+  flex-shrink: 0;
+  color: var(--brand-link);
+}
+.request .linkRow input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 6px 2px;
+  font-size: 12px;
+}
+.removeLink {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--brand-muted);
+  cursor: pointer;
+}
+.removeLink:hover {
+  color: var(--brand-text);
+  background: var(--brand-soft);
+  border-radius: 6px;
+}
+.duplicates {
+  margin-top: 18px;
+}
+.actions {
+  padding-top: 18px;
+  border-top: 1px solid var(--brand-border);
+}
+.actions > span:last-child {
+  flex-basis: 100%;
+}
+@media (max-width: 1000px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .request.request {
+    padding: 16px;
+  }
+  .fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .references {
+    padding: 16px;
+  }
+  .actions > button {
+    flex: 1;
+  }
+}

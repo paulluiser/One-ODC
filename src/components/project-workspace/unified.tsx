@@ -1,4 +1,4 @@
-import { FinancialActivity } from "../financial-activity";
+import { ActivityWorkspace } from "../activity-workspace";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { z } from "zod";
@@ -38,10 +38,8 @@ import { ProjectTools, DiscussionPanel } from "../productivity/project-tools";
 import { ProjectTeamDialog } from "../project-team-dialog";
 import { ProjectCommercialWorkflow } from "../project-commercial-workflow";
 import { ProjectSpaces } from "../project-spaces";
-import { ProjectMonitoring } from "../project-monitoring";
 import { UnifiedOperations } from "../unified-operations";
 import { ProjectQuotation } from "../project-quotation";
-import { QuotationActivity } from "../quotation-activity";
 import { ProjectFinancials } from "../project-financials";
 import { ProjectResources } from "../project-resources";
 import { WorkspaceNavigation, ProjectActionMenu } from "./navigation";
@@ -696,33 +694,11 @@ export async function UnifiedProjectWorkspace({
                 ) : (
                   <>
                     <Suspense fallback={<Loading />}>
-                      {enabled("QUOTATIONS") && !ops && (
-                        <QuotationActivity
-                          project={id}
-                          selected={
-                            typeof query.quotation_history === "string"
-                              ? query.quotation_history
-                              : undefined
-                          }
-                        />
-                      )}
-                      {enabled("FINANCE") && profile.role !== "designer" && (
-                        <FinancialActivity
-                          project={id}
-                          selected={
-                            typeof query.finance_history === "string"
-                              ? query.finance_history
-                              : undefined
-                          }
-                        />
-                      )}
                       {enabled("MONITORING") && (
-                        <ProjectMonitoring
-                          unified
-                          nested
+                        <ActivityWorkspace
                           project={id}
                           manager={manager}
-                          filters={{
+                          query={{
                             ...query,
                             tab: "activity",
                             section: "history",

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import styles from "./lead-request.module.css";
 import type { Attachment, LeadPayload, Person } from "../lib/phase1";
 export type LeadValues = Omit<
   LeadPayload,
@@ -8,7 +10,11 @@ export function LeadFields({
   errors = {},
   disabled = false,
   onValue,
+  owner,
+  designer,
 }: {
+  owner?: ReactNode;
+  designer?: ReactNode;
   values: LeadValues;
   errors?: Record<string, string>;
   disabled?: boolean;
@@ -28,7 +34,7 @@ export function LeadFields({
         <textarea
           id={name}
           name={name}
-          rows={name === "notes" ? 4 : 3}
+          rows={3}
           maxLength={name === "notes" ? 10000 : 2000}
           value={values[name] ?? ""}
           onChange={(e) => onValue?.(name, e.target.value)}
@@ -62,9 +68,18 @@ export function LeadFields({
     </div>
   );
   return (
-    <div className="live-form-grid lead-field-groups">
-      <h3 className="span-all form-section-label">01 · Project brief</h3>
-      {input("project_name", "Project Name / Client Name", { required: true })}
+    <div className={styles.fields}>
+      {owner}
+      {input("project_name", "Project / Client Name", { required: true })}
+      {designer}
+      {input("cabinetry_count", "Estimated Cabinetries", {
+        required: true,
+        type: "number",
+      })}
+      <div className={styles.fullWidth}>
+        {input("address", "Address", { required: true, multiline: true })}
+      </div>
+      {input("date_needed", "Date Needed", { type: "date" })}
       <div className="live-field">
         <label htmlFor="brand">Brand</label>
         <select
@@ -73,30 +88,21 @@ export function LeadFields({
           value={values.brand ?? ""}
           onChange={(e) => onValue?.("brand", e.target.value)}
           disabled={disabled}
+          aria-invalid={!!errors.brand}
+          aria-describedby={errors.brand ? "brand-error" : undefined}
         >
           <option value="">Not specified</option>
           {["SFY", "Stosa", "Both"].map((v) => (
             <option key={v}>{v}</option>
           ))}
         </select>
-        {errors.brand && <span className="field-error">{errors.brand}</span>}
+        {errors.brand && (
+          <span id="brand-error" className="field-error">
+            {errors.brand}
+          </span>
+        )}
       </div>
-      {input("address", "Address", { required: true, multiline: true })}
-      <div>
-        <div className="live-form-grid">
-          {input("cabinetry_count", "Estimated Cabinetries", {
-            required: true,
-            type: "number",
-          })}
-          {input("date_needed", "Date Needed", { type: "date" })}
-        </div>
-        <p className="field-hint">
-          Cabinetry count estimates scope. It does not create Spaces or
-          determine pricing.
-        </p>
-      </div>
-      <div className="span-all">
-        <h3 className="form-section-label">02 · Additional context</h3>
+      <div className={styles.fullWidth}>
         {input("notes", "Notes", { multiline: true })}
       </div>
     </div>

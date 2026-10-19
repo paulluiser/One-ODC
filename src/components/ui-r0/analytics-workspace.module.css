@@ -1,0 +1,549 @@
+.workspace {
+  display: grid;
+  gap: 20px;
+  color: var(--brand-text);
+}
+.header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+.header h1 {
+  font-size: 28px;
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+.header p {
+  margin: 0;
+  color: var(--brand-muted);
+  font-size: 13px;
+}
+.filterControls {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.filterControls > section {
+  max-width: 100%;
+}
+.dateRange {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--brand-muted);
+}
+.dateRange select {
+  min-height: 42px;
+  border: 1px solid var(--brand-border);
+  border-radius: 8px;
+  background: var(--brand-surface);
+  color: var(--brand-text);
+  padding: 8px 12px;
+  max-width: 280px;
+}
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  min-height: 150px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  text-decoration: none;
+  color: var(--brand-text);
+}
+.kpi strong {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.kpi small {
+  color: var(--brand-muted);
+  font-size: 11px;
+}
+.kpiLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.kpiLabel svg {
+  flex-shrink: 0;
+  color: var(--brand-link);
+}
+.accent {
+  background: var(--brand-selected);
+}
+.charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.panel {
+  padding: 20px;
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  min-width: 0;
+}
+.panel h2 {
+  font-size: 17px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.note {
+  font-size: 12px;
+  color: var(--brand-muted);
+  margin: 6px 0 14px;
+  line-height: 1.5;
+}
+.horizontal {
+  padding: 12px 0 0;
+  margin: 0;
+  list-style: none;
+  display: grid;
+  gap: 22px;
+}
+.horizontal li {
+  display: grid;
+  grid-template-columns: 100px minmax(30px, 1fr) 25px 45px;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.horizontal a {
+  color: var(--brand-text);
+  text-decoration: none;
+}
+.horizontal a:hover {
+  color: var(--brand-link);
+  text-decoration: underline;
+}
+.horizontal small {
+  color: var(--brand-muted);
+  text-align: right;
+}
+.horizontal strong {
+  text-align: right;
+}
+.workspace progress {
+  appearance: none;
+  height: 9px;
+  width: 100%;
+  border: 0;
+  background: var(--brand-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.workspace progress::-webkit-progress-bar {
+  background: var(--brand-soft);
+  border-radius: 4px;
+}
+.workspace progress::-webkit-progress-value {
+  background: var(--brand-link);
+  border-radius: 4px;
+}
+.workspace progress::-moz-progress-bar {
+  background: var(--brand-link);
+  border-radius: 4px;
+}
+.monthScroll {
+  overflow-x: auto;
+}
+.monthChart {
+  position: relative;
+  height: 214px;
+  margin-top: 10px;
+  padding-left: 24px;
+}
+.gridLines {
+  position: absolute;
+  inset: 30px 0 44px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--brand-muted);
+}
+.gridLines span {
+  border-bottom: 1px solid var(--brand-border);
+}
+.monthBars {
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: space-around;
+  gap: 6px;
+  height: 100%;
+}
+.monthBars a {
+  height: 100%;
+  flex: 1;
+  min-width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--brand-text);
+  font-size: 10px;
+}
+.monthBars strong {
+  font-size: 11px;
+}
+.monthBars a > span:last-child {
+  min-height: 32px;
+  display: flex;
+  align-items: start;
+  padding-top: 6px;
+  text-align: center;
+}
+.bar {
+  width: 16px;
+  background: var(--brand-link);
+  border-radius: 5px 5px 0 0;
+  min-height: 0;
+}
+.tableScroll {
+  overflow-x: auto;
+  margin-top: 14px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 890px;
+  text-align: left;
+  font-size: 12px;
+}
+.table th {
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--brand-muted);
+  background: var(--brand-soft);
+  padding: 12px 10px;
+  white-space: nowrap;
+}
+.table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--brand-border);
+  vertical-align: middle;
+}
+.table tr:hover td {
+  background: var(--brand-soft);
+}
+.table td:first-child {
+  max-width: 240px;
+}
+.table td a {
+  color: var(--brand-text);
+  text-decoration: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.table td a:hover {
+  color: var(--brand-link);
+  text-decoration: underline;
+}
+.table small {
+  display: block;
+  color: var(--brand-muted);
+  font-size: 10px;
+  margin-top: 4px;
+}
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.progress progress {
+  width: 65px;
+  height: 5px;
+}
+.muted {
+  color: var(--brand-muted);
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  font-size: 12px;
+  margin-top: 16px;
+}
+.workspace a:focus-visible,
+.workspace select:focus-visible {
+  outline: 2px solid var(--brand-focus);
+  outline-offset: 3px;
+}
+.pagination a,
+.footer a,
+.matchHeading a {
+  color: var(--brand-link);
+  text-underline-offset: 3px;
+}
+.empty {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  color: var(--brand-muted);
+  font-size: 13px;
+}
+.panel {
+  scroll-margin-top: 110px;
+}
+.matchHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+}
+.matches {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.matches li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--brand-border);
+  font-size: 12px;
+}
+.matches li a {
+  color: var(--brand-link);
+}
+.matches li span,
+.matches li small {
+  color: var(--brand-muted);
+}
+.footer {
+  font-size: 11px;
+  color: var(--brand-muted);
+  line-height: 1.6;
+}
+.footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+@media (max-width: 1100px) {
+  .header {
+    align-items: start;
+    flex-direction: column;
+  }
+  .filterControls {
+    max-width: none;
+    justify-content: flex-end;
+  }
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kpi {
+    min-height: 135px;
+  }
+  .panel {
+    padding: 16px;
+  }
+  .horizontal li {
+    grid-template-columns: 80px minmax(25px, 1fr) 22px 40px;
+    gap: 8px;
+  }
+  .filterControls {
+    display: flex;
+    width: 100%;
+  }
+  .dateRange select {
+    max-width: none;
+    width: 100%;
+  }
+  .matches li {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
+.directoryScroll {
+  height: clamp(260px, 42dvh, 420px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.directoryScroll:focus-visible {
+  outline: 2px solid var(--brand-focus);
+  outline-offset: 2px;
+}
+.directoryScroll .table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.directoryScroll .table td {
+  padding: 8px 10px;
+}
+
+/* Compact reference layout; shared queries and toolbar behavior are unchanged. */
+.header {
+  align-items: center;
+}
+.header h1 {
+  font-size: 26px;
+}
+.dateRange {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.dateRange > svg {
+  position: absolute;
+  left: 12px;
+  pointer-events: none;
+}
+.dateRange select {
+  height: 44px;
+  width: 210px;
+  padding-left: 36px;
+}
+.kpi {
+  padding: 20px;
+  gap: 14px;
+  min-height: 148px;
+}
+.kpiArrow {
+  margin-left: auto;
+  color: var(--brand-text) !important;
+}
+.kpiLabel {
+  font-size: 12px;
+}
+.accent {
+  background: color-mix(
+    in srgb,
+    var(--brand-primary) 74%,
+    var(--brand-surface)
+  );
+}
+.kpi:nth-child(2) {
+  background: color-mix(in srgb, var(--brand-soft) 58%, var(--brand-surface));
+}
+.kpi:nth-child(3) {
+  background: color-mix(
+    in srgb,
+    var(--brand-selected) 48%,
+    var(--brand-surface)
+  );
+}
+.directoryHeading {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(460px, 1.2fr);
+  align-items: center;
+  gap: 16px;
+}
+.directoryHeading h2 {
+  margin-bottom: 4px;
+}
+.directoryHeading .note {
+  margin: 0;
+}
+.directoryScroll {
+  height: clamp(250px, 36dvh, 340px);
+}
+.directoryFooter {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-top: 12px;
+  font-size: 12px;
+}
+.pageSize {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.pageSize select {
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--brand-border);
+  border-radius: 7px;
+  color: var(--brand-text);
+  background: var(--brand-surface);
+}
+.range {
+  color: var(--brand-muted);
+}
+.pageNumbers {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
+.pageNumbers a,
+.pageNumbers button {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  min-height: 34px;
+  border: 1px solid var(--brand-border);
+  border-radius: 7px;
+  background: var(--brand-surface);
+  color: var(--brand-text);
+  text-decoration: none;
+}
+.pageNumbers button:disabled {
+  opacity: 0.4;
+}
+.pageNumbers a[aria-current="page"] {
+  background: var(--brand-link);
+  color: var(--brand-surface);
+  border-color: var(--brand-link);
+}
+@media (max-width: 1100px) {
+  .header {
+    align-items: stretch;
+  }
+  .directoryHeading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .filterControls {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 600px) {
+  .directoryFooter {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pageNumbers {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .dateRange select {
+    width: 190px;
+  }
+  .header .filterControls {
+    width: 100%;
+  }
+}

@@ -1,27 +1,34 @@
 "use client";
+import { Link2, Plus, X } from "lucide-react";
+import styles from "./lead-request.module.css";
 import type { ResourceLink } from "@/lib/resources";
 export function ResourceLinks({
   links,
   onChange,
   disabled = false,
   error,
+  compact = false,
 }: {
   links: ResourceLink[];
   onChange: (links: ResourceLink[]) => void;
   disabled?: boolean;
   error?: string;
+  compact?: boolean;
 }) {
   return (
     <fieldset
       id="resource_links"
       tabIndex={-1}
-      className="live-form"
+      className={compact ? styles.links : "live-form"}
       disabled={disabled}
     >
-      <legend>Files and Resources</legend>
+      <legend>
+        {compact ? "Files and references" : "Files and Resources"}
+      </legend>
       <p className="field-hint">
-        Optional HTTPS links, up to 20. External resources are not downloaded or
-        synchronized.
+        {compact
+          ? "Paste HTTPS links to drawings, photos, or inspiration."
+          : "Optional HTTPS links, up to 20. External resources are not downloaded or synchronized."}
       </p>
       <input
         type="hidden"
@@ -29,11 +36,20 @@ export function ResourceLinks({
         value={JSON.stringify(links)}
       />
       {links.map((link, i) => (
-        <div className="live-field" key={link.id}>
-          <label htmlFor={`resource-${link.id}`}>Resource link {i + 1}</label>
+        <div className={compact ? styles.linkRow : "live-field"} key={link.id}>
+          {compact && <Link2 size={16} aria-hidden="true" />}
+          <label
+            className={compact ? "sr-only" : undefined}
+            htmlFor={`resource-${link.id}`}
+          >
+            Resource link {i + 1}
+          </label>
           <input
             id={`resource-${link.id}`}
             type="url"
+            placeholder="https://…"
+            aria-invalid={!!error}
+            aria-describedby={error ? "resource-links-error" : undefined}
             required
             maxLength={2048}
             pattern="https://.*"
@@ -48,10 +64,15 @@ export function ResourceLinks({
           />
           <button
             type="button"
-            className="button button-outline"
+            className={compact ? styles.removeLink : "button button-outline"}
+            aria-label={`Remove Link ${i + 1}`}
             onClick={() => onChange(links.filter((l) => l.id !== link.id))}
           >
-            Remove Link {i + 1}
+            {compact ? (
+              <X size={16} aria-hidden="true" />
+            ) : (
+              `Remove Link ${i + 1}`
+            )}
           </button>
         </div>
       ))}
@@ -63,10 +84,16 @@ export function ResourceLinks({
           onChange([...links, { id: crypto.randomUUID(), url: "" }])
         }
       >
+        {compact && <Plus size={16} aria-hidden="true" />}
         Add Link
       </button>
+      {compact && (
+        <p className="field-hint">
+          Up to 20 links. External resources are not downloaded.
+        </p>
+      )}
       {error && (
-        <p role="alert" className="field-error">
+        <p id="resource-links-error" role="alert" className="field-error">
           {error}
         </p>
       )}

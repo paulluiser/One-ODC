@@ -1,0 +1,456 @@
+.workspace {
+  display: grid;
+  gap: 18px;
+}
+.section {
+  padding: 22px;
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  color: var(--brand-text);
+}
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.sectionHeader h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+.sectionHeader p {
+  font-size: 13px;
+  color: var(--brand-muted);
+  margin: 0;
+}
+.overview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  padding: 12px 0 20px;
+}
+.overview svg {
+  color: var(--brand-link);
+}
+.overview strong {
+  font-size: 22px;
+}
+.overview > span:last-child {
+  margin-left: auto;
+  color: var(--brand-muted);
+}
+.directory {
+  margin-top: 14px;
+}
+.row {
+  display: grid;
+  grid-template-columns:
+    6px minmax(120px, 1.1fr) minmax(90px, 0.7fr) minmax(120px, 1.5fr)
+    minmax(135px, 1fr) 18px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--brand-border);
+  text-decoration: none;
+  color: var(--brand-text);
+  font-size: 13px;
+  min-height: 64px;
+  box-sizing: border-box;
+}
+.row:hover {
+  background: var(--brand-soft);
+}
+.row strong {
+  font-weight: 600;
+}
+.dot {
+  width: 5px;
+  height: 5px;
+  background: var(--brand-link);
+  border-radius: 50%;
+}
+.badge {
+  width: fit-content;
+  font-size: 11px;
+  color: var(--brand-link);
+  background: var(--brand-selected);
+  padding: 4px 7px;
+  border-radius: 5px;
+}
+.description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--brand-muted);
+}
+.actor {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.actor time,
+.actor small {
+  font-size: 11px;
+  color: var(--brand-muted);
+}
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 18px;
+  font-size: 13px;
+  padding-top: 20px;
+}
+.pagination a,
+.context a,
+.contextLink {
+  color: var(--brand-link);
+  text-underline-offset: 3px;
+}
+.controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.empty {
+  padding: 20px 0;
+  color: var(--brand-muted);
+  font-size: 14px;
+}
+.context {
+  padding: 14px;
+  background: var(--brand-soft);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.modalOverlay,
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(25 22 17 / 42%);
+  z-index: 90;
+}
+.sheetOverlay {
+  z-index: 80;
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(640px, calc(100vw - 32px));
+  height: fit-content;
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+  z-index: 91;
+  border-radius: 16px;
+  border: 1px solid var(--brand-border);
+  background: var(--brand-surface);
+  color: var(--brand-text);
+  overflow: hidden;
+  box-shadow: 0 24px 80px #0003;
+}
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid var(--brand-border);
+}
+.modalHeader h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.modalHeader p {
+  font-size: 13px;
+  color: var(--brand-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+.iconButton {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  background: transparent;
+  color: inherit;
+  border: 0;
+}
+.modal form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.modalBody {
+  padding: 20px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.modal fieldset {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.modal :global(.live-field) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 18px;
+  min-width: 0;
+}
+.modal
+  :is(input:not([type="checkbox"]):not([type="hidden"]), select, textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: var(--brand-surface);
+  color: inherit;
+  border: 1px solid var(--brand-input);
+  border-radius: 8px;
+  font: inherit;
+  box-sizing: border-box;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 18px;
+}
+.files {
+  font-size: 13px;
+  padding-bottom: 18px !important;
+}
+.files legend {
+  margin-bottom: 12px;
+}
+.files label {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  overflow-wrap: anywhere;
+}
+.files input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.modalFooter,
+.sheetFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 24px;
+  border-top: 1px solid var(--brand-border);
+}
+.modalFooter button,
+.sheetFooter button {
+  min-height: 44px;
+}
+.destructive {
+  background: var(--brand-destructive) !important;
+  color: var(--brand-surface) !important;
+  box-shadow: none !important;
+}
+.dangerOutline {
+  color: var(--brand-destructive) !important;
+}
+.error {
+  color: var(--brand-destructive);
+  font-size: 13px;
+}
+.sheet {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(600px, 100vw);
+  z-index: 81;
+  background: var(--brand-surface);
+  color: var(--brand-text);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  box-shadow: -12px 0 45px #0002;
+}
+.sheetBody {
+  padding: 24px;
+  overflow-y: auto;
+}
+.sheetBody h3 {
+  font-weight: 600;
+  font-size: 15px;
+  margin: 24px 0 12px;
+}
+.longText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.changes {
+  font-size: 13px;
+}
+.changes > div {
+  border-top: 1px solid var(--brand-border);
+  padding: 12px 0;
+}
+.changes dt {
+  color: var(--brand-muted);
+  margin-bottom: 8px;
+}
+.changes dd {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr);
+  gap: 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.changes strong {
+  font-weight: 500;
+}
+.version {
+  border-top: 1px solid var(--brand-border);
+  padding: 16px 0;
+  font-size: 13px;
+}
+.version > p {
+  color: var(--brand-muted);
+}
+.contextLink {
+  display: block;
+  margin-top: 18px;
+  font-size: 13px;
+}
+.workspace :is(a, button):focus-visible,
+.sheet :is(a, button):focus-visible,
+.modal :is(input, select, textarea, button):focus-visible {
+  outline: 2px solid var(--brand-focus);
+  outline-offset: 3px;
+}
+@media (max-width: 1000px) {
+  .row {
+    grid-template-columns:
+      6px minmax(130px, 1fr) minmax(90px, 0.6fr) minmax(130px, 1fr)
+      18px;
+  }
+  .description {
+    grid-column: 2/4;
+    grid-row: 2;
+  }
+  .actor {
+    grid-column: 4;
+    grid-row: 1/3;
+  }
+  .row > svg {
+    grid-column: 5;
+    grid-row: 1/3;
+  }
+}
+@media (max-width: 600px) {
+  .section {
+    padding: 18px;
+  }
+  .sectionHeader {
+    flex-wrap: wrap;
+  }
+  .row {
+    grid-template-columns: 5px minmax(0, 1fr) 18px;
+    gap: 8px 12px;
+    padding: 16px 0;
+  }
+  .row strong {
+    grid-column: 2;
+  }
+  .badge {
+    grid-column: 2;
+  }
+  .description {
+    grid-column: 2;
+    grid-row: auto;
+  }
+  .actor {
+    grid-column: 2;
+    grid-row: auto;
+  }
+  .row > svg {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .dot {
+    grid-row: 1;
+  }
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .modalHeader,
+  .modalBody,
+  .modalFooter,
+  .sheetBody,
+  .sheetFooter {
+    padding: 18px;
+  }
+  .modalFooter button {
+    flex: 1;
+  }
+}
+
+.overview > div {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 24px auto;
+  gap: 5px 10px;
+  align-items: center;
+}
+.overview > div + div {
+  padding-left: 18px;
+  border-left: 1px solid var(--brand-border);
+}
+.overview > div > span {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--brand-muted);
+}
+.row strong {
+  color: var(--brand-text);
+}
+.badge[data-category="Financial"] {
+  background: var(--brand-success-soft);
+  color: var(--brand-success);
+}
+.badge[data-category="Quotation"] {
+  background: var(--brand-info-soft);
+  color: var(--brand-info);
+}
+.badge[data-category="Corrections"] {
+  background: var(--brand-warning-soft);
+  color: var(--brand-warning);
+}
+@media (max-width: 600px) {
+  .overview {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .overview > div {
+    min-width: 100px;
+  }
+  .overview > div + div {
+    padding-left: 0;
+    border: 0;
+  }
+}
+
+.sheetBody:focus-visible {
+  outline: 2px solid var(--brand-focus);
+  outline-offset: -4px;
+}

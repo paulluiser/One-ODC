@@ -1,3 +1,4 @@
+import { analyticsProjects } from "@/lib/analytics-projects";
 import Link from "next/link";
 import { RebuildAnalytics } from "@/components/ui-r0/analytics";
 import { notFound } from "next/navigation";
@@ -67,10 +68,17 @@ export default async function Analytics({
   });
   checkDatabase(result.error);
   const data = analyticsSchema.parse(result.data);
-  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
+    const projects = await analyticsProjects(client, filters, data.role);
     return (
-      <RebuildAnalytics data={data} filters={filters} recovery={recovery} />
+      <RebuildAnalytics
+        data={data}
+        filters={filters}
+        recovery={recovery}
+        projects={projects}
+      />
     );
+  }
   return (
     <>
       <PageIntro

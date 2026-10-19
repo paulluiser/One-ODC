@@ -1,5 +1,12 @@
 "use client";
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import {
@@ -12,6 +19,9 @@ import {
 } from "@/lib/filter-toolbar";
 import styles from "./filter-bar.module.css";
 export type FilterBarProps = {
+  leading?: ReactNode;
+  compact?: boolean;
+  unframed?: boolean;
   config: FilterConfig;
   values: Record<string, string>;
   resultCount?: number;
@@ -31,6 +41,9 @@ function Toolbar({
   recovery,
   validate,
   hint,
+  leading,
+  compact = false,
+  unframed = false,
 }: FilterBarProps) {
   const router = useRouter(),
     id = useId();
@@ -139,7 +152,7 @@ function Toolbar({
     config.search ? { ...next, [config.search.key]: search } : next;
   return (
     <section
-      className={styles.bar}
+      className={`${styles.bar} ${compact ? styles.compact : ""} ${unframed ? styles.unframed : ""}`}
       aria-label={config.label}
       aria-busy={pending}
     >
@@ -150,6 +163,7 @@ function Toolbar({
         </p>
       )}
       <div className={styles.toolbar}>
+        {leading}
         {config.search && (
           <label className={styles.search}>
             <Search size={18} aria-hidden="true" />

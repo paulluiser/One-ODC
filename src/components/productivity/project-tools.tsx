@@ -167,6 +167,9 @@ export function DiscussionPanel({
     [mentionSearch, setMentionSearch] = useState(""),
     [mentionOpen, setMentionOpen] = useState(false),
     [opened, setOpened] = useState(presentation === "full");
+  const feed = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
+  const feedPage = useRef(1);
   const readIds = useRef(new Set<string>());
   const lastMessage = useRef("");
   const operation = useRef(""),
@@ -254,6 +257,28 @@ export function DiscussionPanel({
   }, [project, page, opened, presentation]);
   useEffect(() => {
     if (!data || !opened || presentation === "preview") return;
+    const panel = feed.current;
+    if (!panel) return;
+    const id = window.location.hash.slice(1);
+    const target = id.startsWith("comment-")
+      ? document.getElementById(id)
+      : null;
+    if (target && panel.contains(target) && lastMessage.current !== id) {
+      panel.scrollIntoView({ block: "nearest" });
+      panel.scrollTop +=
+        target.getBoundingClientRect().top -
+        panel.getBoundingClientRect().top -
+        panel.clientHeight / 2 +
+        target.clientHeight / 2;
+      lastMessage.current = id;
+      followLatest.current = false;
+    } else if (followLatest.current || feedPage.current !== page) {
+      panel.scrollTop = panel.scrollHeight;
+    }
+    feedPage.current = page;
+  }, [data, opened, page, presentation]);
+  useEffect(() => {
+    if (!data || !opened || presentation === "preview") return;
     let active = true;
     const mark = () => {
       if (document.visibilityState !== "visible") return;
@@ -279,14 +304,6 @@ export function DiscussionPanel({
     };
     const frame = requestAnimationFrame(mark);
     document.addEventListener("visibilitychange", mark);
-    const id = window.location.hash.slice(1);
-    if (id.startsWith("comment-") && lastMessage.current !== id) {
-      const target = document.getElementById(id);
-      if (target) {
-        target.scrollIntoView({ block: "center" });
-        lastMessage.current = id;
-      }
-    }
     return () => {
       active = false;
       cancelAnimationFrame(frame);
@@ -321,6 +338,7 @@ export function DiscussionPanel({
       form.current?.dispatchEvent(
         new CustomEvent("one-odc:saved", { bubbles: true }),
       );
+      followLatest.current = true;
       await load(1);
     } catch (e) {
       setError((e as Error).message);
@@ -395,73 +413,90 @@ export function DiscussionPanel({
       {busy && <p role="status">Loading discussion…</p>}
       {data && (
         <>
-          <ol
-            className={styles.discussionFeed}
-            aria-label="Project discussion messages"
+          {/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- Keyboard users must be able to focus and scroll the message region. */}
+          <div
+            ref={feed}
+            className={styles.discussionScroll}
+            role="region"
+            aria-label="Scrollable discussion"
+            tabIndex={0}
+            onScroll={(event) => {
+              const panel = event.currentTarget;
+              followLatest.current =
+                panel.scrollHeight - panel.scrollTop - panel.clientHeight < 64;
+            }}
           >
-            {[...data.records]
-              .sort(
-                (a, b) =>
-                  a.created_at.localeCompare(b.created_at) ||
-                  a.id.localeCompare(b.id),
-              )
-              .map((c) => {
-                const author =
-                  data.people.find((p) => p.id === c.author_id)?.display_name ??
-                  "Project member";
-                return (
-                  <li key={c.id} id={`comment-${c.id}`} tabIndex={-1}>
-                    <span className={styles.avatar} aria-hidden="true">
-                      {author
-                        .split(/\s+/)
-                        .slice(0, 2)
-                        .map((n) => n[0])
-                        .join("")}
-                    </span>
-                    <div className={styles.messageBody}>
-                      <div className={styles.messageMeta}>
-                        <strong>{author}</strong>
-                        <time dateTime={c.created_at}>
-                          {new Date(c.created_at).toLocaleString("en-PH")}
-                        </time>
-                        {c.version > 1 && <small>Edited · v{c.version}</small>}
-                      </div>
-                      {c.space_id && (
-                        <span className={styles.messageSpace}>
-                          <Layers size={13} aria-hidden="true" />
-                          <span>
-                            Space:{" "}
-                            {c.space?.name ??
-                              data.spaces.find((s) => s.id === c.space_id)
-                                ?.name ??
-                              "Linked space"}
+            <ol
+              className={styles.discussionFeed}
+              aria-label="Project discussion messages"
+            >
+              {[...data.records]
+                .sort(
+                  (a, b) =>
+                    a.created_at.localeCompare(b.created_at) ||
+                    a.id.localeCompare(b.id),
+                )
+                .map((c) => {
+                  const author =
+                    data.people.find((p) => p.id === c.author_id)
+                      ?.display_name ?? "Project member";
+                  return (
+                    <li key={c.id} id={`comment-${c.id}`} tabIndex={-1}>
+                      <span className={styles.avatar} aria-hidden="true">
+                        {author
+                          .split(/\s+/)
+                          .slice(0, 2)
+                          .map((n) => n[0])
+                          .join("")}
+                      </span>
+                      <div className={styles.messageBody}>
+                        <div className={styles.messageMeta}>
+                          <strong>{author}</strong>
+                          <time dateTime={c.created_at}>
+                            {new Date(c.created_at).toLocaleString("en-PH")}
+                          </time>
+                          {c.version > 1 && (
+                            <small>Edited · v{c.version}</small>
+                          )}
+                        </div>
+                        {c.space_id && (
+                          <span className={styles.messageSpace}>
+                            <Layers size={13} aria-hidden="true" />
+                            <span>
+                              Space:{" "}
+                              {c.space?.name ??
+                                data.spaces.find((s) => s.id === c.space_id)
+                                  ?.name ??
+                                "Linked space"}
+                            </span>
                           </span>
-                        </span>
-                      )}
-                      <p className={styles.plainText}>{c.body}</p>
-                      {!data.readOnly &&
-                        (c.author_id === profile.id ||
-                          profile.role === "system_administrator") && (
-                          <button
-                            type="button"
-                            className={styles.quietAction}
-                            onClick={() => edit(c)}
-                          >
-                            Edit
-                          </button>
                         )}
-                    </div>
-                  </li>
-                );
-              })}
-          </ol>
-          {!data.records.length && (
-            <div className={styles.discussionEmpty}>
-              <MessageSquare size={28} aria-hidden="true" />
-              <h3>No discussions yet</h3>
-              <p>Start a conversation with your project team.</p>
-            </div>
-          )}
+                        <p className={styles.plainText}>{c.body}</p>
+                        {!data.readOnly &&
+                          (c.author_id === profile.id ||
+                            profile.role === "system_administrator") && (
+                            <button
+                              type="button"
+                              className={styles.quietAction}
+                              onClick={() => edit(c)}
+                            >
+                              Edit
+                            </button>
+                          )}
+                      </div>
+                    </li>
+                  );
+                })}
+            </ol>
+            {!data.records.length && (
+              <div className={styles.discussionEmpty}>
+                <MessageSquare size={28} aria-hidden="true" />
+                <h3>No discussions yet</h3>
+                <p>Start a conversation with your project team.</p>
+              </div>
+            )}
+          </div>
+          {/* eslint-enable jsx-a11y/no-noninteractive-tabindex */}
           {(page > 1 || data.hasMore) && (
             <div className={styles.row}>
               <button

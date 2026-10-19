@@ -26,7 +26,7 @@ export default async function NewLead() {
       <Scope>
         <Heading
           title="New quotation request"
-          description="Start with the client’s brief. Paste links to drawings and other files."
+          description="Capture the client brief and assign it for review."
         />
         <LeadForm
           bdms={bdms?.data?.filter((p: { role: string }) => p.role === "bdm")}

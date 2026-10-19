@@ -1,7 +1,11 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/dashboard/analytics",
+  useSearchParams: () => new URLSearchParams(),
+}));
 import { RebuildRoleDashboard } from "../../src/components/ui-r0/role-dashboard";
 import { RebuildAnalytics } from "../../src/components/ui-r0/analytics";
 import { dashboardMetrics, type DashboardData } from "../../src/lib/dashboard";
@@ -76,19 +80,31 @@ for (const role of [...roles, "lead_designer"] as const)
       to: "2026-10-15",
       view: "projects",
     });
+    const projects = Array.from({ length: 3 }, (_, i) => ({
+      id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
+      name: `Project ${i + 1}`,
+      reference: `ODC-${i + 1}`,
+      commercial: "Closed",
+      lifecycle: "Active",
+      progress: null,
+      deadline: null,
+      handoff: null,
+      lastActivity: null,
+    }));
     const html = renderToStaticMarkup(
-      createElement(RebuildAnalytics, { data, filters }),
+      createElement(RebuildAnalytics, { data, filters, projects }),
     );
-    expect(html).toContain('aria-label="Closed: 3 matching records"');
-    expect(html).toContain("bucket=Closed");
-    expect(html).toContain('aria-label="Current project stage"');
+    expect(html).toContain('aria-label="Active: 3 projects"');
+    expect(html).toContain("Project status distribution");
+    expect(html).toContain('aria-label="Current reporting stage"');
     expect(html).toContain('aria-label="Assigned stakeholder"');
-    expect(html).toContain('method="get"');
+    expect(html).toContain("Project breakdown filters");
     expect(html).toContain("Last 30 days");
     const recoveryHtml = renderToStaticMarkup(
       createElement(RebuildAnalytics, {
         data,
         filters,
+        projects,
         recovery: {
           values: { from: "2025-02-30" },
           errors: { from: "Choose a valid calendar date." },

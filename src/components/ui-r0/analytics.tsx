@@ -1,276 +1,282 @@
 import Link from "next/link";
 import {
-  ArrowUpRight,
   FolderOpen,
   CheckCheck,
+  FileText,
   Layers3,
-  Clock3,
+  ArrowUpRight,
 } from "lucide-react";
 import {
-  analyticsDefinitions,
   analyticsUrl,
   collectionRate,
   rate,
   type AnalyticsData,
   type AnalyticsFilters,
-} from "../../lib/analytics";
-import { financialAmount } from "../../lib/finance";
-import { formatTime } from "../../lib/phase1";
-import { Panel, SectionHeading, StatTile, Empty } from "./primitives";
-import styles from "./ui-r0.module.css";
-import r1 from "./ui-r1.module.css";
+} from "@/lib/analytics";
+import type { AnalyticsProject } from "@/lib/analytics-projects";
+import { financialAmount } from "@/lib/finance";
+import { formatTime } from "@/lib/phase1";
 import {
   AnalyticsFilterPanel,
   type AnalyticsFilterRecovery,
 } from "./analytics-filters";
+import { AnalyticsProjectTable } from "./analytics-project-table";
+import styles from "./analytics-workspace.module.css";
 export function RebuildAnalytics({
   data,
   filters,
   recovery,
+  projects,
 }: {
   data: AnalyticsData;
   filters: AnalyticsFilters;
   recovery?: AnalyticsFilterRecovery;
+  projects: AnalyticsProject[];
 }) {
   const count = (key: string) => data.metrics[key]?.count ?? 0;
-  const bucketCount = (key: string, bucket: string) =>
-    data.groups.find((g) => g.key === key && g.bucket === bucket)?.count ?? 0;
   const commercial = ["bdm", "lead_designer", "system_administrator"].includes(
     data.role,
   );
-  const operational = [
-    "operations_admin",
-    "lead_designer",
-    "system_administrator",
-  ].includes(data.role);
-  const cards: { key: string; label: string; value?: string }[] = [
-    { key: "active_projects", label: "Active projects" },
-    { key: "completed_projects", label: "Currently completed projects" },
-    { key: "completions", label: "Projects with a completion in range" },
+  const spaceCount = count("spaces"),
+    completedSpaces =
+      data.groups.find((g) => g.key === "spaces" && g.bucket === "Completed")
+        ?.count ?? 0;
+  const kpis = [
     {
-      key: "completions",
-      label: "Average operational duration",
-      value: count("completions")
-        ? `${(Number(data.metrics.completions.amount) / count("completions")).toFixed(1)} days`
-        : "Not Available",
+      label: "Active projects",
+      value: String(count("active_projects")),
+      href: analyticsUrl(filters, "active_projects") + "#matching-records",
+      icon: FolderOpen,
+      note: "Open operational cycles · includes on hold",
     },
-    ...(data.role !== "operations_admin"
-      ? [
-          {
-            key: "spaces",
-            label: "Space design completion",
-            value: rate(bucketCount("spaces", "Completed"), count("spaces")),
-          },
-        ]
-      : []),
-    ...(commercial
-      ? [
-          { key: "leads", label: "Leads first submitted" },
-          { key: "accepted_leads", label: "Accepted leads in cohort" },
-          {
-            key: "leads",
-            label: "Lead conversion",
-            value: rate(count("accepted_leads"), count("leads")),
-          },
-          { key: "closed", label: "Commercially closed in range" },
-          {
-            key: "sale",
-            label: "Current authorized Sale",
-            value: financialAmount(data.metrics.sale?.amount),
-          },
-          {
-            key: "collections",
-            label: "Current client collections",
-            value: financialAmount(data.metrics.collections?.amount),
-          },
-          {
-            key: "collections",
-            label: "Collection progress",
-            value: collectionRate(
-              data.metrics.collections?.amount,
-              data.metrics.sale?.amount,
-            ),
-          },
-        ]
-      : []),
-    ...(operational
-      ? [
-          { key: "handoffs", label: "Pending primary handoffs" },
-          {
-            key: "outstanding_installations",
-            label: "Outstanding installation tasks",
-          },
-          { key: "stalled_logistics", label: "Stalled logistics" },
-          {
-            key: "installations",
-            label: "Installation completion",
-            value: rate(
-              bucketCount("installations", "Completed"),
-              count("installations") -
-                bucketCount("installations", "Not Applicable"),
-            ),
-          },
-        ]
-      : []),
+    {
+      label: "Completed projects",
+      value: String(count("completed_projects")),
+      href: analyticsUrl(filters, "completed_projects") + "#matching-records",
+      icon: CheckCheck,
+      note: "Currently operationally completed",
+    },
+    {
+      label: "For quotation",
+      value: String(
+        projects.filter((p) => p.commercial === "For Quotation").length,
+      ),
+      href:
+        analyticsUrl(filters) +
+        "&project_stage=For+Quotation#project-breakdown",
+      icon: FileText,
+      note: "Current commercial stage",
+    },
+    {
+      label: "Space design completion",
+      value:
+        data.role === "operations_admin"
+          ? "Not available"
+          : rate(completedSpaces, spaceCount),
+      href:
+        data.role === "operations_admin"
+          ? null
+          : analyticsUrl(filters, "spaces") + "#matching-records",
+      icon: Layers3,
+      note:
+        data.role === "operations_admin"
+          ? "Unavailable for your role"
+          : "Completed / non-cancelled spaces",
+    },
   ];
-
-  const primaryLabels = [
-    "Active projects",
-    "Currently completed projects",
-    "Projects with a completion in range",
-    data.role === "operations_admin"
-      ? "Installation completion"
-      : "Space design completion",
-  ];
-  const financialLabels = [
-    "Current authorized Sale",
-    "Current client collections",
-    "Collection progress",
-  ];
-  const chart = (key: string, title: string, monthly = false) => {
-    const recorded = data.groups.filter((g) => g.key === key);
-    const groups = monthly
-      ? (() => {
-          const rows: typeof recorded = [];
-          const month = new Date(`${filters.from.slice(0, 7)}-01T00:00:00Z`);
-          while (month.toISOString().slice(0, 7) <= filters.to.slice(0, 7)) {
-            const bucket = month.toISOString().slice(0, 7);
-            rows.push(
-              recorded.find((g) => g.bucket === bucket) ?? {
-                key,
-                bucket,
-                count: 0,
-                amount: null,
-              },
-            );
-            month.setUTCMonth(month.getUTCMonth() + 1);
-          }
-          return rows;
-        })()
-      : recorded;
-    const max = Math.max(1, ...groups.map((g) => g.count));
-    return (
-      <Panel label={title} className={r1.chart}>
-        <SectionHeading
-          title={title}
-          description="Select a label to open matching records."
+  const lifecycle = [
+    "Active",
+    "On Hold",
+    "Operationally Completed",
+    "Cancelled",
+    "Not available",
+  ]
+    .map((bucket) => ({
+      bucket,
+      count: projects.filter((p) => p.lifecycle === bucket).length,
+    }))
+    .filter((g) => g.count);
+  const months: { bucket: string; count: number }[] = [];
+  const cursor = new Date(`${filters.from.slice(0, 7)}-01T00:00:00Z`);
+  while (cursor.toISOString().slice(0, 7) <= filters.to.slice(0, 7)) {
+    const bucket = cursor.toISOString().slice(0, 7);
+    months.push({
+      bucket,
+      count:
+        data.groups.find((g) => g.key === "completions" && g.bucket === bucket)
+          ?.count ?? 0,
+    });
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  const max = Math.max(1, ...months.map((g) => g.count));
+  const matching = !!filters.view;
+  return (
+    <div className={styles.workspace}>
+      <header className={styles.header}>
+        <div>
+          <h1>Project analytics</h1>
+          <p>Key insights across your authorized workspace.</p>
+        </div>
+        <AnalyticsFilterPanel
+          data={data}
+          filters={filters}
+          recovery={recovery}
         />
-        {groups.length ? (
-          <ul className={`${r1.bars} ${monthly ? r1.months : ""}`}>
-            {groups.map((g) => {
-              const label =
-                key === "workload"
-                  ? g.bucket.split(" · ")[0]
-                  : monthly
-                    ? new Intl.DateTimeFormat("en", {
-                        month: "short",
-                        year: "2-digit",
-                        timeZone: "UTC",
-                      }).format(new Date(`${g.bucket}-01T00:00:00Z`))
-                    : g.bucket;
-              return (
+      </header>
+      <section className={styles.kpis} aria-label="Analytics KPIs">
+        {kpis.map((k, i) => {
+          const contents = (
+            <>
+              <span className={styles.kpiLabel}>
+                <k.icon size={18} aria-hidden="true" />
+                {k.label}
+                {k.href && (
+                  <ArrowUpRight
+                    size={16}
+                    className={styles.kpiArrow}
+                    aria-hidden="true"
+                  />
+                )}
+              </span>
+              <strong>{k.value}</strong>
+              <small>{k.note}</small>
+            </>
+          );
+          return k.href ? (
+            <Link
+              className={`${styles.kpi} ${i === 0 ? styles.accent : ""}`}
+              href={k.href}
+              key={k.label}
+            >
+              {contents}
+            </Link>
+          ) : (
+            <article className={styles.kpi} key={k.label}>
+              {contents}
+            </article>
+          );
+        })}
+      </section>
+      <div className={styles.charts}>
+        <section
+          className={styles.panel}
+          aria-label="Project status distribution"
+        >
+          <h2>Project status distribution</h2>
+          <p className={styles.note}>Share of projects by lifecycle stage.</p>
+          {lifecycle.length ? (
+            <ul className={styles.horizontal}>
+              {lifecycle.map((g) => (
                 <li key={g.bucket}>
                   <Link
-                    href={analyticsUrl(filters, key, g.bucket)}
-                    aria-label={`${label}: ${g.count} matching records`}
+                    href={
+                      analyticsUrl(filters) +
+                      `&project_lifecycle=${encodeURIComponent(g.bucket)}#project-breakdown`
+                    }
                   >
-                    <span>{label}</span>
-                    <strong>{g.count}</strong>
+                    {g.bucket === "Operationally Completed"
+                      ? "Completed"
+                      : g.bucket}
                   </Link>
-                  <div className={r1.track} aria-hidden="true">
-                    <span
-                      style={
-                        monthly
-                          ? { height: `${(g.count / max) * 100}%` }
-                          : { width: `${(g.count / max) * 100}%` }
-                      }
-                    />
-                  </div>
+                  <progress
+                    max={projects.length}
+                    value={g.count}
+                    aria-label={`${g.bucket}: ${g.count} projects`}
+                  />
+                  <strong>{g.count}</strong>
+                  <small>{rate(g.count, projects.length)}</small>
                 </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <Empty
-            title="No matching records"
-            description="This chart will populate when records meet the selected filters."
-          />
-        )}
-      </Panel>
-    );
-  };
-  return (
-    <div className={r1.analytics}>
-      <section className={styles.welcome} aria-label="Analytics introduction">
-        <div>
-          <span className={styles.eyebrow}>PERFORMANCE, WITH PERSPECTIVE</span>
-          <h2>Project analytics</h2>
-          <p>Understand progress across your authorized workspace.</p>
-        </div>
-        <Link className={styles.textLink} href="/dashboard">
-          Back to dashboard
-          <ArrowUpRight size={15} />
-        </Link>
-      </section>
-      <AnalyticsFilterPanel
-        key={JSON.stringify({ filters, recovery })}
-        data={data}
-        filters={filters}
-        recovery={recovery}
-      />
-      {data.role === "operations_admin" && (
-        <p className={styles.smallPrint}>
-          Only assigned Closed Projects enter these analytics. Originating-lead
-          brand filtering is unavailable for your role.
-        </p>
-      )}
-      <section className={styles.stats} aria-label="Analytics KPIs">
-        {cards
-          .filter((m) => primaryLabels.includes(m.label))
-          .map((m, i) => (
-            <StatTile
-              key={m.label}
-              label={m.label}
-              value={m.value ?? count(m.key)}
-              href={analyticsUrl(filters, m.key)}
-              description="Open matching records"
-              icon={[FolderOpen, CheckCheck, Clock3, Layers3][i]}
-              accent={i === 0}
-            />
-          ))}
-      </section>
-      {filters.view && (
-        <Panel label="Matching analytics records">
-          <SectionHeading
-            title="Matching analytics records"
-            description={`${data.selected_count} matching records · Page ${filters.page}`}
-            action={
-              <Link className={styles.textLink} href={analyticsUrl(filters)}>
-                Close results
-              </Link>
-            }
-          />
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.empty}>
+              No projects in this reporting period.
+            </p>
+          )}
+        </section>
+        <section
+          className={styles.panel}
+          aria-label="Operational completions by month"
+        >
+          <h2>Operational completions by month</h2>
+          <p className={styles.note}>
+            Latest recorded operational completion per project, by completion
+            date.
+          </p>
+          {months.some((g) => g.count) ? (
+            <div className={styles.monthScroll}>
+              <div
+                className={styles.monthChart}
+                style={{ minWidth: Math.max(300, months.length * 38 + 24) }}
+              >
+                <div className={styles.gridLines} aria-hidden="true">
+                  {[max, max / 2, 0].map((v, i) => (
+                    <span key={i}>{v}</span>
+                  ))}
+                </div>
+                <div className={styles.monthBars}>
+                  {months.map((g) => (
+                    <Link
+                      href={
+                        analyticsUrl(filters, "completions", g.bucket) +
+                        "#matching-records"
+                      }
+                      key={g.bucket}
+                      aria-label={`${g.bucket}: ${g.count} completed projects`}
+                    >
+                      <strong>{g.count}</strong>
+                      <span
+                        className={styles.bar}
+                        style={{ height: `${(g.count / max) * 140}px` }}
+                      />
+                      <span>
+                        {new Intl.DateTimeFormat("en", {
+                          month: "short",
+                          year: "2-digit",
+                          timeZone: "UTC",
+                        }).format(new Date(`${g.bucket}-01T00:00:00Z`))}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className={styles.empty}>
+              No operational completions in the selected period.
+            </p>
+          )}
+        </section>
+      </div>
+      <AnalyticsProjectTable projects={projects} />
+      {matching && (
+        <section
+          className={styles.panel}
+          aria-label="Matching analytics records"
+          id="matching-records"
+        >
+          <div className={styles.matchHeading}>
+            <h2>Matching analytics records</h2>
+            <Link href={analyticsUrl(filters)}>Close results</Link>
+          </div>
+          <p className={styles.note}>
+            {data.selected_count} matching records · Page {filters.page}
+          </p>
           {data.records.length ? (
-            <ul className={r1.records}>
+            <ul className={styles.matches}>
               {data.records.map((r, i) => (
                 <li key={`${r.id}-${i}`}>
-                  <Link href={r.href}>
-                    <strong>{r.label}</strong>
-                    <ArrowUpRight size={16} />
-                  </Link>
-                  <p>{r.detail}</p>
+                  <Link href={r.href}>{r.label}</Link>
+                  <span>{r.detail}</span>
                   {r.at && <small>{formatTime(r.at)}</small>}
                 </li>
               ))}
             </ul>
           ) : (
-            <Empty
-              title="No matching records"
-              description="Adjust the filters to explore another part of your authorized scope."
-            />
+            <p className={styles.empty}>No matching records.</p>
           )}
           <nav
-            className={styles.resultPagination}
+            className={styles.pagination}
             aria-label="Analytics record pages"
           >
             {filters.page > 1 && (
@@ -282,7 +288,7 @@ export function RebuildAnalytics({
                   filters.page - 1,
                 )}
               >
-                Previous page
+                Previous
               </Link>
             )}
             {filters.page * 25 < data.selected_count && (
@@ -294,87 +300,44 @@ export function RebuildAnalytics({
                   filters.page + 1,
                 )}
               >
-                Next page
+                Next
               </Link>
             )}
           </nav>
-        </Panel>
+        </section>
       )}
-      {commercial && (
-        <Panel label="Commercial balances">
-          <SectionHeading
-            title="Commercial balances"
-            description="Current balances for projects in this cohort; not period revenue."
-          />
-          <div className={r1.metricFacts}>
-            {cards
-              .filter((m) => financialLabels.includes(m.label))
-              .map((m) => (
-                <Link href={analyticsUrl(filters, m.key)} key={m.label}>
-                  <span>{m.label}</span>
-                  <strong>{m.value}</strong>
-                </Link>
-              ))}
-          </div>
-        </Panel>
-      )}
-      <div className={r1.chartGrid}>
-        {chart("projects", "Current lifecycle distribution")}
-        {chart("completions", "Operational completions by month", true)}
-      </div>
-      <details className={r1.more}>
-        <summary>More performance metrics</summary>
-        <Panel label="Supporting analytics metrics">
-          <div className={r1.metricFacts}>
-            {cards
-              .filter(
-                (m) =>
-                  !primaryLabels.includes(m.label) &&
-                  !financialLabels.includes(m.label),
-              )
-              .map((m) => (
-                <Link href={analyticsUrl(filters, m.key)} key={m.label}>
-                  <span>{m.label}</span>
-                  <strong>{m.value ?? count(m.key)}</strong>
-                </Link>
-              ))}
-          </div>
-        </Panel>
-      </details>
-      <details className={r1.more}>
-        <summary>Explore design, delivery & commercial charts</summary>
-        <div className={r1.chartGrid}>
-          {chart("completion_timing", "On-time versus overdue completion")}
-          {["lead_designer", "system_administrator"].includes(data.role) && (
-            <>
-              {chart("risk", "Current project risk")}
-              {chart("workload", "Designer workload distribution")}
-            </>
-          )}
-          {commercial && chart("closed", "Commercial closures by month", true)}
-          {operational && (
-            <>
-              {chart("handoffs", "Pending handoff aging")}
-              {chart("logistics", "Logistics status distribution")}
-              {chart("installations", "Installation status distribution")}
-            </>
-          )}
-        </div>
-      </details>
-      <footer className={styles.dataFoot}>
-        <span>
-          Authorized workspace data · Updated {formatTime(data.as_of)}
-        </span>
-        <span>
-          Inclusive dates · Current work uses creation dates; completion and
-          closure use event dates.
-        </span>
-        <details>
-          <summary>Calculation definitions and limitations</summary>
-          {analyticsDefinitions.map((d) => (
-            <p key={d}>{d}</p>
-          ))}
-        </details>
+      <footer className={styles.footer}>
+        {commercial && (
+          <nav aria-label="Commercial analytics">
+            <Link href={analyticsUrl(filters, "sale")}>
+              Current Sale: {financialAmount(data.metrics.sale?.amount)}
+            </Link>
+            <Link href={analyticsUrl(filters, "collections")}>
+              Client collections:{" "}
+              {financialAmount(data.metrics.collections?.amount)}
+            </Link>
+            <Link href={analyticsUrl(filters, "collections")}>
+              Collection progress:{" "}
+              {collectionRate(
+                data.metrics.collections?.amount,
+                data.metrics.sale?.amount,
+              )}
+            </Link>
+            <Link href={analyticsUrl(filters, "closed")}>
+              Commercial closures
+            </Link>
+            <Link href={analyticsUrl(filters, "leads")}>Submitted leads</Link>
+            <Link href={analyticsUrl(filters, "accepted_leads")}>
+              Accepted leads
+            </Link>
+          </nav>
+        )}
+        <p>
+          Updated {formatTime(data.as_of)} · Inclusive reporting dates. Current
+          project metrics use creation dates; completions use recorded
+          completion dates. Commercial totals are current cohort balances, not
+          period revenue.
+        </p>
       </footer>
     </div>
   );

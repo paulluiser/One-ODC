@@ -246,6 +246,24 @@
   font-weight: 600;
   vertical-align: middle;
 }
+.discussionScroll {
+  height: clamp(240px, 50dvh, 560px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  padding: 0 8px;
+  min-width: 0;
+}
+.discussionScroll:focus-visible {
+  outline: 2px solid var(--brand-focus);
+  outline-offset: 2px;
+}
+.discussionScroll .discussionEmpty {
+  min-height: 100%;
+  box-sizing: border-box;
+  align-content: center;
+}
 .discussionFeed {
   list-style: none;
   padding: 0;
@@ -443,4 +461,10 @@
 }
 .messageSpace svg {
   flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .discussionScroll {
+    height: clamp(180px, 38dvh, 360px);
+  }
 }

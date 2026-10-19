@@ -1,6 +1,6 @@
 "use client";
 import { OperationSummary } from "./ui-r4/primitives";
-import r2 from "./ui-r2/ui-r2.module.css";
+import styles from "./lead-request.module.css";
 import { OperationFeedback } from "./operation-feedback";
 import { FormPending } from "./form-pending";
 import { useActionState, useEffect, useRef, useState } from "react";
@@ -79,147 +79,150 @@ export function LeadForm({
       base.cabinetry_count === null ? "" : String(base.cabinetry_count),
   });
   const [links, setLinks] = useState(base.resource_links ?? []);
+  const [bdm, setBdm] = useState(lead?.bdm_id ?? "");
   const [reason, setReason] = useState("");
   useEffect(() => {
     const first = Object.keys(state.fields ?? {})[0];
     if (first) document.getElementById(first)?.focus();
   }, [state]);
-  const fields = (
-    <>
-      {bdms && (
-        <label className="live-field" htmlFor="bdm_id">
-          Responsible BDM *
-          <select
-            id="bdm_id"
-            name="bdm_id"
-            required
-            defaultValue={lead?.bdm_id ?? ""}
-            disabled={pending || !!lead}
-          >
-            <option value="">Choose a BDM</option>
-            {bdms.map((p) => (
-              <option value={p.id} key={p.id}>
-                {p.display_name}
-              </option>
-            ))}
-          </select>
-          {lead && <input type="hidden" name="bdm_id" value={lead.bdm_id} />}
-          <small className="field-hint">
-            The BDM owns the client relationship and subsequent commercial
-            steps. Your administrator account is recorded as the author.
-          </small>
-          {state.fields?.bdm_id && (
-            <span className="field-error">Choose an active BDM.</span>
-          )}
-        </label>
+  const owner = bdms ? (
+    <div className="live-field">
+      <label htmlFor="bdm_id">Responsible BDM *</label>
+      <select
+        id="bdm_id"
+        name="bdm_id"
+        required
+        value={bdm}
+        onChange={(event) => setBdm(event.target.value)}
+        disabled={pending || !!lead}
+        aria-invalid={!!state.fields?.bdm_id}
+        aria-describedby={state.fields?.bdm_id ? "bdm-error" : undefined}
+      >
+        <option value="">Choose a BDM</option>
+        {bdms.map((p) => (
+          <option value={p.id} key={p.id}>
+            {p.display_name}
+          </option>
+        ))}
+      </select>
+      {lead && <input type="hidden" name="bdm_id" value={lead.bdm_id} />}
+      {state.fields?.bdm_id && (
+        <span id="bdm-error" className="field-error">
+          {state.fields.bdm_id}
+        </span>
       )}
-      <LeadFields
-        values={values}
-        errors={state.fields}
+    </div>
+  ) : (
+    <div className="live-field">
+      <label htmlFor="responsible-bdm">Responsible BDM *</label>
+      <input id="responsible-bdm" value={bdmName} readOnly />
+    </div>
+  );
+  const designer = (
+    <div className="live-field">
+      <label htmlFor="assigned_lead_designer_id">Lead Designer *</label>
+      <select
+        id="assigned_lead_designer_id"
+        name="assigned_lead_designer_id"
+        value={values.assigned_lead_designer_id ?? ""}
+        onChange={(e) =>
+          setValues({
+            ...values,
+            assigned_lead_designer_id: e.target.value || null,
+          })
+        }
         disabled={pending}
-        onValue={(k, v) => setValues({ ...values, [k]: v })}
-      />
-      <div className="live-field">
-        <label htmlFor="assigned_lead_designer_id">Lead Designer *</label>
-        <select
-          id="assigned_lead_designer_id"
-          name="assigned_lead_designer_id"
-          value={values.assigned_lead_designer_id ?? ""}
-          onChange={(e) =>
-            setValues({
-              ...values,
-              assigned_lead_designer_id: e.target.value || null,
-            })
-          }
-          disabled={pending}
-          aria-invalid={!!state.fields?.assigned_lead_designer_id}
-          aria-describedby="lead-designer-hint"
-        >
-          <option value="">Choose a Lead Designer</option>
-          {leadDesigners.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.display_name}
-            </option>
-          ))}
-        </select>
-        <p id="lead-designer-hint" className="field-hint">
-          Required to submit. Only the selected Lead Designer receives this
-          request for review.
+        aria-invalid={!!state.fields?.assigned_lead_designer_id}
+        required
+        aria-describedby={
+          state.fields?.assigned_lead_designer_id
+            ? "lead-designer-error"
+            : undefined
+        }
+      >
+        <option value="">Choose a Lead Designer</option>
+        {leadDesigners.map((person) => (
+          <option key={person.id} value={person.id}>
+            {person.display_name}
+          </option>
+        ))}
+      </select>
+      {!leadDesigners.length && (
+        <p role="status" className="field-hint">
+          No active Lead Designers are available. Save a draft and contact your
+          System Administrator.
         </p>
-        {!leadDesigners.length && (
-          <p role="status" className="field-hint">
-            No active Lead Designers are available. Save a draft and contact
-            your System Administrator.
-          </p>
-        )}
-        {state.fields?.assigned_lead_designer_id && (
-          <span className="field-error">
-            {state.fields.assigned_lead_designer_id}
-          </span>
-        )}
-      </div>
-    </>
+      )}
+      {state.fields?.assigned_lead_designer_id && (
+        <span id="lead-designer-error" className="field-error">
+          {state.fields.assigned_lead_designer_id}
+        </span>
+      )}
+    </div>
+  );
+  const fields = (
+    <LeadFields
+      values={values}
+      errors={state.fields}
+      disabled={pending}
+      owner={owner}
+      designer={designer}
+      onValue={(k, v) => setValues({ ...values, [k]: v })}
+    />
   );
   const resources = (
-    <>
-      {" "}
-      <div className="lead-files-guidance">
-        <h3 className="form-section-label">03 · Files and references</h3>
-        <p>
-          Paste HTTPS links to drawings, photographs, and other files. Direct
-          file uploads are not available for quotation requests.
-        </p>
-      </div>
-      <ResourceLinks
-        links={links}
-        onChange={setLinks}
-        disabled={pending}
-        error={state.fields?.resource_links}
-      />
-    </>
+    <ResourceLinks
+      compact
+      links={links}
+      onChange={setLinks}
+      disabled={pending}
+      error={state.fields?.resource_links}
+    />
   );
-  const duplicateReview = (
-    <>
-      {(state.duplicates?.length ?? 0) > 0 && (
-        <div className="duplicate-warning">
-          <h3>Possible duplicate requests</h3>
-          <ul>
-            {state.duplicates!.map((d) => (
-              <li key={d.id}>
-                {d.reference} · {d.project_name}
-              </li>
-            ))}
-          </ul>
-          <p>
-            You may continue with a reason. Other BDMs’ private leads are not
-            disclosed.
-          </p>
-        </div>
-      )}
-      <div className="live-field">
-        <label htmlFor="duplicate_reason">
-          Duplicate override reason (when applicable)
-        </label>
-        <textarea
-          id="duplicate_reason"
-          name="duplicate_reason"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          disabled={pending}
-          rows={2}
-          aria-invalid={!!state.fields?.duplicate_reason}
-        />
-        {state.fields?.duplicate_reason && (
-          <span className="field-error">{state.fields.duplicate_reason}</span>
+  const duplicateReview =
+    (state.duplicates?.length ?? 0) > 0 || state.fields?.duplicate_reason ? (
+      <div className={styles.duplicates}>
+        {(state.duplicates?.length ?? 0) > 0 && (
+          <div className="duplicate-warning">
+            <h3>Possible duplicate requests</h3>
+            <ul>
+              {state.duplicates!.map((d) => (
+                <li key={d.id}>
+                  {d.reference} · {d.project_name}
+                </li>
+              ))}
+            </ul>
+            <p>
+              You may continue with a reason. Other BDMs’ private leads are not
+              disclosed.
+            </p>
+          </div>
         )}
+        <div className="live-field">
+          <label htmlFor="duplicate_reason">
+            Duplicate override reason (when applicable)
+          </label>
+          <textarea
+            id="duplicate_reason"
+            name="duplicate_reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={pending}
+            rows={2}
+            aria-invalid={!!state.fields?.duplicate_reason}
+          />
+          {state.fields?.duplicate_reason && (
+            <span className="field-error">{state.fields.duplicate_reason}</span>
+          )}
+        </div>
       </div>
-    </>
-  );
+    ) : null;
   return (
     <form
       ref={formRef}
       action={action}
-      className="surface live-form lead-request-form"
+      onReset={(event) => event.preventDefault()}
+      className={`surface live-form lead-request-form ${styles.request}`}
     >
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="expected_version" value={lead?.version ?? 0} />
@@ -228,43 +231,22 @@ export function LeadForm({
         name="attachment_metadata"
         value={JSON.stringify(base.attachment_metadata)}
       />
-      <div className="form-heading">
-        <h2>Project Quotation Request</h2>
-        <p>
-          {bdms ? (
-            <>
-              Created by <strong>{bdmName}</strong> · on behalf of the selected
-              BDM.
-            </>
-          ) : (
-            <>
-              BDM: <strong>{bdmName}</strong> · derived from your signed-in
-              account.
-            </>
-          )}
-        </p>
-      </div>
-      {rebuild ? (
-        <div className={r2.formColumns}>
-          <div>{fields}</div>
-          <aside>
-            {resources}
-            {duplicateReview}
-          </aside>
-        </div>
-      ) : (
-        <>
+      <div className={styles.columns} data-rebuild={rebuild || undefined}>
+        <section className={styles.main} aria-label="Project quotation request">
+          <h2>Project quotation request</h2>
           {fields}
-          {resources}
           {duplicateReview}
-        </>
-      )}
+        </section>
+        <aside className={styles.references} aria-label="Files and references">
+          {resources}
+        </aside>
+      </div>
       <ActionStatus state={state} />
-      <div className="form-actions">
+      <div className={`form-actions ${styles.actions}`}>
         <Button type="submit" name="intent" value="submit" disabled={pending}>
           <Pending
             pending={pending}
-            label={lead?.first_submitted_at ? "Resubmit lead" : "Submit lead"}
+            label={lead?.first_submitted_at ? "Resubmit Lead" : "Submit Lead"}
           />
         </Button>
         <Button
@@ -275,7 +257,7 @@ export function LeadForm({
           formNoValidate
           disabled={pending}
         >
-          Save draft
+          Save Draft
         </Button>
         <span className="field-hint">
           Submitted requests are locked until returned for clarification.

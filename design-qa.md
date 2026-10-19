@@ -29,3 +29,17 @@ Browsed existing Admin session across dashboard, projects, spaces/activities, qu
 ## Remaining verification limits
 
 Login/invitation/password and BDM editable lead screens received shared styling but were not freshly browser-inspected. Other roles, all form/error states, screen readers, zoom and cross-browser behavior remain outside this focused checkpoint. Earlier full acceptance gaps remain. No claim of universal overlap absence or complete accessibility certification. Supplier/payment tables retain intentional contained horizontal scrolling where column density requires it. No production changes or deployment.
+
+---
+
+# Activity & History design QA — 19 October 2026
+
+final result: passed
+
+Compared the supplied four-panel Activity reference with the rendered Activity content in `artifacts/verification/activity-workspace/reference-content-comparison.png`. The comparison normalizes the content regions; the reference is a synthetic design board, while the implementation uses authorized staging records and the existing project header. Desktop captures use a 1440×900 CSS viewport; responsive checks also cover 1280×800 and 390×844 in light/dark themes.
+
+The implementation preserves the reference's compact event rows, distinct categories, subtle dividers, readable actor/date/record columns, warm surfaces and gold accents. Existing shared hybrid filters and the Activity/Discussion switch are retained as requested. Only persisted counts appear; the unsupported pending-review metric and unrelated Export action are omitted. Administration actions open focused dialogs rather than inline forms.
+
+Fixed the long details drawer's keyboard scrolling by making its content region focusable, then recaptured all six viewport/theme combinations. Post-fix axe checks report zero serious/critical violations; timeline, drawer and form have no horizontal overflow or browser page errors. Mobile details and forms retain usable controls and scrolling. Evidence: `accessibility.json`, `light-390-details.png`, and the corresponding desktop/dark captures in the same ignored verification directory.
+
+No outstanding P0–P2 visual findings. P3: optional category icons could make dense timelines easier to scan. Full cross-browser and manual screen-reader certification remain deferred to pre-production; this report does not claim those checks.
