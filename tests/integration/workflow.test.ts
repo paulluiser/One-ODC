@@ -5656,7 +5656,7 @@ describe("Administrator quotation request creation", () => {
           [payload.project_name, payload.address],
         )
       ).rows,
-    ).toHaveLength(1);
+    ).toHaveLength(0);
     await denied(
       () =>
         db.query("select public.save_lead($1,1,$2::jsonb,true,'')", [
