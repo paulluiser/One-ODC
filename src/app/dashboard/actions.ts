@@ -47,6 +47,7 @@ export async function saveLead(
       project_name: value(data, "project_name"),
       address: value(data, "address"),
       brand: nullable(value(data, "brand")),
+      supplier_id: nullable(value(data, "supplier_id")),
       cabinetry_count: count === "" ? null : Number(count),
       notes: value(data, "notes"),
       resource_links: (() => {
@@ -103,6 +104,14 @@ export async function saveLead(
     return {
       error: workflowError(error.message),
       duplicates: duplicates ?? [],
+      ...(error.message.includes("INVALID_LEAD_SUPPLIER")
+        ? {
+            fields: {
+              supplier_id:
+                "Choose an active supplier from the supplier masterfile.",
+            },
+          }
+        : {}),
     };
   return {
     error: null,
@@ -143,7 +152,7 @@ export async function reviewLead(
     p_remarks: v.remarks,
     p_primary: v.assignments.primary ?? null,
     p_support: v.assignments.support ?? [],
-    p_ops: v.assignments.ops ?? [],
+    p_ops: [],
     p_lead_designer: v.assignments.lead_designer ?? null,
   });
   if (error) return { error: workflowError(error.message) };

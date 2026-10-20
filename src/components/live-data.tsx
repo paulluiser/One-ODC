@@ -183,9 +183,7 @@ function ProjectMonitoringCells({ summary }: { summary: Monitoring }) {
       <td data-label="State">
         <span className={`status ${tone}`}>{metrics.risk}</span>
         <span className="cell-secondary">
-          {process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true"
-            ? projectWorkState(summary)
-            : summary.state}{" "}
+          {projectWorkState(summary)}{" "}
           · {metrics.age} days
         </span>
       </td>

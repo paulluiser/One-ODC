@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { RebuildRoleDashboard } from "@/components/ui-r0/role-dashboard";
-import { LeadDashboard } from "@/components/ui-r0/lead-dashboard";
+import { dashboardExtras } from "@/lib/dashboard-extras";
 import { dashboardOptions, dashboardSchema } from "@/lib/dashboard";
 import { RoleDashboard } from "@/components/role-dashboard";
 import { requireWorkspace } from "@/lib/workspace-session";
@@ -23,25 +23,17 @@ export default async function Dashboard({
     });
     checkDatabase(result.error);
     const data = dashboardSchema.parse(result.data);
-    if (
-      process.env.ONE_ODC_UI_R0_ENABLED === "true" &&
-      profile.role === "lead_designer"
-    )
-      return (
-        <LeadDashboard
-          data={data}
-          profile={profile}
-          restricted={Boolean(params.restricted)}
-        />
-      );
-    if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+    if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
+      const extra = await dashboardExtras(client, data);
       return (
         <RebuildRoleDashboard
           data={data}
           profile={profile}
+          extra={extra}
           restricted={Boolean(params.restricted)}
         />
       );
+    }
     return (
       <>
         <PageIntro
@@ -87,6 +79,7 @@ export default async function Dashboard({
     client
       .from("notifications")
       .select("id", { count: "exact", head: true })
+      .eq("recipient_id", profile.id)
       .is("read_at", null),
   ]);
   for (const result of [leads, projects, notifications])

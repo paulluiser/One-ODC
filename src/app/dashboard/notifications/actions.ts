@@ -8,15 +8,21 @@ export async function readNotifications(
   _previous: NotificationState,
   data: FormData,
 ): Promise<NotificationState> {
-  const { client } = await requireWorkspace();
+  const { client, profile } = await requireWorkspace();
   if (process.env.ONE_ODC_UI_R0_ENABLED !== "true")
     return { error: "This action is unavailable." };
   const all = data.get("scope") === "all";
+  const requested = z.uuid().safeParse(data.get("recipient"));
+  const recipient = requested.success ? requested.data : profile.id;
+  if (recipient !== profile.id && profile.role !== "system_administrator")
+    return { error: "You cannot manage this inbox." };
   const id = z.uuid().safeParse(data.get("id"));
   if (!all && !id.success) return { error: "Choose a valid notification." };
   try {
     const result = all
-      ? await client.rpc("mark_all_notifications_read")
+      ? await client.rpc("mark_recipient_notifications_read", {
+          p_recipient: recipient,
+        })
       : await client.rpc("mark_notification_read", { p_id: id.data! });
     if (result.error)
       return {

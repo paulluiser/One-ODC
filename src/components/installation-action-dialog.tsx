@@ -1,4 +1,6 @@
 "use client";
+import { ProjectActionLabel } from "./project-workspace/action-label";
+import menuStyles from "./project-workspace/workspace.module.css";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useActionState, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -32,8 +34,10 @@ export function InstallationActionDialog({
   administrative = false,
   handoffAcknowledged = true,
   primary = false,
+  menuItem = false,
 }: {
   primary?: boolean;
+  menuItem?: boolean;
   project: string;
   space?: string;
   name?: string;
@@ -45,9 +49,7 @@ export function InstallationActionDialog({
   handoffAcknowledged?: boolean;
 }) {
   const complete = !!readiness,
-    title = complete
-      ? "Complete project operations"
-      : "Schedule or update installation",
+    title = complete ? "Complete Project" : "Schedule or update installation",
     router = useRouter(),
     id = useId(),
     form = useRef<HTMLFormElement>(null);
@@ -117,9 +119,24 @@ export function InstallationActionDialog({
         <Dialog.Trigger asChild>
           <button
             type="button"
-            className={`button ${complete && !primary ? "button-outline" : "button-primary"}`}
+            aria-label={menuItem ? title : undefined}
+            aria-describedby={menuItem ? `${id}-action-hint` : undefined}
+            className={
+              menuItem
+                ? `${menuStyles.actionRow} ${menuStyles.completionAction}`
+                : `button ${complete && !primary ? "button-outline" : "button-primary"}`
+            }
           >
-            {title}
+            {menuItem ? (
+              <ProjectActionLabel
+                icon={Flag}
+                title={title}
+                description="Complete the project once all operational prerequisites are satisfied."
+                descriptionId={`${id}-action-hint`}
+              />
+            ) : (
+              title
+            )}
           </button>
         </Dialog.Trigger>
         <Dialog.Portal>
@@ -128,6 +145,11 @@ export function InstallationActionDialog({
             className={styles.modal}
             data-completion={complete}
             onCloseAutoFocus={(event) => {
+              if (menuItem && complete) {
+                event.preventDefault();
+                document.getElementById("project-actions-trigger")?.focus();
+                return;
+              }
               if (
                 complete &&
                 document.getElementById("operational-readiness-title")?.dataset
@@ -152,7 +174,11 @@ export function InstallationActionDialog({
               </div>
               <Dialog.Close
                 className={styles.close}
-                aria-label="Close installation action"
+                aria-label={
+                  complete
+                    ? "Close project completion"
+                    : "Close installation action"
+                }
                 disabled={pending}
               >
                 <X size={20} />
@@ -230,9 +256,10 @@ export function InstallationActionDialog({
                                   href={
                                     b.kind === "logistics"
                                       ? `/dashboard/projects/${project}?tab=operations&logistics_detail=${b.id}#logistics-${b.id}`
-                                      : b.kind === "design"
+                                      : b.kind === "design" ||
+                                          b.kind === "readiness"
                                         ? `/dashboard/projects/${project}?tab=spaces&space_detail=${b.id}#space-${b.id}`
-                                        : `/dashboard/projects/${project}?tab=operations&installation_detail=${b.id}#installation-${b.id}`
+                                        : `/dashboard/projects/${project}?tab=operations#operations-handoff`
                                   }
                                 >
                                   {" "}
@@ -386,7 +413,7 @@ export function InstallationActionDialog({
                   {pending
                     ? "Saving…"
                     : complete
-                      ? "Confirm operational completion"
+                      ? "Confirm project completion"
                       : "Save installation"}
                 </button>
               </footer>

@@ -1,7 +1,7 @@
 import { resourceLinksSchema } from "./resources";
 import { z } from "zod";
 import { CURRENT_MAX_FILE_BYTES } from "./storage/provider";
-import { calendarDays, roles, type Role } from "./domain";
+import { calendarDays, roles, isSuperAdmin, type Role } from "./domain";
 export const roleLabels: Record<Role, string> = {
   system_administrator: "System Administrator",
   lead_designer: "Lead Designer",
@@ -39,6 +39,7 @@ export const leadPayloadSchema = z
     project_name: z.string().trim().max(200),
     address: z.string().trim().max(2000),
     brand: z.enum(["SFY", "Stosa", "Both"]).nullable(),
+    supplier_id: z.uuid().nullable().optional(),
     cabinetry_count: z.number().int().positive().max(2147483647).nullable(),
     notes: z.string().max(10000),
     resource_links: resourceLinksSchema.default([]),
@@ -115,6 +116,7 @@ export type Profile = z.infer<typeof profileSchema>;
 export type Attachment = z.infer<typeof attachmentSchema>;
 export type LeadPayload = z.infer<typeof leadPayloadSchema>;
 export const leadSchema = leadPayloadSchema.extend({
+  supplier_name: z.string().nullable().optional(),
   id: z.uuid(),
   reference: z.string(),
   bdm_id: z.uuid(),
@@ -196,7 +198,7 @@ export const emptyLead: LeadPayload = {
   attachment_metadata: [],
 };
 export function maySubmit(role: Role) {
-  return role === "bdm";
+  return role === "bdm" || isSuperAdmin(role);
 }
 export function mayReview(role: Role) {
   return role === "lead_designer" || role === "system_administrator";
@@ -263,10 +265,14 @@ export function workflowError(message: string): string {
       "An assigned person is inactive or has an incompatible role.",
     INVALID_BDM: "The primary BDM is inactive or no longer has the BDM role.",
     INVALID_LEAD_DESIGNER: "Choose an active Lead Designer.",
+    INVALID_LEAD_SUPPLIER:
+      "Choose an active supplier from the supplier masterfile.",
     SELF_ACCESS_CHANGE_DENIED:
       "You cannot deactivate or demote your own administrator account.",
+    OPERATIONS_ASSIGNMENT_AFTER_CLOSURE:
+      "Operations Admins can be assigned only after commercial closure.",
     OPERATIONS_ADMIN_REQUIRED:
-      "A commercially Closed project must retain an Operations Admin.",
+      "Assign an active Operations Admin after commercial closure before handing off Ordered Spaces.",
   };
   return (
     Object.entries(errors).find(([key]) => message.includes(key))?.[1] ??

@@ -1,3 +1,4 @@
+import { readinessSummary } from "@/lib/project-readiness";
 import { ProjectDirectory } from "@/components/ui-r2/directories";
 import type { Monitoring } from "@/lib/monitoring";
 import { requireWorkspace } from "@/lib/workspace-session";
@@ -66,6 +67,27 @@ export default async function Projects({
     );
   }
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
+    const readinessResult = projects.length
+      ? await client
+          .from("space_readiness")
+          .select("project_id,status,spaces!inner(cancelled_at)")
+          .in(
+            "project_id",
+            projects.map((p) => p.id),
+          )
+          .is("spaces.cancelled_at", null)
+      : { data: [], error: null };
+    checkDatabase(readinessResult.error);
+    const readiness = Object.fromEntries(
+      projects.map((p) => [
+        p.id,
+        p.commercial_status === "Closed"
+          ? readinessSummary(
+              (readinessResult.data ?? []).filter((r) => r.project_id === p.id),
+            )
+          : "—",
+      ]),
+    );
     // One authenticated, RLS-protected lookup for names; no team/design reads for Ops previews.
     const names =
       profile.role !== "operations_admin" && projects.length
@@ -77,6 +99,7 @@ export default async function Projects({
     checkDatabase(names.error);
     return (
       <ProjectDirectory
+        readiness={readiness}
         columns={
           typeof parameters.columns === "string"
             ? parameters.columns

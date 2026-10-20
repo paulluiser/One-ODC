@@ -65,23 +65,13 @@ export default async function Suppliers({
       `/dashboard/suppliers?${new URLSearchParams({ q: search, sort, status, page: "1" })}`,
     );
   checkDatabase(r.error);
-  const events = r.data?.length
-    ? await client
-        .from("supplier_events")
-        .select("*")
-        .in(
-          "supplier_id",
-          r.data.map((s) => s.id),
-        )
-        .order("occurred_at", { ascending: false })
-        .limit(500)
-    : { data: [], error: null };
-  checkDatabase(events.error);
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
     return (
       <SupplierDirectory
         suppliers={(r.data ?? []) as Supplier[]}
-        events={events.data ?? []}
+        selectedId={
+          typeof query.supplier === "string" ? query.supplier : undefined
+        }
         search={search}
         sort={sort}
         status={status}
@@ -92,7 +82,7 @@ export default async function Suppliers({
   return (
     <>
       <PageIntro
-        title="Supplier Masterlist"
+        title="Supplier/Brand Masterlist"
         description="Manage supplier contacts and availability across your projects."
       >
         <ContextPanel
@@ -187,33 +177,6 @@ export default async function Suppliers({
                       >
                         <LogisticsForm id={s.id} supplier={s} />
                       </ContextPanel>
-                      <details>
-                        <summary>Supplier audit history</summary>
-                        <p>Supplier ID: {s.id}</p>
-                        <ol>
-                          {events.data
-                            ?.filter((e) => e.supplier_id === s.id)
-                            .map((e) => (
-                              <li key={e.id}>
-                                {formatTime(e.occurred_at)} · {e.reason}
-                                <details>
-                                  <summary>Preserved values and actor</summary>
-                                  <p>Actor {e.actor_id}</p>
-                                  <pre className="history-json">
-                                    {JSON.stringify(
-                                      {
-                                        previous: e.previous_value,
-                                        current: e.new_value,
-                                      },
-                                      null,
-                                      2,
-                                    )}
-                                  </pre>
-                                </details>
-                              </li>
-                            ))}
-                        </ol>
-                      </details>
                     </td>
                   </tr>
                 ))}

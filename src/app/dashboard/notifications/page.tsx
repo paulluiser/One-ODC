@@ -1,3 +1,4 @@
+import { z } from "zod";
 import Link from "next/link";
 import { NotificationInbox } from "@/components/notification-inbox";
 import { requireWorkspace } from "@/lib/workspace-session";
@@ -9,11 +10,44 @@ import { Button } from "@/components/ui/button";
 export default async function Notifications({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; page?: string }>;
+  searchParams: Promise<{ view?: string; page?: string; recipient?: string }>;
 }) {
-  const { client } = await requireWorkspace();
+  const { client, profile } = await requireWorkspace();
+  const params = await searchParams;
+  const recipient =
+    profile.role === "system_administrator" &&
+    z.uuid().safeParse(params.recipient).success
+      ? params.recipient!
+      : profile.id;
+  const people =
+    profile.role === "system_administrator"
+      ? await client
+          .from("profiles")
+          .select("id,display_name")
+          .order("display_name")
+          .limit(1000)
+      : { data: [], error: null };
+  checkDatabase(people.error);
+  const recipientFilter =
+    profile.role === "system_administrator" ? (
+      <form method="get" data-no-unsaved className="surface live-form">
+        <label className="live-field">
+          Notification recipient
+          <select name="recipient" defaultValue={recipient}>
+            {people.data?.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.display_name}
+                {person.id === profile.id ? " (you)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="button button-outline" type="submit">
+          View inbox
+        </button>
+      </form>
+    ) : null;
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
-    const params = await searchParams;
     const all = params.view === "all";
     const page = Math.max(1, Math.min(100000, Number(params.page) || 1)) | 0;
     let query = client
@@ -23,7 +57,8 @@ export default async function Notifications({
         {
           count: "exact",
         },
-      );
+      )
+      .eq("recipient_id", recipient);
     if (!all) query = query.is("read_at", null);
     const [notices, unread] = await Promise.all([
       query
@@ -33,6 +68,7 @@ export default async function Notifications({
       client
         .from("notifications")
         .select("id", { count: "exact", head: true })
+        .eq("recipient_id", recipient)
         .is("read_at", null),
     ]);
     checkDatabase(notices.error);
@@ -41,9 +77,16 @@ export default async function Notifications({
       <>
         <PageIntro
           title="Notifications"
-          description="Your project, review, and assignment updates in one place."
+          description={
+            recipient === profile.id
+              ? "Your project, review, and assignment updates in one place."
+              : "Viewing the selected recipient’s inbox as System Administrator."
+          }
         />
+        {recipientFilter}
         <NotificationInbox
+          recipient={recipient}
+          monitoringOther={recipient !== profile.id}
           notices={notices.data as Notification[]}
           unread={unread.count ?? 0}
           all={all}
@@ -56,6 +99,7 @@ export default async function Notifications({
   const { data, error } = await client
     .from("notifications")
     .select("*")
+    .eq("recipient_id", recipient)
     .order("created_at", { ascending: false })
     .limit(100);
   checkDatabase(error);
@@ -63,8 +107,13 @@ export default async function Notifications({
     <>
       <PageIntro
         title="Notifications"
-        description="Your project, review, and assignment updates in one place."
+        description={
+          recipient === profile.id
+            ? "Your project, review, and assignment updates in one place."
+            : "Viewing the selected recipient’s inbox as System Administrator."
+        }
       />
+      {recipientFilter}
       <section className="surface live-form">
         {data?.length ? (
           (data as Notification[]).map((n) => (

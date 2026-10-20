@@ -108,7 +108,7 @@ describe("compact project directory data", () => {
     expect(lost.attention).toBe("—");
   });
   it("normalizes column URLs and always retains project identity", () => {
-    expect(visibleDirectoryColumns()).toHaveLength(7);
+    expect(visibleDirectoryColumns()).toHaveLength(8);
     expect(visibleDirectoryColumns()).not.toContain("handoff");
     expect(visibleDirectoryColumns("handoff,garbage,stage,stage")).toEqual([
       "project",

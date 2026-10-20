@@ -1,0 +1,67 @@
+.identity {
+  display: grid;
+  gap: 4px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.identity strong {
+  font-weight: 500;
+}
+.identity small {
+  color: var(--r-muted);
+  font-size: 11px;
+}
+.copy {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.modal {
+  width: min(660px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: 22px;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.modal :global(.live-form) {
+  gap: 16px;
+}
+.modal :global(.live-form-grid) {
+  gap: 14px;
+}
+.modal textarea {
+  min-height: 70px;
+  height: 70px;
+}
+.modal :global(.form-actions) {
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.modal :global(.live-form-grid) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.modal :global(.live-field) {
+  margin-bottom: 0;
+}
+.modal :global(.live-field):last-child {
+  grid-column: 1 / -1;
+}
+@media (max-width: 600px) {
+  .modal :global(.live-form-grid) {
+    grid-template-columns: 1fr;
+  }
+}

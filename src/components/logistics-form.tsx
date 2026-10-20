@@ -20,7 +20,11 @@ export function LogisticsForm({
   manager = false,
   held = false,
   rebuild = false,
+  compact = false,
+  onSaved,
 }: {
+  compact?: boolean;
+  onSaved?: (message: string) => void;
   rebuild?: boolean;
   id: string;
   project?: string;
@@ -46,6 +50,7 @@ export function LogisticsForm({
     async (prev: FormState, data: FormData) => {
       const r = await logisticsAction(prev, data);
       if (r.success) {
+        onSaved?.(r.success);
         setOpen(false);
         setReset((v) => v + 1);
         if (!record && !supplier) setIdentity(crypto.randomUUID());
@@ -221,67 +226,89 @@ export function LogisticsForm({
           </label>
         )}
       </fieldset>
-      <Dialog.Root
-        open={open}
-        onOpenChange={(v) => {
-          if (!pending) setOpen(v);
-        }}
-      >
-        <Dialog.Trigger asChild>
+      {master && compact ? (
+        <div className="form-actions">
+          <Dialog.Close asChild>
+            <button
+              type="button"
+              className="button button-outline"
+              disabled={pending}
+            >
+              Cancel
+            </button>
+          </Dialog.Close>
           <button
-            type="button"
+            type="submit"
             disabled={pending}
             className="button button-primary"
-            onClick={(e) => {
-              if (!e.currentTarget.form?.reportValidity()) e.preventDefault();
-            }}
           >
-            {label}
+            {pending ? "Saving…" : "Save supplier"}
           </button>
-        </Dialog.Trigger>
-        <Dialog.Portal>
-          <Dialog.Overlay className="dialog-overlay" />
-          <Dialog.Content
-            className={`detail-dialog ${rebuild ? r3.dialog : ""}`}
-            onEscapeKeyDown={(e) => {
-              if (pending) e.preventDefault();
-            }}
-            onInteractOutside={(e) => {
-              if (pending) e.preventDefault();
-            }}
-          >
-            <Dialog.Title>{label}</Dialog.Title>
-            <Dialog.Description>
-              {master
-                ? "Save supplier master data and append an audit event. Historical project records remain preserved."
-                : "Save this operational tracking record with immutable status history. RFP is external Request for Payment monitoring only. No Raw amount, payment, installation or completion will be changed."}
-            </Dialog.Description>
-            {state.error && (
-              <p role="alert" className="form-error">
-                {state.error}
-              </p>
-            )}
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                disabled={pending}
-                className="button button-outline"
-              >
-                Go back
-              </button>
-            </Dialog.Close>
+          <PendingIndicator pending={pending} />
+        </div>
+      ) : (
+        <Dialog.Root
+          open={open}
+          onOpenChange={(v) => {
+            if (!pending) setOpen(v);
+          }}
+        >
+          <Dialog.Trigger asChild>
             <button
-              type="submit"
-              form={fid}
+              type="button"
               disabled={pending}
               className="button button-primary"
+              onClick={(e) => {
+                if (!e.currentTarget.form?.reportValidity()) e.preventDefault();
+              }}
             >
-              {pending ? "Saving logistics…" : "Confirm change"}
+              {label}
             </button>
-            <PendingIndicator pending={pending} />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="dialog-overlay" />
+            <Dialog.Content
+              className={`detail-dialog ${rebuild ? r3.dialog : ""}`}
+              onEscapeKeyDown={(e) => {
+                if (pending) e.preventDefault();
+              }}
+              onInteractOutside={(e) => {
+                if (pending) e.preventDefault();
+              }}
+            >
+              <Dialog.Title>{label}</Dialog.Title>
+              <Dialog.Description>
+                {master
+                  ? "Save supplier master data and append an audit event. Historical project records remain preserved."
+                  : "Save this operational tracking record with immutable status history. RFP is external Request for Payment monitoring only. No Raw amount, payment, installation or completion will be changed."}
+              </Dialog.Description>
+              {state.error && (
+                <p role="alert" className="form-error">
+                  {state.error}
+                </p>
+              )}
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  disabled={pending}
+                  className="button button-outline"
+                >
+                  Go back
+                </button>
+              </Dialog.Close>
+              <button
+                type="submit"
+                form={fid}
+                disabled={pending}
+                className="button button-primary"
+              >
+                {pending ? "Saving logistics…" : "Confirm change"}
+              </button>
+              <PendingIndicator pending={pending} />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      )}
       {state.error && !open && (
         <p role="alert" className="form-error">
           {state.error}

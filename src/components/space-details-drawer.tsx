@@ -1,4 +1,6 @@
 "use client";
+import { SpaceReadinessForm } from "./space-readiness-form";
+import type { SpaceReadiness } from "@/lib/project-readiness";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -32,6 +34,7 @@ export function SpaceDetailsDrawer({
   editable,
   admin,
   held,
+  readiness,
 }: {
   space: Space;
   support: string[];
@@ -40,6 +43,7 @@ export function SpaceDetailsDrawer({
   editable: boolean;
   admin: boolean;
   held: boolean;
+  readiness?: SpaceReadiness;
 }) {
   const router = useRouter(),
     path = usePathname(),
@@ -265,6 +269,15 @@ export function SpaceDetailsDrawer({
                   ? `This Space is cancelled. ${space.cancellation_reason ?? ""}`
                   : "You have read-only access to this Space."}
               </p>
+            )}
+            {readiness && (
+              <SpaceReadinessForm
+                project={space.project_id}
+                space={space.id}
+                readiness={readiness}
+                manager={manager}
+                editable={writable && !held}
+              />
             )}
             <form
               ref={detailsForm}

@@ -94,7 +94,7 @@ export function ProjectActionMenu({ children }: { children: ReactNode }) {
       if (
         ref.current &&
         !ref.current.contains(target) &&
-        !target.closest('[role="dialog"]')
+        !document.querySelector('[role="dialog"]')
       )
         ref.current.open = false;
     };
@@ -108,19 +108,56 @@ export function ProjectActionMenu({ children }: { children: ReactNode }) {
         ref.current.querySelector("summary")?.focus();
       }
     };
+    const menu = ref.current;
+    const closeLink = (event: MouseEvent) => {
+      if ((event.target as Element).closest("a[href]") && menu)
+        menu.open = false;
+    };
+    const navigate = (event: KeyboardEvent) => {
+      if (!menu || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
+        return;
+      const controls = Array.from(
+        menu.querySelectorAll<HTMLElement>("button:not([disabled]),a[href]"),
+      );
+      if (!controls.length) return;
+      event.preventDefault();
+      menu.open = true;
+      const current = controls.indexOf(document.activeElement as HTMLElement);
+      const next =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? controls.length - 1
+            : event.key === "ArrowDown"
+              ? (current + 1) % controls.length
+              : current < 0
+                ? controls.length - 1
+                : (current - 1 + controls.length) % controls.length;
+      controls[next].focus();
+    };
+    menu?.addEventListener("click", closeLink);
+    menu?.addEventListener("keydown", navigate);
     document.addEventListener("pointerdown", outside);
     document.addEventListener("keydown", escape);
     return () => {
+      menu?.removeEventListener("click", closeLink);
+      menu?.removeEventListener("keydown", navigate);
       document.removeEventListener("pointerdown", outside);
       document.removeEventListener("keydown", escape);
     };
   }, []);
   return (
     <details className={styles.actionMenu} ref={ref}>
-      <summary aria-label="Project actions">
+      <summary id="project-actions-trigger" aria-label="Project actions">
         <MoreHorizontal size={20} aria-hidden="true" />
       </summary>
-      <div className={styles.actionPanel}>{children}</div>
+      <div className={styles.actionPanel}>
+        <header className={styles.actionHeader}>
+          <h2>Project actions</h2>
+          <p>Manage and take action on this project.</p>
+        </header>
+        {children}
+      </div>
     </details>
   );
 }

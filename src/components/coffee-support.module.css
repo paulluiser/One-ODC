@@ -1,0 +1,298 @@
+.trigger {
+  display: grid;
+  place-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--r-soft, var(--surface));
+  color: var(--r-muted, var(--text-muted));
+  cursor: pointer;
+}
+/* Keep all effects on the shared trigger so both workspace headers agree. */
+.trigger.trigger.trigger {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  align-self: center;
+  overflow: visible;
+  background: var(--brand-gold, #d6a23f);
+  color: #35260d;
+  transition: transform 180ms ease;
+}
+.trigger.trigger.trigger:hover {
+  transform: scale(1.1);
+  background: var(--brand-gold, #d6a23f);
+  color: #35260d;
+}
+.trigger:focus-visible {
+  outline: 2px solid var(--brand-link, #93600f);
+  outline-offset: 3px;
+}
+.trigger::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--brand-gold, #d6a23f);
+  background: var(--brand-gold, #d6a23f);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  animation: coffee-pulse 3s ease-out infinite;
+}
+.trigger.trigger .cup {
+  width: 24px;
+  height: 24px;
+}
+.cup {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  transform-origin: 50% 80%;
+  animation: coffee-wiggle 3s ease-in-out infinite;
+}
+/* Replace Lucide's three static steam marks, preserving its cup and handle. */
+.cup > path[d$="2v2"] {
+  display: none;
+}
+.steam {
+  opacity: 0;
+  animation: coffee-steam 3s ease-in-out infinite;
+}
+.steam:nth-last-child(2) {
+  animation-delay: 350ms;
+}
+.steam:last-child {
+  animation-delay: 700ms;
+}
+.trigger:hover::before,
+.trigger:focus-visible::before,
+.trigger:hover .cup,
+.trigger:focus-visible .cup,
+.trigger:hover .steam,
+.trigger:focus-visible .steam {
+  animation-play-state: paused;
+}
+@keyframes coffee-pulse {
+  0% {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.4;
+  }
+  60%,
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+@keyframes coffee-steam {
+  0% {
+    transform: translateY(1.5px);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  48% {
+    transform: translateY(-3.5px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(-3.5px);
+    opacity: 0;
+  }
+}
+@keyframes coffee-wiggle {
+  0%,
+  61%,
+  83%,
+  100% {
+    transform: rotate(0);
+  }
+  65% {
+    transform: rotate(-8deg);
+  }
+  70% {
+    transform: rotate(8deg);
+  }
+  75% {
+    transform: rotate(-4deg);
+  }
+  79% {
+    transform: rotate(2deg);
+  }
+}
+.modal {
+  width: min(480px, calc(100vw - 32px));
+  padding: 30px 26px 24px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  text-align: center;
+}
+.close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 7px;
+  min-width: 32px;
+  min-height: 32px;
+  border-color: transparent;
+  background: transparent;
+}
+.symbol {
+  display: grid;
+  place-content: center;
+  width: 66px;
+  height: 66px;
+  margin: 6px auto 16px;
+  border-radius: 50%;
+  background: var(--brand-selected);
+  color: var(--brand-link);
+}
+.modal .title {
+  margin: 0 0 10px;
+  font-size: 25px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+.modal .description {
+  margin: 0 0 22px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.segments {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 4px;
+  border: 0;
+  border-radius: 10px;
+  padding: 4px;
+  margin: 0;
+  background: var(--surface-alt, var(--brand-soft));
+}
+.segments label {
+  min-width: 0;
+  position: relative;
+  cursor: pointer;
+}
+.segments input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.segments span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.segments input:checked + span {
+  background: var(--brand-selected);
+  color: var(--brand-link);
+  border-color: var(--brand-link);
+}
+.segments input:focus-visible + span {
+  outline: 2px solid var(--brand-link);
+  outline-offset: 2px;
+}
+.content {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  padding-top: 20px;
+}
+.donation {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+.qr {
+  display: block;
+  width: 190px;
+  height: auto;
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: white;
+}
+.donation p,
+.hire > p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.email input {
+  min-width: 0;
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  font-size: 14px;
+  color: var(--text);
+}
+.email button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px;
+  font-size: 12px;
+}
+.hire .feedback {
+  margin-top: 10px;
+  min-height: 20px;
+}
+@media (max-width: 440px) {
+  .modal {
+    padding: 28px 18px 20px;
+  }
+  .email {
+    flex-wrap: wrap;
+  }
+  .email input {
+    flex-basis: 100%;
+  }
+  .email button {
+    margin-left: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trigger::before,
+  .cup,
+  .steam {
+    animation: none;
+  }
+  .trigger::before {
+    opacity: 0;
+  }
+  .steam {
+    opacity: 0.9;
+    transform: none;
+  }
+  .trigger.trigger.trigger {
+    transition: none;
+  }
+}

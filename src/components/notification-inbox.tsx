@@ -16,7 +16,9 @@ import styles from "./notification-inbox.module.css";
 function ReadButton({
   id,
   disabled = false,
+  recipient,
 }: {
+  recipient?: string;
   id?: string;
   disabled?: boolean;
 }) {
@@ -27,6 +29,9 @@ function ReadButton({
   return (
     <div className={styles.readAction}>
       <form action={action}>
+        {recipient && (
+          <input type="hidden" name="recipient" value={recipient} />
+        )}
         <input type="hidden" name={id ? "id" : "scope"} value={id ?? "all"} />
         <Button variant="outline" type="submit" disabled={pending || disabled}>
           {!id && <CheckCheck size={16} aria-hidden="true" />}
@@ -46,7 +51,11 @@ export function NotificationInbox({
   all,
   page,
   total,
+  recipient,
+  monitoringOther = false,
 }: {
+  recipient?: string;
+  monitoringOther?: boolean;
   notices: Notification[];
   unread: number;
   all: boolean;
@@ -56,28 +65,33 @@ export function NotificationInbox({
   const latestUnread = useDiscussionCounts().notifications;
   const router = useRouter();
   useEffect(() => {
-    if (latestUnread !== undefined && latestUnread !== unread) router.refresh();
-  }, [latestUnread, unread, router]);
+    if (
+      !monitoringOther &&
+      latestUnread !== undefined &&
+      latestUnread !== unread
+    )
+      router.refresh();
+  }, [latestUnread, unread, router, monitoringOther]);
   const href = (p: number) =>
-    `/dashboard/notifications?${new URLSearchParams({ view: all ? "all" : "unread", page: String(p) })}`;
+    `/dashboard/notifications?${new URLSearchParams({ view: all ? "all" : "unread", page: String(p), ...(recipient ? { recipient } : {}) })}`;
   return (
     <section className={styles.inbox} aria-label="Notification inbox">
       <div className={styles.toolbar}>
         <nav aria-label="Notification views" className={styles.views}>
           <Link
-            href="/dashboard/notifications"
+            href={href(1).replace("view=all", "view=unread")}
             aria-current={!all ? "page" : undefined}
           >
             Unread <span>{unread}</span>
           </Link>
           <Link
-            href="/dashboard/notifications?view=all"
+            href={href(1).replace("view=unread", "view=all")}
             aria-current={all ? "page" : undefined}
           >
             All notifications
           </Link>
         </nav>
-        <ReadButton disabled={unread === 0} />
+        <ReadButton recipient={recipient} disabled={unread === 0} />
       </div>
       {notices.length ? (
         <ul className={styles.list}>

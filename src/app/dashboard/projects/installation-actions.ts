@@ -8,7 +8,7 @@ export async function installationAction(
   _: FormState,
   data: FormData,
 ): Promise<FormState> {
-  if (process.env.ONE_ODC_INSTALLATIONS_ENABLED !== "true")
+  if (String(data.get("intent")) !== "complete")
     return { error: "Installation management is not enabled." };
   const get = (key: string) => String(data.get(key) ?? "");
   const complete = get("intent") === "complete";

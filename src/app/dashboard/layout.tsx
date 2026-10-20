@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+// Shell and loading states share these styles; load them at their common layout.
+import "@/components/ui-r0/ui-r0.module.css";
 import { StartupState } from "@/components/startup-state";
 import { requireWorkspace } from "@/lib/workspace-session";
 import { RebuildShell } from "@/components/ui-r0/shell";
@@ -14,6 +16,7 @@ async function AuthorizedWorkspace({
     const count = await client
       .from("notifications")
       .select("id", { count: "exact", head: true })
+      .eq("recipient_id", profile.id)
       .is("read_at", null);
     checkDatabase(count.error);
     return (

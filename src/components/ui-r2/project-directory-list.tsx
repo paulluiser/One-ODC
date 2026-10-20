@@ -1,7 +1,6 @@
 "use client";
 /* eslint jsx-a11y/no-noninteractive-tabindex: ["error", {"roles": ["region"]}] -- The labeled scroll region needs keyboard scrolling. */
 import { DiscussionBadge } from "../productivity/discussion-sync";
-import Link from "next/link";
 import {
   useEffect,
   useRef,
@@ -10,13 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  ArrowDownAZ,
-  ChevronRight,
-  Columns3,
-  AlertCircle,
-  CheckCircle2,
-} from "lucide-react";
+import { Columns3, AlertCircle, CheckCircle2 } from "lucide-react";
 import {
   directoryColumns,
   visibleDirectoryColumns,
@@ -24,6 +17,7 @@ import {
   type DirectoryColumn,
 } from "@/lib/project-directory-view";
 import { Status } from "./primitives";
+import { DirectoryTable } from "./directory-table";
 import styles from "./project-directory-list.module.css";
 
 export function ProjectColumnMenu() {
@@ -181,122 +175,44 @@ export function ProjectDirectoryList({
 }) {
   const shown = directoryColumns.filter((c) => columns.includes(c.key));
   return (
-    <div data-project-view="list" className={styles.directory}>
-      {/* Keyboard focus enables horizontal and vertical scrolling without a pointer. */}
-      <div
-        className={styles.scroll}
-        role="region"
-        aria-label="Project directory table"
-        tabIndex={0}
-      >
-        <table className={styles.table}>
-          <caption className={styles.srOnly}>
-            Authorized projects. Operations lifecycle and design progress are
-            separate from commercial stage. Scroll horizontally for additional
-            columns.
-          </caption>
-          <thead>
-            <tr>
-              {shown.map((c) => (
-                <th
-                  key={c.key}
-                  scope="col"
-                  data-column={c.key}
-                  aria-sort={
-                    c.key === "project"
-                      ? sorted
-                        ? "ascending"
-                        : "none"
-                      : undefined
-                  }
-                >
-                  {c.key === "project" ? (
-                    <Link href={sortUrl} title="Sort projects by name">
-                      <span>{c.label}</span>
-                      <ArrowDownAZ size={14} aria-hidden="true" />
-                    </Link>
-                  ) : (
-                    c.label
-                  )}
-                </th>
-              ))}
-              <th scope="col">
-                <span className={styles.srOnly}>Open project</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                {shown.map((c) => (
-                  <td key={c.key} data-column={c.key}>
-                    <Link
-                      prefetch={false}
-                      href={`/dashboard/projects/${row.id}`}
-                      tabIndex={c.key === "project" ? 0 : -1}
-                      aria-describedby={
-                        c.key === "project"
-                          ? `project-${row.id}-tooltip`
-                          : undefined
-                      }
-                      aria-label={
-                        c.key === "project"
-                          ? `Open ${row.name}, ${row.reference}`
-                          : undefined
-                      }
-                    >
-                      <Value row={row} column={c.key} />
-                    </Link>
-                  </td>
-                ))}
-                <td>
-                  <Link
-                    prefetch={false}
-                    href={`/dashboard/projects/${row.id}`}
-                    tabIndex={-1}
-                    aria-label={`Open ${row.name}`}
-                  >
-                    <ChevronRight size={16} aria-hidden="true" />
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className={styles.mobile}>
-        {rows.map((row) => (
-          <Link
-            prefetch={false}
-            href={`/dashboard/projects/${row.id}`}
-            className={styles.mobileRow}
-            key={row.id}
-          >
-            <div className={styles.mobileHeading}>
-              <span className={styles.project}>
-                <span className={styles.projectName}>
-                  <DiscussionBadge project={row.id} dot />
-                  <span>{row.name}</span>
-                </span>
-                <small title={row.reference}>{row.reference}</small>
+    <div data-project-view="list">
+      <DirectoryTable
+        label="Project directory table"
+        caption="Authorized projects. Operations lifecycle and design progress are separate from commercial stage. Scroll horizontally for additional columns."
+        primaryKey="project"
+        columns={shown.map((c) => ({
+          ...c,
+          ...(c.key === "project"
+            ? {
+                sortHref: sortUrl,
+                sortDirection: sorted
+                  ? ("ascending" as const)
+                  : ("none" as const),
+              }
+            : {}),
+        }))}
+        rows={rows.map((row) => ({
+          id: row.id,
+          href: `/dashboard/projects/${row.id}`,
+          label: `${row.name}, ${row.reference}`,
+          descriptionId: `project-${row.id}-tooltip`,
+          cells: Object.fromEntries(
+            shown.map((c) => [
+              c.key,
+              <Value key={c.key} row={row} column={c.key} />,
+            ]),
+          ),
+          mobileTitle: (
+            <span className={styles.project}>
+              <span className={styles.projectName}>
+                <DiscussionBadge project={row.id} dot />
+                <span>{row.name}</span>
               </span>
-              <ChevronRight size={18} aria-hidden="true" />
-            </div>
-            <dl>
-              {shown
-                .filter((c) => c.key !== "project")
-                .map((c) => (
-                  <div key={c.key}>
-                    <dt>{c.label}</dt>
-                    <dd>
-                      <Value row={row} column={c.key} />
-                    </dd>
-                  </div>
-                ))}
-            </dl>
-          </Link>
-        ))}
-      </div>
+              <small title={row.reference}>{row.reference}</small>
+            </span>
+          ),
+        }))}
+      />
     </div>
   );
 }

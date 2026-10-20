@@ -1,4 +1,5 @@
 "use client";
+import { CoffeeSupport } from "../coffee-support";
 import {
   DiscussionSync,
   useDiscussionCounts,
@@ -32,6 +33,7 @@ import {
   RefreshCw,
   ArrowUpRight,
   Users,
+  BookOpen,
 } from "lucide-react";
 import { roleLabels, type Profile } from "@/lib/phase1";
 import { signOut } from "@/app/login/actions";
@@ -88,9 +90,6 @@ export function RebuildShell({
       label: "Analytics",
       icon: ChartNoAxesCombined,
     },
-    ...(manager || profile.role === "operations_admin"
-      ? [{ href: "/dashboard/suppliers", label: "Suppliers", icon: Truck }]
-      : []),
     ...(profile.role === "system_administrator"
       ? [{ href: "/dashboard/users", label: "Team access", icon: Users }]
       : []),
@@ -102,7 +101,8 @@ export function RebuildShell({
             projects: "Projects",
             leads: profile.role === "bdm" ? "My leads" : "Lead review",
             analytics: "Analytics",
-            suppliers: "Suppliers",
+            suppliers: "Supplier/Brand Masterlist",
+            manual: "User Manual",
             calendar: "Calendar",
             notifications: "Notifications",
             users: "Team access",
@@ -215,6 +215,7 @@ export function RebuildShell({
               </div>
             </div>
             <div className={styles.utilities} aria-label="Workspace utilities">
+              <CoffeeSupport className={styles.iconButton} />
               {calendarEnabled && (
                 <Link
                   className={styles.iconButton}
@@ -223,6 +224,19 @@ export function RebuildShell({
                   title="Calendar"
                 >
                   <CalendarDays size={20} strokeWidth={1.8} />
+                </Link>
+              )}
+              {(manager || profile.role === "operations_admin") && (
+                <Link
+                  className={styles.iconButton}
+                  href="/dashboard/suppliers"
+                  aria-label="Open Supplier/Brand Masterlist"
+                  title="Supplier/Brand Masterlist"
+                  aria-current={
+                    path.startsWith("/dashboard/suppliers") ? "page" : undefined
+                  }
+                >
+                  <Truck size={20} strokeWidth={1.8} aria-hidden="true" />
                 </Link>
               )}
               <Link
@@ -326,6 +340,14 @@ export function RebuildShell({
                       <LayoutDashboard size={17} />
                       My workspace
                       <ArrowUpRight size={15} className={styles.menuCheck} />
+                    </Link>
+                    <Link
+                      href="/dashboard/manual"
+                      className={styles.menuItem}
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      <BookOpen size={17} aria-hidden="true" />
+                      User Manual
                     </Link>
                     <button
                       className={styles.menuItem}

@@ -55,6 +55,7 @@ export function LeadAttachments({
   slots,
   editable,
   allowUploads = true,
+  canManageAll = false,
   userId,
   attachments,
   versions,
@@ -64,6 +65,7 @@ export function LeadAttachments({
   slots?: { uploaded: number; reserved: number; remaining: number };
   editable: boolean;
   allowUploads?: boolean;
+  canManageAll?: boolean;
   userId: string;
   attachments: StoredAttachment[];
   versions: StoredVersion[];
@@ -417,7 +419,7 @@ export function LeadAttachments({
                   !a.archived_at &&
                   editable &&
                   allowUploads &&
-                  v.created_by === userId && (
+                  (v.created_by === userId || canManageAll) && (
                     <Button
                       type="button"
                       variant="outline"

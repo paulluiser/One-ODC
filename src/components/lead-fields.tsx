@@ -12,7 +12,11 @@ export function LeadFields({
   onValue,
   owner,
   designer,
+  suppliers = [],
+  supplierName,
 }: {
+  suppliers?: { id: string; name: string; brand: string | null }[];
+  supplierName?: string | null;
   owner?: ReactNode;
   designer?: ReactNode;
   values: LeadValues;
@@ -81,24 +85,40 @@ export function LeadFields({
       </div>
       {input("date_needed", "Date Needed", { type: "date" })}
       <div className="live-field">
-        <label htmlFor="brand">Brand</label>
+        <label htmlFor="supplier_id">Supplier / Brand</label>
+        <input type="hidden" name="brand" value={values.brand ?? ""} />
         <select
-          id="brand"
-          name="brand"
-          value={values.brand ?? ""}
-          onChange={(e) => onValue?.("brand", e.target.value)}
+          id="supplier_id"
+          name="supplier_id"
+          value={values.supplier_id ?? ""}
+          onChange={(e) => onValue?.("supplier_id", e.target.value)}
           disabled={disabled}
-          aria-invalid={!!errors.brand}
-          aria-describedby={errors.brand ? "brand-error" : undefined}
+          aria-invalid={!!errors.supplier_id}
+          aria-describedby={errors.supplier_id ? "supplier-error" : undefined}
         >
-          <option value="">Not specified</option>
-          {["SFY", "Stosa", "Both"].map((v) => (
-            <option key={v}>{v}</option>
+          <option value="">
+            {!values.supplier_id && values.brand
+              ? `${values.brand} (previous selection)`
+              : "Not specified"}
+          </option>
+          {values.supplier_id &&
+            !suppliers.some(
+              (supplier) => supplier.id === values.supplier_id,
+            ) && (
+              <option value={values.supplier_id}>
+                {supplierName || "Previously selected supplier"} (inactive)
+              </option>
+            )}
+          {suppliers.map((supplier) => (
+            <option key={supplier.id} value={supplier.id}>
+              {supplier.name}
+              {supplier.brand ? ` — ${supplier.brand}` : ""}
+            </option>
           ))}
         </select>
-        {errors.brand && (
-          <span id="brand-error" className="field-error">
-            {errors.brand}
+        {errors.supplier_id && (
+          <span id="supplier-error" className="field-error">
+            {errors.supplier_id}
           </span>
         )}
       </div>
@@ -134,6 +154,7 @@ export function AssignmentFields({
   onSupport,
   ops,
   onOps,
+  showOps = true,
   disabled = false,
 }: {
   people: Person[];
@@ -144,6 +165,7 @@ export function AssignmentFields({
   ops: string[];
   onOps?: (v: string[]) => void;
   disabled?: boolean;
+  showOps?: boolean;
 }) {
   const designers = people.filter(
     (p) => p.role === "designer" || p.role === "lead_designer",
@@ -215,14 +237,14 @@ export function AssignmentFields({
         support,
         onSupport,
       )}
-      {choices(
+      {showOps && choices(
         "Operations Admins (optional before commercial closure)",
         "ops",
         operations,
         ops,
         onOps,
       )}
-      {ops.length > 0 && (
+      {showOps && ops.length > 0 && (
         <div className="live-field">
           <label htmlFor="primary-ops">Primary Operations Admin</label>
           <select
@@ -247,7 +269,7 @@ export function AssignmentFields({
         </div>
       )}
       <p className="field-hint">
-        Select the primary Operations Admin from the assigned Operations team.
+        Operations Admin assignment is managed after commercial closure.
         No Spaces are created by project conversion.
       </p>
     </div>

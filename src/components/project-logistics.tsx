@@ -30,7 +30,6 @@ import {
 import { checkDatabase } from "@/lib/live-data";
 import { formatTime } from "@/lib/phase1";
 import type { Supplier, Logistics, LogisticsEvent } from "@/lib/logistics";
-import type { CommercialHandoff } from "@/lib/handoff";
 import { LogisticsForm } from "./logistics-form";
 function skippedTransition(event: LogisticsEvent) {
   const previous = event.previous_value as {
@@ -90,8 +89,12 @@ export async function ProjectLogistics({
   ]);
   for (const r of [records, history, handoff, monitoring])
     checkDatabase(r.error);
-  const h = handoff.data as CommercialHandoff,
-    held = monitoring.data?.[0]?.state === "On Hold";
+  const receipt = await client.rpc("has_operational_receipt", {
+    p_project: project,
+  });
+  checkDatabase(receipt.error);
+  const acknowledged = receipt.data === true;
+  const held = monitoring.data?.[0]?.state === "On Hold";
   const manager =
     profile.role === "system_administrator" ||
     (profile.role === "lead_designer" &&
@@ -155,7 +158,7 @@ export async function ProjectLogistics({
       permitted &&
       !p.data?.is_cancelled &&
       !completed &&
-      (manager || h.status === "Acknowledged");
+      (manager || acknowledged);
   const supplierResult = permitted
     ? await client
         .from("suppliers")
@@ -189,7 +192,7 @@ export async function ProjectLogistics({
                 suppliers={suppliers}
                 manager={manager}
                 administrative={profile.role === "system_administrator"}
-                handoffAcknowledged={h.status === "Acknowledged"}
+                handoffAcknowledged={acknowledged}
               />
             )}
           </header>
@@ -210,8 +213,8 @@ export async function ProjectLogistics({
         )}
         {!rebuild && (
           <p>
-            Current handoff: {h.status}. Raw and supplier payments remain
-            consolidated Project-level records.
+            Operational receipt: {acknowledged ? "Acknowledged" : "Pending"}.
+            Raw and supplier payments remain consolidated Project-level records.
           </p>
         )}
         {!unified && permitted && (
@@ -487,7 +490,7 @@ export async function ProjectLogistics({
                         manager={manager}
                         held={held}
                         administrative={profile.role === "system_administrator"}
-                        handoffAcknowledged={h.status === "Acknowledged"}
+                        handoffAcknowledged={acknowledged}
                       />
                     )}
                     <Link

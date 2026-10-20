@@ -6,9 +6,10 @@ export function workspaceCrumbs(path: string, tab?: string | null) {
     leads: "Leads",
     analytics: "Analytics",
     calendar: "Calendar",
-    suppliers: "Supplier Masterlist",
+    suppliers: "Supplier/Brand Masterlist",
     users: "User management",
     notifications: "Notifications",
+    manual: "User Manual",
   };
   if (!section || !labels[section]) return [root];
   const result = [

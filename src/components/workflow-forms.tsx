@@ -59,6 +59,7 @@ export function LeadForm({
   id,
   bdmName,
   bdms,
+  suppliers = [],
   leadDesigners = [],
   lead,
   rebuild = false,
@@ -66,6 +67,7 @@ export function LeadForm({
   id: string;
   bdmName: string;
   bdms?: Person[];
+  suppliers?: { id: string; name: string; brand: string | null }[];
   leadDesigners?: Person[];
   lead?: Lead;
   rebuild?: boolean;
@@ -162,12 +164,26 @@ export function LeadForm({
   );
   const fields = (
     <LeadFields
+      suppliers={suppliers}
+      supplierName={lead?.supplier_name}
       values={values}
       errors={state.fields}
       disabled={pending}
       owner={owner}
       designer={designer}
-      onValue={(k, v) => setValues({ ...values, [k]: v })}
+      onValue={(k, v) =>
+        setValues({
+          ...values,
+          [k]: v || (k === "supplier_id" ? null : v),
+          ...(k === "supplier_id"
+            ? {
+                brand:
+                  (suppliers.find((supplier) => supplier.id === v)
+                    ?.brand as LeadValues["brand"]) ?? null,
+              }
+            : {}),
+        })
+      }
     />
   );
   const resources = (
@@ -284,7 +300,7 @@ export function ReviewForm({
     profile.role === "lead_designer" ? profile.id : "",
   );
   const [support, setSupport] = useState<string[]>([]);
-  const [ops, setOps] = useState<string[]>([]);
+  const [ops] = useState<string[]>([]);
   const [leadDesigner] = useState(lead.assigned_lead_designer_id ?? "");
   return (
     <form
@@ -317,13 +333,14 @@ export function ReviewForm({
               "Not assigned — assign a Lead Designer before acceptance."}
           </p>
           <AssignmentFields
+            showOps={false}
             people={people}
             primary={primary}
             onPrimary={setPrimary}
             support={support}
             onSupport={setSupport}
             ops={ops}
-            onOps={setOps}
+            onOps={undefined}
             disabled={pending}
           />
         </>

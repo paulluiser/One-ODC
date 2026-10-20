@@ -20,12 +20,7 @@ export const dashboardPrimary: Record<Role, string[]> = {
     "clarification_leads",
     "commercial_opportunities",
   ],
-  operations_admin: [
-    "operational_projects",
-    "handoffs",
-    "ops_installations",
-    "delayed_logistics",
-  ],
+  operations_admin: ["operational_projects", "handoffs", "delayed_logistics"],
 };
 export function analyticsMetricGroup(key: string) {
   if (

@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({
     new URLSearchParams("tab=spaces&space_q=Kitchen&space_sort=name"),
 }));
 import { SpaceDirectory } from "../../src/components/space-directory";
-it("renders only five real-data columns, safe space names and filter-preserving detail links", () => {
+it("renders six real-data columns, safe space names and filter-preserving detail links", () => {
   const html = renderToStaticMarkup(
     createElement(SpaceDirectory, {
       rows: [
@@ -25,7 +25,14 @@ it("renders only five real-data columns, safe space names and filter-preserving 
   );
   expect(
     [...html.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map((m) => m[1]),
-  ).toEqual(["Space", "Assigned Designer", "Status", "Deadline", "Updated"]);
+  ).toEqual([
+    "Space",
+    "Assigned Designer",
+    "Design status",
+    "Post-closure readiness",
+    "Deadline",
+    "Updated",
+  ]);
   expect(html).toContain("Kitchen &lt;script&gt;");
   expect(html).toContain("Jane Doe");
   expect(html).toContain("Not scheduled");

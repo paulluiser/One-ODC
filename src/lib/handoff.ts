@@ -10,6 +10,7 @@ export type HandoffRecord = {
   status: "Pending Acknowledgment" | "Acknowledged";
   acknowledged_by: string | null;
   acknowledged_at: string | null;
+  acknowledged_as_admin?: boolean;
   superseded_at: string | null;
 };
 export type CommercialHandoff = {
@@ -48,7 +49,7 @@ export function handoffError(message: string): string {
   const errors: Record<string, string> = {
     SALE_REQUIRED: "Record the agreed Sale before closing.",
     OPERATIONS_ADMIN_REQUIRED:
-      "Ask the Lead Designer or System Administrator to assign an active primary Operations Admin before closure.",
+      "Ask the Lead Designer or System Administrator to assign an active primary Operations Admin after closure.",
     STALE_CLOSURE_CONTEXT:
       "Sale or Operations assignment changed. Reload and confirm the latest details before retrying.",
     SALE_ALREADY_CLOSED:

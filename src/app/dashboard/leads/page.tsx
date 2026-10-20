@@ -61,10 +61,57 @@ export default async function Leads({
   const leads = leadSchema.array().parse(data ?? []);
   const url = (number: number) =>
     `/dashboard/leads?${new URLSearchParams({ q, sort, status: status || "All", page: String(number) })}`;
-  if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
+  if (process.env.ONE_ODC_UI_R0_ENABLED === "true") {
+    const statusCounts = await Promise.all(
+      statuses.map(async (value) => {
+        const result = await client
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("status", value);
+        checkDatabase(result.error);
+        return [value, result.count ?? 0] as const;
+      }),
+    );
+    // Pair each immutable review with its own submission, including resubmissions.
+    let reviewDays = 0;
+    let reviewedCount = 0;
+    for (let offset = 0; ; offset += 500) {
+      const reviews = await client
+        .from("lead_reviews")
+        .select("id,reviewed_at,lead_submissions!inner(submitted_at)")
+        .order("id")
+        .range(offset, offset + 499);
+      checkDatabase(reviews.error);
+      for (const review of reviews.data ?? []) {
+        const submission = Array.isArray(review.lead_submissions)
+          ? review.lead_submissions[0]
+          : review.lead_submissions;
+        const elapsed =
+          Date.parse(review.reviewed_at) -
+          Date.parse(submission?.submitted_at ?? "");
+        if (Number.isFinite(elapsed) && elapsed >= 0) {
+          reviewDays += elapsed / 86400000;
+          reviewedCount++;
+        }
+      }
+      if ((reviews.data?.length ?? 0) < 500) break;
+    }
+    const ownerIds = [...new Set(leads.map((lead) => lead.bdm_id))];
+    const owners = ownerIds.length
+      ? await client
+          .from("profiles")
+          .select("id,display_name")
+          .in("id", ownerIds)
+      : { data: [], error: null };
+    checkDatabase(owners.error);
     return (
       <LeadDirectory
         leads={leads}
+        averageReviewDays={reviewedCount ? reviewDays / reviewedCount : null}
+        totals={Object.fromEntries(statusCounts)}
+        owners={Object.fromEntries(
+          (owners.data ?? []).map((owner) => [owner.id, owner.display_name]),
+        )}
         q={q}
         sort={sort}
         status={status}
@@ -74,6 +121,7 @@ export default async function Leads({
         canCreate={["bdm", "system_administrator"].includes(profile.role)}
       />
     );
+  }
   return (
     <>
       <PageIntro

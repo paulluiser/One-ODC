@@ -1,3 +1,4 @@
+import { leadSupplierOptions } from "@/lib/lead-suppliers";
 import { Scope, Heading } from "@/components/ui-r2/primitives";
 import { randomUUID } from "node:crypto";
 import { requireRole } from "@/lib/workspace-session";
@@ -9,6 +10,7 @@ export default async function NewLead() {
     "bdm",
     "system_administrator",
   ]);
+  const suppliers = await leadSupplierOptions(client);
   const designers = await client.rpc("list_lead_designers");
   checkDatabase(designers.error);
   const bdms =
@@ -30,6 +32,7 @@ export default async function NewLead() {
         />
         <LeadForm
           bdms={bdms?.data?.filter((p: { role: string }) => p.role === "bdm")}
+          suppliers={suppliers}
           leadDesigners={designers.data ?? []}
           rebuild
           id={randomUUID()}
@@ -45,6 +48,7 @@ export default async function NewLead() {
       />
       <LeadForm
         bdms={bdms?.data?.filter((p: { role: string }) => p.role === "bdm")}
+        suppliers={suppliers}
         leadDesigners={designers.data ?? []}
         id={randomUUID()}
         bdmName={profile.display_name}

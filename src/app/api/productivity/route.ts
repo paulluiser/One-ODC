@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
         client
           .from("notifications")
           .select("id", { count: "exact", head: true })
+          .eq("recipient_id", profile.id)
           .is("read_at", null),
       ]);
       const records = read(counts) as { project_id: string; unread: number }[];

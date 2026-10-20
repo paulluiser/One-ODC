@@ -421,32 +421,119 @@
   justify-content: center;
   border: 1px solid var(--r-line);
   border-radius: 8px;
+  list-style: none;
+}
+.actionMenu > summary::-webkit-details-marker {
+  display: none;
+}
+.actionMenu[open] > summary {
+  border-color: var(--brand-gold);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-gold) 20%, transparent);
 }
 .actionPanel {
   position: absolute;
   right: 0;
-  top: 100%;
-  z-index: 10;
-  width: min(360px, calc(100vw - 48px));
+  top: calc(100% + 8px);
+  z-index: 30;
+  width: min(350px, calc(100vw - 32px));
+  max-height: min(76dvh, 650px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--r-line);
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 14px;
   background: var(--r-surface);
   box-shadow: 0 10px 30px #0002;
 }
-.actionPanel > a {
-  display: block;
-  margin-top: 12px;
+.actionHeader {
+  padding-bottom: 12px;
 }
-.actionPanel :global(.commercial-workspace-actions) {
-  margin-bottom: 12px;
+.actionHeader h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
 }
-.actionPanel :global(.commercial-workspace-actions) > div {
-  display: grid !important;
-}
-.actionPanel :global(.commercial-workspace-actions) p {
-  margin-bottom: 8px;
+.actionHeader p {
+  margin: 4px 0 0;
   font-size: 12px;
+  color: var(--r-muted);
+}
+.actionGroup {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--r-line);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.actionGroup:first-of-type {
+  margin-top: 0;
+}
+.actionGroup h3 {
+  margin: 0 0 2px;
+  color: var(--r-muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.actionRow {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 10px;
+  margin: 0;
+  border: 1px solid var(--r-line);
+  border-radius: 8px;
+  background: var(--r-surface);
+  color: var(--r-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.actionRow:hover {
+  background: var(--r-soft);
+  border-color: color-mix(in srgb, var(--brand-gold) 45%, var(--r-line));
+}
+.actionRow:focus-visible {
+  outline: 2px solid var(--r-focus);
+  outline-offset: 2px;
+}
+.actionLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+.actionLabel > svg {
+  flex-shrink: 0;
+  color: var(--brand-gold-dark, var(--brand-gold));
+}
+.actionLabel > svg:last-child {
+  margin-left: auto;
+}
+.actionText {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.actionText > small {
+  color: var(--r-muted);
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.completionAction {
+  background: color-mix(in srgb, var(--brand-gold) 13%, var(--r-surface));
+  border-color: color-mix(in srgb, var(--brand-gold) 65%, var(--r-line));
+  font-weight: 600;
+}
+.completionAction:hover {
+  background: color-mix(in srgb, var(--brand-gold) 21%, var(--r-surface));
 }
 .workspace a:focus-visible,
 .workspace summary:focus-visible {

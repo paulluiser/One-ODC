@@ -1,4 +1,7 @@
 "use client";
+import { Users, Flag, Handshake, UserRoundCog } from "lucide-react";
+import { ProjectActionLabel } from "./project-workspace/action-label";
+import menuStyles from "./project-workspace/workspace.module.css";
 import { useActionState } from "react";
 import { commercialAction } from "@/app/dashboard/projects/commercial-actions";
 import { ContextPanel } from "./context-panel";
@@ -10,7 +13,9 @@ export function CommercialStageForm({
   price,
   version = 0,
   people = [],
+  menuItem = false,
 }: {
+  menuItem?: boolean;
   project: string;
   stage: string;
   intent: "negotiate" | "close" | "lost" | "handoff";
@@ -25,7 +30,7 @@ export function CommercialStageForm({
     negotiate: "Send to BDM",
     close: "Close deal",
     lost: "Mark Lost",
-    handoff: "Assign Operations & hand off",
+    handoff: "Assign Operations Admin",
   }[intent];
   const description = {
     negotiate:
@@ -34,11 +39,27 @@ export function CommercialStageForm({
       "Confirm the agreed closure price. The Lead Designer will be notified to assign Operations and complete the handoff.",
     lost: "The client is not proceeding. This permanently locks project edits, including ongoing designs. Files and history remain accessible to authorized members.",
     handoff:
-      "Choose the primary Operations Admin and release the closed project for operational acknowledgment.",
+      "Assign the primary Operations Admin. Ordered Spaces are handed off separately from the Operations tab.",
   }[intent];
   return (
     <ContextPanel
       title={label}
+      triggerClassName={menuItem ? menuStyles.actionRow : undefined}
+      triggerLabel={
+        menuItem ? (
+          <ProjectActionLabel
+            icon={
+              {
+                negotiate: Users,
+                lost: Flag,
+                close: Handshake,
+                handoff: UserRoundCog,
+              }[intent]
+            }
+            title={label}
+          />
+        ) : undefined
+      }
       description={description}
       blockPending
       resetOnClose

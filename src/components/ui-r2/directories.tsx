@@ -10,16 +10,8 @@ import {
 } from "@/lib/project-directory-view";
 import { FilterBar } from "../filter-bar";
 import { filterOptions } from "../../lib/filter-toolbar";
-import {
-  ArrowUpRight,
-  CalendarDays,
-  FolderOpen,
-  Plus,
-  LayoutGrid,
-  List,
-} from "lucide-react";
-import type { Lead, Project } from "../../lib/phase1";
-import { formatTime, leadAge, statuses } from "../../lib/phase1";
+import { ArrowUpRight, FolderOpen, LayoutGrid, List } from "lucide-react";
+import type { Project } from "../../lib/phase1";
 import {
   projectMetrics,
   projectWorkState,
@@ -32,137 +24,7 @@ import {
 } from "../../lib/project-workspace";
 import { Heading, Scope, Status } from "./primitives";
 import styles from "./ui-r2.module.css";
-export function LeadDirectory({
-  leads,
-  q,
-  status,
-  page,
-  count,
-  bdm,
-  canCreate = bdm,
-  sort = "updated",
-}: {
-  leads: Lead[];
-  q: string;
-  status: string;
-  page: number;
-  count: number;
-  bdm: boolean;
-  canCreate?: boolean;
-  sort?: string;
-}) {
-  const url = (p: number) =>
-    `/dashboard/leads?${new URLSearchParams({ q, sort, status: status || "All", page: String(p) })}`;
-  return (
-    <Scope>
-      <Heading
-        title={bdm ? "My Leads" : "Lead review"}
-        description={
-          bdm
-            ? "Keep your requests moving, from first brief to project."
-            : "Review the brief, resolve questions, and bring the right projects forward."
-        }
-        action={
-          canCreate && (
-            <Link className="button button-primary" href="/dashboard/leads/new">
-              <Plus size={16} aria-hidden="true" />
-              New request
-            </Link>
-          )
-        }
-      />
-      <section className={styles.directory}>
-        <FilterBar
-          resultCount={count}
-          values={{ q, sort, status: status || "All" }}
-          config={{
-            label: "Lead filters",
-            sort: {
-              key: "sort",
-              label: "Sort leads",
-              defaultValue: "updated",
-              options: [
-                { value: "updated", label: "Recently updated" },
-                { value: "newest", label: "Newest first" },
-                { value: "name", label: "Project name A–Z" },
-              ],
-            },
-            search: {
-              key: "q",
-              label: "Search leads",
-              placeholder: "Search lead or project name…",
-            },
-            fields: [
-              {
-                key: "status",
-                label: "Status",
-                defaultValue: "All",
-                options: [
-                  { value: "All", label: "All statuses" },
-                  ...filterOptions(statuses),
-                ],
-              },
-            ],
-          }}
-        />
-        <div className={styles.listHeading}>
-          <h2>{bdm ? "Your requests" : "Review queue"}</h2>
-          <span>{count} matching records</span>
-        </div>
-        <div className={styles.recordList}>
-          {leads.map((lead) => (
-            <Link
-              className={styles.record}
-              href={`/dashboard/leads/${lead.id}`}
-              key={lead.id}
-            >
-              <div className={styles.recordIdentity}>
-                <span className={styles.reference}>
-                  {lead.reference}
-                  {lead.brand ? ` · ${lead.brand}` : ""}
-                </span>
-                <h3>{lead.project_name || "Untitled draft"}</h3>
-                <p>{lead.address || "Address not added"}</p>
-              </div>
-              <div>
-                <Status>{lead.status}</Status>
-                <p>
-                  {leadAge(lead) === null
-                    ? "Not submitted"
-                    : `${leadAge(lead)} calendar days`}
-                </p>
-              </div>
-              <div className={styles.recordDate}>
-                <span>
-                  <CalendarDays size={14} aria-hidden="true" />
-                  Needed {lead.date_needed || "Not scheduled"}
-                </span>
-                <small>Saved {formatTime(lead.updated_at)}</small>
-              </div>
-              <ArrowUpRight size={18} aria-hidden="true" />
-            </Link>
-          ))}
-        </div>
-        {!leads.length && (
-          <div className={styles.empty}>
-            <FolderOpen size={26} aria-hidden="true" />
-            <h3>No leads to show</h3>
-            <p>
-              {q || status
-                ? "Try another search or status. Only authorized requests appear here."
-                : "Create a request to start your next project."}
-            </p>
-          </div>
-        )}
-        <nav className={styles.pagination} aria-label="Lead pages">
-          <span>Page {page}</span>
-          {page > 1 && <Link href={url(page - 1)}>Previous</Link>}
-          {page * 25 < count && <Link href={url(page + 1)}>Next</Link>}
-        </nav>
-      </section>
-    </Scope>
-  );
-}
+export { LeadDirectory } from "./lead-directory";
 export function ProjectDirectory({
   columns,
   view = "list",
@@ -172,6 +34,7 @@ export function ProjectDirectory({
   count,
   ops,
   leads,
+  readiness = {},
 }: {
   columns?: string;
   view?: "grid" | "list";
@@ -181,6 +44,7 @@ export function ProjectDirectory({
   count: number;
   ops: boolean;
   leads: Record<string, string>;
+  readiness?: Record<string, string>;
 }) {
   const viewUrl = (layout: "grid" | "list", page = options.page) =>
     `${projectDirectoryUrl(options, page)}&view=${layout}${columns !== undefined ? `&columns=${encodeURIComponent(columns)}` : ""}`;
@@ -291,6 +155,7 @@ export function ProjectDirectory({
                 monitoring?.[p.id],
                 ops,
                 leads[p.lead_designer_id],
+                readiness[p.id],
               ),
             )}
             columns={visibleDirectoryColumns(columns)}

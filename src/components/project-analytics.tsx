@@ -158,7 +158,7 @@ export function ProjectAnalytics({
           },
         ]
       : []),
-  ];
+  ].filter((card) => !card.key.includes("installation"));
   const primaryLabels = [
     "Active projects",
     "Currently completed projects",
@@ -405,7 +405,6 @@ export function ProjectAnalytics({
           <>
             {chart("handoffs", "Pending handoff aging")}
             {chart("logistics", "Logistics status distribution")}
-            {chart("installations", "Installation status distribution")}
           </>
         )}
       </div>

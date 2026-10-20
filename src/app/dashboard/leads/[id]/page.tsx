@@ -1,3 +1,4 @@
+import { leadSupplierOptions } from "@/lib/lead-suppliers";
 import r2 from "@/components/ui-r2/ui-r2.module.css";
 import {
   DisclosureSummary,
@@ -91,22 +92,9 @@ export default async function LeadDetail({
   for (const r of [submissions, reviews, origin, peopleResult, attached, slots])
     checkDatabase(r.error);
   const people: Person[] = peopleResult.data ?? [];
-  const author =
-    profile.role === "system_administrator"
-      ? await client
-          .from("audit_events")
-          .select("actor_id")
-          .eq("entity_type", "lead")
-          .eq("entity_id", id)
-          .in("action", ["lead.draft_saved", "lead.submitted"])
-          .eq("new_value->>version", "1")
-          .maybeSingle()
-      : null;
-  checkDatabase(author?.error ?? null);
   const editable =
     ((profile.role === "bdm" && lead.bdm_id === profile.id) ||
-      (profile.role === "system_administrator" &&
-        author?.data?.actor_id === profile.id)) &&
+      profile.role === "system_administrator") &&
     ["Draft", "Returned for Clarification"].includes(lead.status);
   const versions = attached.data?.length
     ? await client
@@ -121,8 +109,10 @@ export default async function LeadDetail({
     : { data: [], error: null };
   checkDatabase(versions.error);
   const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
+  const suppliers = editable ? await leadSupplierOptions(client) : [];
   const brief = editable ? (
     <LeadForm
+      suppliers={suppliers}
       rebuild={rebuild}
       id={id}
       lead={lead}
@@ -182,8 +172,11 @@ export default async function LeadDetail({
           <dd>{lead.address}</dd>
         </div>
         <div>
-          <dt>Brand</dt>
-          <dd>{lead.brand || "Not specified"}</dd>
+          <dt>Supplier / Brand</dt>
+          <dd>
+            {[lead.supplier_name, lead.brand].filter(Boolean).join(" — ") ||
+              "Not specified"}
+          </dd>
         </div>
         <div>
           <dt>Estimated Cabinetries</dt>
@@ -216,6 +209,7 @@ export default async function LeadDetail({
       slots={slots.data}
       editable={editable}
       userId={profile.id}
+      canManageAll={profile.role === "system_administrator"}
       attachments={(attached.data ?? []) as StoredAttachment[]}
       versions={(versions.data ?? []) as StoredVersion[]}
     />
@@ -247,10 +241,12 @@ export default async function LeadDetail({
                   <dd>{s.snapshot.address}</dd>
                 </div>
                 <div>
-                  <dt>Cabinetries / Brand</dt>
+                  <dt>Cabinetries / Supplier / Brand</dt>
                   <dd>
                     {s.snapshot.cabinetry_count} /{" "}
-                    {s.snapshot.brand || "Not specified"}
+                    {[s.snapshot.supplier_name, s.snapshot.brand]
+                      .filter(Boolean)
+                      .join(" — ") || "Not specified"}
                   </dd>
                 </div>
                 <div>

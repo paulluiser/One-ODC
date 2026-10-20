@@ -182,7 +182,6 @@ export async function ProjectMonitoring({
     name: a.original_name,
   }));
   const operationallyCompleted =
-    process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true" &&
     projectWorkState(m) === "Operationally Completed";
   const allowedCategories =
     profile.role === "operations_admin"

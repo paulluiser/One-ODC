@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Flag, CheckCircle2 } from "lucide-react";
 import type { Readiness } from "@/lib/installations";
-import { InstallationActionDialog } from "./installation-action-dialog";
 import styles from "./operations-workspace.module.css";
 export function OperationsCompletionBar({
   project,
@@ -14,7 +13,7 @@ export function OperationsCompletionBar({
     <section
       className={styles.completionBar}
       id="operations-outstanding"
-      aria-label="Project operations completion"
+      aria-label="Project completion"
       tabIndex={-1}
     >
       {readiness.completed ? (
@@ -28,32 +27,26 @@ export function OperationsCompletionBar({
           tabIndex={-1}
           data-completed={readiness.completed}
         >
-          Project operations completion
+          Project completion
         </h3>
         <p>
           {readiness.completed
-            ? "Operations completed. Previous completion and audit records are preserved."
+            ? "Project completed. Previous completion and audit records are preserved."
             : "Mark the project complete once all operational prerequisites are satisfied."}
         </p>
       </div>
       {readiness.completed && (
         <div className={styles.completionState}>
-          <strong>Operationally completed</strong>
+          <strong>Completed</strong>
         </div>
       )}
-      {readiness.completed ? (
+      {readiness.completed && (
         <Link
           href={`/dashboard/projects/${project}?tab=activity&section=history`}
         >
           View completion history →
         </Link>
-      ) : readiness.can_complete ? (
-        <InstallationActionDialog
-          project={project}
-          readiness={readiness}
-          primary
-        />
-      ) : null}
+      )}
     </section>
   );
 }

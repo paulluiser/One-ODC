@@ -176,8 +176,8 @@ it("empty BDM directory provides a real creation action without fabricated recor
     }),
   );
   expect(html).toContain("New request");
-  expect(html).toContain("No leads to show");
-  expect(html).toContain("0 matching records");
+  expect(html).toContain("No leads match this search or status.");
+  expect(html).toContain("0 results");
   expect(html).not.toContain("LEAD-01");
 });
 it("project list mode preserves filters, pagination and the selected view in navigation", () => {

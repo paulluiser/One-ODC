@@ -21,7 +21,7 @@ export async function OperationsHistory({
   checkDatabase(result.error);
   const h = result.data as CommercialHandoff;
   const ready =
-    process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true"
+    process.env.ONE_ODC_MONITORING_ENABLED === "true"
       ? await client.rpc("operational_readiness", { p_project: project })
       : { data: null, error: null };
   checkDatabase(ready.error);

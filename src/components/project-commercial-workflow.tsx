@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import menuStyles from "./project-workspace/workspace.module.css";
 import { z } from "zod";
 import { requireWorkspace } from "@/lib/workspace-session";
 import { checkDatabase } from "@/lib/live-data";
@@ -5,9 +7,11 @@ import { CommercialStageForm } from "./commercial-stage-form";
 export async function ProjectCommercialWorkflow({
   project,
   compact = false,
+  teamAction,
 }: {
   project: string;
   compact?: boolean;
+  teamAction?: ReactNode;
 }) {
   if (
     process.env.ONE_ODC_UI_R0_ENABLED !== "true" ||
@@ -18,16 +22,18 @@ export async function ProjectCommercialWorkflow({
   const r = await client
     .from("projects")
     .select(
-      "commercial_status,lead_designer_id,awaiting_handoff,lost_reason,is_cancelled",
+      "commercial_status,lead_designer_id,awaiting_handoff,lost_reason,is_cancelled,is_operationally_completed",
     )
     .eq("id", project)
     .maybeSingle();
   checkDatabase(r.error);
   if (!r.data) return null;
   const p = r.data,
+    administrator = profile.role === "system_administrator",
     lead =
-      profile.role === "lead_designer" && profile.id === p.lead_designer_id;
-  let primary = false;
+      administrator ||
+      (profile.role === "lead_designer" && profile.id === p.lead_designer_id);
+  let primary = administrator;
   if (profile.role === "bdm") {
     const m = await client
       .from("project_memberships")
@@ -42,7 +48,8 @@ export async function ProjectCommercialWorkflow({
   }
   const open =
     ["For Quotation", "Under Negotiation"].includes(p.commercial_status) &&
-    !p.is_cancelled;
+    !p.is_cancelled &&
+    !p.is_operationally_completed;
   const sale =
     primary && p.commercial_status === "Under Negotiation"
       ? await client.rpc("get_commercial_handoff", { p_project: project })
@@ -56,6 +63,68 @@ export async function ProjectCommercialWorkflow({
   const ops = (directory.data ?? []).filter(
     (person: { role: string }) => person.role === "operations_admin",
   );
+  const actions = (
+    <>
+      {lead && open && p.commercial_status === "For Quotation" && (
+        <CommercialStageForm
+          menuItem={compact}
+          project={project}
+          stage={p.commercial_status}
+          intent="negotiate"
+        />
+      )}
+      {primary && open && p.commercial_status === "Under Negotiation" && (
+        <CommercialStageForm
+          menuItem={compact}
+          project={project}
+          stage={p.commercial_status}
+          intent="close"
+          price={sale.data?.sale?.amount}
+          version={sale.data?.sale?.version ?? 0}
+        />
+      )}
+      {primary && open && (
+        <CommercialStageForm
+          menuItem={compact}
+          project={project}
+          stage={p.commercial_status}
+          intent="lost"
+        />
+      )}
+      {lead &&
+        p.awaiting_handoff &&
+        !p.is_cancelled &&
+        !p.is_operationally_completed && (
+          <CommercialStageForm
+            menuItem={compact}
+            project={project}
+            stage={p.commercial_status}
+            intent="handoff"
+            people={ops}
+          />
+        )}
+      {compact && teamAction}
+    </>
+  );
+  if (compact) {
+    const available =
+      (open &&
+        (primary || (lead && p.commercial_status === "For Quotation"))) ||
+      (lead &&
+        p.awaiting_handoff &&
+        !p.is_cancelled &&
+        !p.is_operationally_completed) ||
+      !!teamAction;
+    return available ? (
+      <section
+        className={menuStyles.actionGroup}
+        aria-label="Team and pipeline"
+      >
+        <h3>Team &amp; Pipeline</h3>
+        {actions}
+      </section>
+    ) : null;
+  }
   return (
     <section
       className={compact ? "commercial-workspace-actions" : "surface live-form"}
@@ -86,43 +155,13 @@ export async function ProjectCommercialWorkflow({
           )}
           {p.awaiting_handoff && (
             <p>
-              The deal is locked. The Lead Designer must assign Operations and
-              hand off the project.
+              The deal is locked. The Lead Designer or System Administrator must
+              assign Operations and hand off the project.
             </p>
           )}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {lead && open && p.commercial_status === "For Quotation" && (
-            <CommercialStageForm
-              project={project}
-              stage={p.commercial_status}
-              intent="negotiate"
-            />
-          )}
-          {primary && open && p.commercial_status === "Under Negotiation" && (
-            <CommercialStageForm
-              project={project}
-              stage={p.commercial_status}
-              intent="close"
-              price={sale.data?.sale?.amount}
-              version={sale.data?.sale?.version ?? 0}
-            />
-          )}
-          {primary && open && (
-            <CommercialStageForm
-              project={project}
-              stage={p.commercial_status}
-              intent="lost"
-            />
-          )}
-          {lead && p.awaiting_handoff && !p.is_cancelled && (
-            <CommercialStageForm
-              project={project}
-              stage={p.commercial_status}
-              intent="handoff"
-              people={ops}
-            />
-          )}
+          {actions}
         </div>
       </div>
     </section>

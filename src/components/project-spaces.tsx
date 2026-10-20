@@ -1,3 +1,5 @@
+import { installationTrackingEnabled } from "@/lib/project-readiness";
+import type { SpaceReadiness } from "@/lib/project-readiness";
 import { SpaceDetailsDrawer } from "./space-details-drawer";
 import { SpaceWorkspaceTools } from "./space-workspace-tools";
 import directoryStyles from "./space-directory.module.css";
@@ -37,6 +39,12 @@ export async function ProjectSpaces({
   const rebuild = process.env.ONE_ODC_UI_R0_ENABLED === "true";
   const { client, profile } = await requireWorkspace();
   const lost = await projectIsLost(project);
+  const readinessResult = await client
+    .from("space_readiness")
+    .select("*")
+    .eq("project_id", project);
+  checkDatabase(readinessResult.error);
+  const readiness = (readinessResult.data ?? []) as SpaceReadiness[];
   const [rows, support, events, monitoring, completion, activity] =
     await Promise.all([
       client
@@ -66,7 +74,7 @@ export async function ProjectSpaces({
             .eq("project_id", project)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
-      process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true"
+      process.env.ONE_ODC_MONITORING_ENABLED === "true"
         ? client
             .from("projects")
             .select("is_operationally_completed,commercial_status")
@@ -98,7 +106,7 @@ export async function ProjectSpaces({
   const name = (id: string) =>
     people.find((p) => p.id === id)?.display_name || id;
   const installations =
-    process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true" &&
+    installationTrackingEnabled &&
     completion.data?.commercial_status === "Closed"
       ? await client
           .from("space_installations")
@@ -189,6 +197,7 @@ export async function ProjectSpaces({
             name: s.name,
             designer: name(s.primary_designer_id),
             status: s.cancelled_at ? "Cancelled" : s.status,
+            readiness: readiness.find((r) => r.space_id === s.id)?.status,
             deadline: s.deadline,
             updated: s.updated_at,
           }))}
@@ -276,6 +285,7 @@ export async function ProjectSpaces({
             <SpaceDetailsDrawer
               key={s.id}
               space={s}
+              readiness={readiness.find((r) => r.space_id === s.id)}
               support={supporters
                 .filter((a) => a.space_id === s.id)
                 .map((a) => a.user_id)}
@@ -347,7 +357,7 @@ export async function ProjectSpaces({
                 <p className="space-risk">{indicator}</p>
               )}
               <dl className="record-details">
-                {process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true" && (
+                {installationTrackingEnabled && (
                   <div>
                     <dt>Installation</dt>
                     <dd>

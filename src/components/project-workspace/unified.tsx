@@ -1,3 +1,6 @@
+import type { Readiness } from "@/lib/installations";
+import { InstallationActionDialog } from "../installation-action-dialog";
+import { ProjectActionLabel } from "./action-label";
 import { ActivityWorkspace } from "../activity-workspace";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
@@ -7,6 +10,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  History,
   FileText,
   FolderOpen,
   Layers,
@@ -25,14 +29,9 @@ import {
   projectMetrics,
   projectWorkState,
   type Monitoring,
-  type TimelineEvent,
 } from "@/lib/monitoring";
 import { directoryDate } from "@/lib/project-directory-view";
-import {
-  readableProjectEvent,
-  workspaceView,
-  workspaceUrl,
-} from "@/lib/project-workspace-view";
+import { workspaceView, workspaceUrl } from "@/lib/project-workspace-view";
 import { Scope, Status } from "../ui-r2/primitives";
 import { ProjectTools, DiscussionPanel } from "../productivity/project-tools";
 import { ProjectTeamDialog } from "../project-team-dialog";
@@ -124,37 +123,47 @@ export async function UnifiedProjectWorkspace({
     (profile.role === "system_administrator" ||
       (profile.role === "lead_designer" &&
         project.lead_designer_id === profile.id));
-  const [summary, members, spaceRows, events] = await Promise.all([
-    !restricted && enabled("MONITORING")
-      ? projectMonitoringSummary(id)
-      : { data: [], error: null },
-    !ops ? projectTeam(id) : { data: [], error: null },
-    !restricted && enabled("SPACES")
-      ? client
-          .from("spaces")
-          .select("id,name,status,cancelled_at,updated_at")
-          .eq("project_id", id)
-          .order("created_at")
-      : { data: [], error: null },
-    !restricted && enabled("MONITORING") && view.tab === "overview"
-      ? client.rpc("project_timeline", {
-          p_project: id,
-          p_category: "",
-          p_from: null,
-          p_to: null,
-          p_actor: null,
-          p_space: null,
-          p_offset: 0,
-        })
-      : { data: [], error: null },
-  ]);
-  for (const r of [summary, members, spaceRows, events]) checkDatabase(r.error);
+  const [summary, members, spaceRows, events, completionResult] =
+    await Promise.all([
+      !restricted && enabled("MONITORING")
+        ? projectMonitoringSummary(id)
+        : { data: [], error: null },
+      !ops ? projectTeam(id) : { data: [], error: null },
+      !restricted && enabled("SPACES")
+        ? client
+            .from("spaces")
+            .select("id,name,status,cancelled_at,updated_at")
+            .eq("project_id", id)
+            .order("created_at")
+        : { data: [], error: null },
+      !restricted && enabled("MONITORING") && view.tab === "overview"
+        ? client.rpc("project_milestones", {
+            p_project: id,
+            p_offset: Math.max(0, Number(query.timeline_page ?? 0) || 0) * 20,
+          })
+        : { data: [], error: null },
+      manager &&
+      enabled("MONITORING") &&
+      project.commercial_status === "Closed" &&
+      !project.is_cancelled &&
+      !project.is_operationally_completed
+        ? client.rpc("operational_readiness", { p_project: id })
+        : { data: null, error: null },
+    ]);
+  for (const r of [summary, members, spaceRows, events, completionResult])
+    checkDatabase(r.error);
   const m = (summary.data as Monitoring[] | null)?.[0],
     metric = m ? projectMetrics(m) : null;
   const team = (members.data ?? []) as Member[],
     spaces = spaceRows.data ?? [],
     active = spaces.filter((s) => !s.cancelled_at),
-    recent = (events.data ?? []) as TimelineEvent[];
+    recent = (events.data ?? []) as {
+      id: string;
+      title: string;
+      detail: string;
+      actor: string;
+      occurred_at: string;
+    }[];
   const origin =
     !ops && profile.role !== "designer"
       ? await client
@@ -207,18 +216,23 @@ export async function UnifiedProjectWorkspace({
     : project.commercial_status === "Lost" || project.is_cancelled
       ? "Inactive"
       : metric?.risk || "Not available";
-  const assignments = manager ? (
-    <ProjectTeamDialog
-      id={id}
-      people={people}
-      team={team}
-      current={project.lead_designer_id}
-      closed={project.commercial_status === "Closed"}
-      canAssign={!project.awaiting_handoff || profile.role === "lead_designer"}
-      canTransfer={!project.is_cancelled && !project.is_operationally_completed}
-      viewer={{ id: profile.id, role: profile.role }}
-    />
-  ) : null;
+  const completion = completionResult.data as Readiness | null;
+  const renderAssignments = (menuItem = false) =>
+    manager && !project.is_cancelled && !project.is_operationally_completed ? (
+      <ProjectTeamDialog
+        id={id}
+        menuItem={menuItem}
+        people={people}
+        team={team}
+        current={project.lead_designer_id}
+        closed={project.commercial_status === "Closed"}
+        canAssign={!project.awaiting_handoff || manager}
+        canTransfer={
+          !project.is_cancelled && !project.is_operationally_completed
+        }
+        viewer={{ id: profile.id, role: profile.role }}
+      />
+    ) : null;
   const section = view.section;
   const next: { label: string; description: string; href: string }[] = [];
   if (manager && !project.is_cancelled && !project.is_operationally_completed) {
@@ -240,7 +254,7 @@ export async function UnifiedProjectWorkspace({
         description: "Set the target date using the existing project controls.",
         href: url("activity", "history") + "#project-controls",
       });
-    if (project.awaiting_handoff && profile.role === "lead_designer")
+    if (project.awaiting_handoff && manager)
       next.push({
         label: "Hand off to Operations",
         description: "Assign Operations and release the closed project.",
@@ -291,16 +305,52 @@ export async function UnifiedProjectWorkspace({
               <ProjectTools compact project={id} profile={profile} />
               {!restricted && (
                 <ProjectActionMenu>
-                  <ProjectCommercialWorkflow project={id} compact />
-                  {assignments}
-                  {origin.data && (
-                    <Link href={`/dashboard/leads/${origin.data.lead_id}`}>
-                      Originating Lead
+                  <ProjectCommercialWorkflow
+                    project={id}
+                    compact
+                    teamAction={renderAssignments(true)}
+                  />
+                  <section
+                    className={styles.actionGroup}
+                    aria-label="Project details"
+                  >
+                    <h3>Project Details</h3>
+                    {origin.data && (
+                      <Link
+                        className={styles.actionRow}
+                        href={`/dashboard/leads/${origin.data.lead_id}`}
+                      >
+                        <ProjectActionLabel
+                          icon={FileText}
+                          title="Originating Lead"
+                        />
+                      </Link>
+                    )}
+                    <Link
+                      className={styles.actionRow}
+                      href={url("activity", "history")}
+                    >
+                      <ProjectActionLabel
+                        icon={History}
+                        title="Project Controls & History"
+                      />
                     </Link>
-                  )}
-                  <Link href={url("activity", "history")}>
-                    Project controls and history
-                  </Link>
+                  </section>
+                  {completion?.can_complete &&
+                    completion.cycle &&
+                    !completion.completed && (
+                      <section
+                        className={styles.actionGroup}
+                        aria-label="Project completion"
+                      >
+                        <h3>Project Completion</h3>
+                        <InstallationActionDialog
+                          project={id}
+                          readiness={completion}
+                          menuItem
+                        />
+                      </section>
+                    )}
                 </ProjectActionMenu>
               )}
             </div>
@@ -505,23 +555,20 @@ export async function UnifiedProjectWorkspace({
                 )}
               </Card>
               <Card
-                title="Recent activity"
+                title="Project Timeline"
                 icon={<Clock3 size={18} />}
                 href={url("activity", "history")}
               >
                 {recent.length ? (
                   <ol className={styles.timeline}>
-                    {recent.slice(0, 3).map((e) => (
+                    {recent.map((e) => (
                       <li key={e.id}>
-                        <strong>
-                          {readableProjectEvent(e.description, e.category)}
-                        </strong>
+                        <strong>{e.title}</strong>
                         <small>
-                          {team.find((t) => t.user_id === e.actor_id)
-                            ?.display_name || "Project member"}
+                          {e.actor || "Recorded actor"} · {e.detail}
                         </small>
-                        <time dateTime={e.recorded_at}>
-                          {formatTime(e.recorded_at)}
+                        <time dateTime={e.occurred_at}>
+                          {formatTime(e.occurred_at)}
                         </time>
                       </li>
                     ))}
@@ -531,6 +578,28 @@ export async function UnifiedProjectWorkspace({
                     No authorized activity yet.
                   </Empty>
                 )}
+                <nav aria-label="Project Timeline pages">
+                  {Number(query.timeline_page ?? 0) > 0 && (
+                    <Link
+                      href={
+                        url("overview") +
+                        `&timeline_page=${Number(query.timeline_page) - 1}`
+                      }
+                    >
+                      Newer milestones
+                    </Link>
+                  )}
+                  {recent.length === 20 && (
+                    <Link
+                      href={
+                        url("overview") +
+                        `&timeline_page=${Number(query.timeline_page ?? 0) + 1}`
+                      }
+                    >
+                      Earlier milestones →
+                    </Link>
+                  )}
+                </nav>
               </Card>
             </div>
             <div className={styles.column}>
@@ -539,7 +608,7 @@ export async function UnifiedProjectWorkspace({
                   <Card
                     title="Project team"
                     icon={<Users size={18} />}
-                    actionNode={assignments}
+                    actionNode={renderAssignments()}
                   >
                     <ul className={styles.team}>
                       {team.map((t) => (
@@ -723,6 +792,7 @@ export async function UnifiedProjectWorkspace({
                 <Suspense fallback={<Loading />}>
                   <ProjectResources
                     project={id}
+                    showManagement={false}
                     manager={manager}
                     primaryBdm={team.some(
                       (t) =>

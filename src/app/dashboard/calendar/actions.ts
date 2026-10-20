@@ -41,7 +41,7 @@ export async function saveCalendarEvent(
       error: error.message.includes("STALE_EVENT")
         ? "This event changed or was cancelled. Refresh the calendar before trying again."
         : error.message.includes("ACCESS_DENIED")
-          ? "You can only change your own personal events."
+          ? "This account cannot change the selected event."
           : "The event could not be saved. Your entries have been kept; please try again.",
     };
   revalidatePath("/dashboard/calendar");
@@ -49,6 +49,6 @@ export async function saveCalendarEvent(
     error: null,
     success: cancel
       ? "Event cancelled. Its history is preserved."
-      : "Event saved to your personal calendar.",
+      : "Calendar event saved.",
   };
 }

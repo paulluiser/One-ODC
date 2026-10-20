@@ -1,3 +1,4 @@
+import { installationTrackingEnabled } from "@/lib/project-readiness";
 import { UnifiedProjectWorkspace } from "@/components/project-workspace/unified";
 import { ProjectCommercialWorkflow } from "@/components/project-commercial-workflow";
 import {
@@ -59,7 +60,7 @@ async function ProjectDetail({
   if (process.env.ONE_ODC_UI_R0_ENABLED === "true")
     return <UnifiedProjectWorkspace project={project} query={query} />;
   const installationEnabled =
-    process.env.ONE_ODC_INSTALLATIONS_ENABLED === "true";
+    installationTrackingEnabled;
   const installationTab = installationEnabled && query.tab === "installation";
   const logisticsEnabled = process.env.ONE_ODC_LOGISTICS_ENABLED === "true";
   const logisticsTab = logisticsEnabled && query.tab === "logistics";
@@ -543,7 +544,9 @@ async function ProjectDetail({
               </ul>
               {editable &&
                 (!project.awaiting_handoff ||
-                  profile.role === "lead_designer") && (
+                  ["lead_designer", "system_administrator"].includes(
+                    profile.role,
+                  )) && (
                   <Disclosure title="Manage project assignments">
                     <AssignmentForm id={id} people={people} team={team} />
                   </Disclosure>
@@ -770,7 +773,8 @@ async function ProjectDetail({
         </Section>
       )}
       {editable &&
-        (!project.awaiting_handoff || profile.role === "lead_designer") && (
+        (!project.awaiting_handoff ||
+          ["lead_designer", "system_administrator"].includes(profile.role)) && (
           <details className="surface workspace-disclosure">
             <DisclosureSummary>Manage project assignments</DisclosureSummary>
             <AssignmentForm id={id} people={people} team={team} />

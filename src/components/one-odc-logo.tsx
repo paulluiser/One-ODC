@@ -31,6 +31,7 @@ export function OneODCLogo({
         <>
           <img
             className={styles.light}
+            loading={theme === "dark" ? "lazy" : "eager"}
             src="/brand/opulence/display/one-odc-logo-light.svg"
             alt={alt}
             width={202}
@@ -38,6 +39,7 @@ export function OneODCLogo({
           />
           <img
             className={styles.dark}
+            loading={theme === "dark" ? "eager" : "lazy"}
             src="/brand/opulence/display/one-odc-logo-dark.svg"
             alt={alt}
             width={202}

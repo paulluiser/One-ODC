@@ -35,12 +35,11 @@ const render = (r: Readiness) =>
   renderToStaticMarkup(
     createElement(OperationsCompletionBar, { project: "p", readiness: r }),
   );
-it("offers one authorized action while keeping prerequisite messaging in the modal", () => {
+it("keeps the Operations summary free of the completion action now offered in Project actions", () => {
   const h = render(readiness);
   expect(h).not.toContain("outstanding items");
-  expect(h.match(/<button/g)).toHaveLength(1);
-  expect(h).toContain('data-primary="true"');
-  expect(h).toContain('data-ready="false"');
+  expect(h).not.toContain("<button");
+  expect(h).toContain("Project completion");
 });
 it("does not offer a completion action to unauthorized readers", () => {
   const h = render({ ...readiness, can_complete: false });
@@ -50,7 +49,7 @@ it("does not offer a completion action to unauthorized readers", () => {
 it("replaces the completion action with preserved completion status and history", () => {
   const h = render({ ...readiness, completed: true, cycle: null });
   expect(h).not.toContain("<button");
-  expect(h).toContain("Operationally completed");
+  expect(h).toContain("Completed");
   expect(h).not.toContain("outstanding items");
   expect(h).toContain("View completion history");
   expect(h).toContain('data-completed="true"');
@@ -58,5 +57,5 @@ it("replaces the completion action with preserved completion status and history"
 it("uses authoritative readiness without fabricating prerequisites", () => {
   const h = render({ ...readiness, ready: true, blockers: [] });
   expect(h).not.toContain("Ready for completion");
-  expect(h).toContain('data-ready="true"');
+  expect(h).not.toContain("<button");
 });

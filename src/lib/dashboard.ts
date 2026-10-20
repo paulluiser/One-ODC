@@ -193,6 +193,11 @@ export const dashboardMetrics: Record<Role, DashboardMetric[]> = {
     ),
   ],
 };
+for (const role of Object.keys(dashboardMetrics) as Role[]) {
+  dashboardMetrics[role] = dashboardMetrics[role].filter(
+    (m) => !m.key.includes("installation"),
+  );
+}
 const entry = z.object({
   id: z.string().uuid(),
   label: z.string(),

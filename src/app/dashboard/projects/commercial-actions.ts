@@ -95,7 +95,7 @@ export async function commercialAction(
         : d.intent === "lost"
           ? "Project marked Lost. Records and files are now read-only."
           : d.intent === "handoff"
-            ? "Operations Admin assigned. Handoff is pending acknowledgment."
+            ? "Operations Admin assigned. Ordered Spaces can now be handed off separately."
             : "Project sent to the BDM for negotiation.",
   };
 }

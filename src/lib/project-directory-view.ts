@@ -9,6 +9,7 @@ export const directoryColumns = [
   { key: "project", label: "Project" },
   { key: "stage", label: "Commercial stage" },
   { key: "operations", label: "Operations" },
+  { key: "readiness", label: "Space readiness" },
   { key: "progress", label: "Design progress" },
   { key: "deadline", label: "Deadline" },
   { key: "designer", label: "Lead Designer" },
@@ -46,6 +47,7 @@ export function projectDirectoryRow(
   monitoring: Monitoring | undefined,
   ops: boolean,
   designer?: string,
+  readiness = "—",
 ) {
   const restricted =
     ops &&
@@ -76,6 +78,7 @@ export function projectDirectoryRow(
                 : m
                   ? projectWorkState(m)
                   : "Not available",
+    readiness: restricted ? "Restricted" : readiness,
     progress:
       m && m.active_spaces > 0
         ? Number(((m.completed_spaces / m.active_spaces) * 100).toFixed(1))

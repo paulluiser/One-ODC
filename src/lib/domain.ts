@@ -6,6 +6,7 @@ export const roles = [
   "operations_admin",
 ] as const;
 export type Role = (typeof roles)[number];
+export const isSuperAdmin = (role: Role) => role === "system_administrator";
 export type Space = {
   status: string;
   installation: string;

@@ -21,7 +21,7 @@ export default async function Calendar({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { client } = await requireWorkspace();
+  const { client, profile } = await requireWorkspace();
   if (process.env.ONE_ODC_CALENDAR_ENABLED !== "true") notFound();
   const query = await searchParams,
     today = todayManila(),
@@ -97,7 +97,11 @@ export default async function Calendar({
     <>
       <PageIntro
         title="Calendar"
-        description="Project dates, design deadlines, installations, and your personal events."
+        description={
+          profile.role === "system_administrator"
+            ? "Workspace dates and personal events across users. Administrator edits preserve the event owner."
+            : "Project dates, design deadlines, and your personal events."
+        }
       >
         <ContextPanel
           resetOnClose
@@ -200,7 +204,9 @@ export default async function Calendar({
                 label: "Event type",
                 options: [
                   { value: "", label: "All dates" },
-                  ...filterOptions(calendarKinds),
+                  ...filterOptions(
+                    calendarKinds.filter((kind) => kind !== "Installation"),
+                  ),
                 ],
               },
             ],

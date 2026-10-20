@@ -28,6 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       data-one-odc-brand={
         process.env.ONE_ODC_UI_R0_ENABLED === "true" ? "opulence" : undefined

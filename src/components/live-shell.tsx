@@ -1,4 +1,5 @@
 "use client";
+import { CoffeeSupport } from "./coffee-support";
 import { Suspense, useState, useSyncExternalStore, useTransition } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
@@ -6,12 +7,14 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   CalendarDays,
+  Truck,
   RefreshCw,
   Bell,
   FolderOpen,
   LayoutDashboard,
   Menu,
   Users,
+  BookOpen,
   X,
   ArrowDownLeft,
   LogOut,
@@ -55,18 +58,6 @@ export function LiveShell({
             href: "/dashboard/leads",
             name: profile.role === "bdm" ? "My Leads" : "Lead review",
             icon: ArrowDownLeft,
-          },
-        ]
-      : []),
-    ...(logisticsEnabled &&
-    ["operations_admin", "lead_designer", "system_administrator"].includes(
-      profile.role,
-    )
-      ? [
-          {
-            href: "/dashboard/suppliers",
-            name: "Supplier Masterlist",
-            icon: Users,
           },
         ]
       : []),
@@ -168,19 +159,29 @@ export function LiveShell({
             Sign out
           </button>
         </form>
-        <div className="profile">
-          <span className="profile-avatar">
-            {profile.display_name
-              .split(" ")
-              .map((p) => p[0])
-              .slice(0, 2)
-              .join("")}
-          </span>
-          <div>
-            <b>{profile.display_name}</b>
-            <span>{roleLabels[profile.role]}</span>
-          </div>
-        </div>
+        <details className="manual-account-menu">
+          <summary className="profile">
+            <span className="profile-avatar">
+              {profile.display_name
+                .split(" ")
+                .map((p) => p[0])
+                .slice(0, 2)
+                .join("")}
+            </span>
+            <span>
+              <b>{profile.display_name}</b>
+              <small>{roleLabels[profile.role]}</small>
+            </span>
+          </summary>
+          <Link
+            className="nav-item"
+            href="/dashboard/manual"
+            onClick={() => setOpen(false)}
+          >
+            <BookOpen size={17} aria-hidden="true" />
+            User Manual
+          </Link>
+        </details>
       </div>
     </aside>
   );
@@ -217,6 +218,38 @@ export function LiveShell({
               </Suspense>
             </div>
             <div className="workspace-tools">
+              <CoffeeSupport />
+              {calendarEnabled && (
+                <Link
+                  className="workspace-refresh"
+                  href="/dashboard/calendar"
+                  aria-label="Open calendar"
+                  title="Calendar"
+                >
+                  <CalendarDays size={20} />
+                </Link>
+              )}
+              {logisticsEnabled &&
+                [
+                  "operations_admin",
+                  "lead_designer",
+                  "system_administrator",
+                ].includes(profile.role) && (
+                  <Link
+                    className="workspace-refresh"
+                    href="/dashboard/suppliers"
+                    aria-label="Open Supplier/Brand Masterlist"
+                    title="Supplier/Brand Masterlist"
+                    aria-current={
+                      path.startsWith("/dashboard/suppliers")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Truck size={20} />
+                  </Link>
+                )}
+
               <button
                 className="workspace-refresh"
                 type="button"

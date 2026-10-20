@@ -1,4 +1,6 @@
 "use client";
+import { ProjectActionLabel } from "./project-workspace/action-label";
+import menuStyles from "./project-workspace/workspace.module.css";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -67,8 +69,7 @@ function TeamAssignments({
   const operations = people.filter((p) => p.role === "operations_admin");
   const errors: Record<string, string> = {};
   if (!primary) errors.primary = "Choose a Primary Designer.";
-  if (closed && !ops.length)
-    errors.ops = "A Closed project requires an Operations Admin.";
+
   if (ops.length && !ops.includes(primaryOps))
     errors.primary_ops =
       "Choose a primary administrator from the assigned Operations team.";
@@ -149,7 +150,8 @@ function TeamAssignments({
               Operations team
             </h3>
             <p>
-              Operations assignments are optional before commercial closure.
+              Assign Operations Admins after commercial closure; Space handoff
+              is separate.
             </p>
             <div id={`${fid}-ops`}>
               <MemberSelect
@@ -161,14 +163,14 @@ function TeamAssignments({
                   setOps(ids);
                   if (!ids.includes(primaryOps)) setPrimaryOps("");
                 }}
-                disabled={pending}
+                disabled={pending || !closed}
               />
               {error("ops")}
             </div>
             <div id={`${fid}-primary_ops`}>
               <MemberSelect
                 label="Primary Operations Admin"
-                required={ops.length > 0 || closed}
+                required={ops.length > 0}
                 options={operations.filter((p) => ops.includes(p.id))}
                 selected={primaryOps ? [primaryOps] : []}
                 onChange={(ids) => setPrimaryOps(ids[0] ?? "")}
@@ -392,6 +394,7 @@ export function ProjectTeamDialog({
   canAssign,
   canTransfer,
   viewer,
+  menuItem = false,
 }: {
   id: string;
   people: Person[];
@@ -401,6 +404,7 @@ export function ProjectTeamDialog({
   canAssign: boolean;
   canTransfer: boolean;
   viewer: { id: string; role: string };
+  menuItem?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     [tab, setTab] = useState(canAssign ? "team" : "lead"),
@@ -459,8 +463,15 @@ export function ProjectTeamDialog({
   return (
     <Dialog.Root open={open} onOpenChange={changeOpen}>
       <Dialog.Trigger asChild>
-        <button type="button" className="button button-outline">
-          Manage team
+        <button
+          type="button"
+          className={menuItem ? menuStyles.actionRow : "button button-outline"}
+        >
+          {menuItem ? (
+            <ProjectActionLabel icon={Users} title="Manage Team" />
+          ) : (
+            "Manage team"
+          )}
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>

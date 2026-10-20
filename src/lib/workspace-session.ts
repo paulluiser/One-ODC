@@ -3,7 +3,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
 import { profileSchema } from "./phase1";
-import type { Role } from "./domain";
+import { isSuperAdmin, type Role } from "./domain";
 export const requireWorkspace = cache(async () => {
   const client = await createClient();
   if (!client) redirect("/login");
@@ -28,7 +28,10 @@ export const requireWorkspace = cache(async () => {
 });
 export async function requireRole(allowed: Role[]) {
   const context = await requireWorkspace();
-  if (!allowed.includes(context.profile.role))
+  if (
+    !isSuperAdmin(context.profile.role) &&
+    !allowed.includes(context.profile.role)
+  )
     redirect("/dashboard?restricted=1");
   return context;
 }

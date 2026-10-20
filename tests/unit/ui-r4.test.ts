@@ -79,14 +79,14 @@ it("supplier empty directory has honest search and create controls, no fabricate
   const h = render(
     createElement(SupplierDirectory, {
       suppliers: [],
-      events: [],
       search: "<img>",
       sort: "name",
       page: 1,
       count: 0,
     }),
   );
-  expect(h).toContain("No suppliers found");
+  expect(h).toContain("No suppliers match your search or filters.");
+  expect(h).not.toContain("Supplier audit history");
   expect(h).toContain("&lt;img&gt;");
   expect(h).not.toContain("Sample Supplier");
 });

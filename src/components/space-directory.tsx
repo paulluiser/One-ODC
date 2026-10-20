@@ -12,6 +12,7 @@ export type SpaceDirectoryRecord = {
   name: string;
   designer: string;
   status: string;
+  readiness?: string;
   deadline: string | null;
   updated: string;
 };
@@ -108,7 +109,8 @@ export function SpaceDirectory({
               {[
                 "Space",
                 "Assigned Designer",
-                "Status",
+                "Design status",
+                "Post-closure readiness",
                 "Deadline",
                 "Updated",
               ].map((label) => (
@@ -147,6 +149,7 @@ export function SpaceDirectory({
                 <td>
                   <Status>{s.status}</Status>
                 </td>
+                <td>{s.readiness || "—"}</td>
                 <td>
                   <span className={styles.date}>
                     <CalendarDays size={15} aria-hidden="true" />
@@ -186,6 +189,7 @@ export function SpaceDirectory({
               <div>
                 <strong>{s.name}</strong>
                 <Status>{s.status}</Status>
+                {s.readiness && <small>Post-closure: {s.readiness}</small>}
               </div>
               {designer(s)}
               <dl>
