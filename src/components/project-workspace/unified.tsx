@@ -1,3 +1,4 @@
+/* eslint jsx-a11y/no-noninteractive-tabindex: ["error", {"roles": ["region"]}] -- The labeled milestone scroll region needs keyboard scrolling. */
 import type { Readiness } from "@/lib/installations";
 import { InstallationActionDialog } from "../installation-action-dialog";
 import { ProjectActionLabel } from "./action-label";
@@ -560,25 +561,35 @@ export async function UnifiedProjectWorkspace({
                 href={url("activity", "history")}
               >
                 {recent.length ? (
-                  <ol className={styles.timeline}>
-                    {recent.map((e) => (
-                      <li key={e.id}>
-                        <strong>{e.title}</strong>
-                        <small>
-                          {e.actor || "Recorded actor"} · {e.detail}
-                        </small>
-                        <time dateTime={e.occurred_at}>
-                          {formatTime(e.occurred_at)}
-                        </time>
-                      </li>
-                    ))}
-                  </ol>
+                  <div
+                    className={styles.timelineViewport}
+                    role="region"
+                    aria-label="Project milestones"
+                    tabIndex={0}
+                  >
+                    <ol className={styles.timeline}>
+                      {recent.map((e) => (
+                        <li key={e.id}>
+                          <strong>{e.title}</strong>
+                          <small>
+                            {e.actor || "Recorded actor"} · {e.detail}
+                          </small>
+                          <time dateTime={e.occurred_at}>
+                            {formatTime(e.occurred_at)}
+                          </time>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
                 ) : (
                   <Empty icon={<Clock3 size={26} aria-hidden="true" />}>
                     No authorized activity yet.
                   </Empty>
                 )}
-                <nav aria-label="Project Timeline pages">
+                <nav
+                  className={styles.timelinePagination}
+                  aria-label="Project Timeline pages"
+                >
                   {Number(query.timeline_page ?? 0) > 0 && (
                     <Link
                       href={

@@ -710,3 +710,10 @@ Staging security-advisor review reported no findings on changed objects. Existin
 - Integration fixtures now distinguish grandfathered Ops memberships/project receipts from new conversion and explicit Ordered-Space releases. Superseded installation tests were replaced with disabled-endpoint coverage; completion/analytics fixtures use real readiness/release/acknowledgment RPCs. Updated directory/completion presentation expectations and removed disabled installation metric from shared Ops dashboard priorities.
 - Integration: 154 passed. Final local regression: 41 files / 320 tests passed. Changed-file ESLint (76 files), TypeScript, optimized staging build and authenticated read-only navigation/console smoke passed. Local staging restarted with the optimized build on port 3003.
 - Deploy matching source and five staging-verified migrations; hosted rollout verification to follow.
+
+### 20 October 2026 — bounded Project Overview milestones
+
+- Root cause: the paginated Project Timeline rendered up to 20 milestones with no height limit, expanding the Overview card and page. Added a viewport-aware, independently scrolling milestone region (maximum 26rem / 55dvh), keyboard focus and scrolling, contained overscroll and stable scrollbar space. Heading and pagination stay outside the scroll region; long milestone text wraps within the card.
+- Checks: targeted component ESLint, TypeScript and diff whitespace passed. Lightweight authenticated local-staging browser smoke passed at 1440px and 390px with a render-only 20-entry/long-text stress case: bounded height, independent keyboard scrolling, no horizontal overflow and pagination outside the scroll area; no runtime errors. No database mutations, dependencies or hosted deployments.
+
+- Follow-up: user authorized publishing this UI-only fix to main, production, hosted staging and local staging; deployment uses the existing environment configuration and requires no database migration.
