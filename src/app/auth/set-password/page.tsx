@@ -18,7 +18,9 @@ export default async function SetPassword() {
         <Brand />
       )}
       <h1>Set your One ODC password.</h1>
-      <p>Complete your invited account setup.</p>
+      <p>
+        Choose a new password for your invited, recovered or signed-in account.
+      </p>
       <PasswordForm />
     </main>
   );

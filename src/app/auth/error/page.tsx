@@ -8,6 +8,9 @@ export default function AuthError() {
         The link may have expired or already been used. Ask your System
         Administrator for a fresh invitation or password-reset link.
       </p>
+      <Link href="/auth/forgot-password">
+        Request a new password-reset link
+      </Link>
       <Button asChild>
         <Link href="/login">Back to sign in</Link>
       </Button>

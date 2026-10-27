@@ -60,6 +60,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
           {pending ? "Signing in…" : "Sign in to your workspace"}
           <ArrowRight size={17} />
         </Button>
+        <Link href="/auth/forgot-password">Forgot password?</Link>
         <p id="login-note" className="login-note">
           <LockKeyhole size={14} />
           {configured

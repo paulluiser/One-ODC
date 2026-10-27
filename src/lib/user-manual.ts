@@ -68,6 +68,31 @@ export const manualRoleAccess: Record<Role, string> = {
 };
 export const manualGuides: Guide[] = [
   guide(
+    "passwords",
+    roles,
+    "Getting Started",
+    "Set, change or recover your password",
+    "Accept invitations, change your password, or recover access by email.",
+    [
+      "New users open their invitation email, follow the secure link and set matching passwords of 12–128 characters.",
+      "While signed in, open your profile menu → Change password. Enter and confirm the new password, then choose Set password and continue.",
+      "If you cannot sign in, choose Forgot password? on the sign-in page, enter your work email and choose Send reset email. Check your inbox and spam folder; open the newest link and set your new password.",
+      "An expired or used link opens an error page with Request a new password-reset link. Wait at least one minute before requesting another email.",
+    ],
+    {
+      access:
+        "All users manage only their own password. Recovery never grants a role or activates an inactive account.",
+      prerequisite:
+        "Access to your registered email, or a current signed-in session.",
+      result:
+        "The new password replaces your previous password. Passwords and recovery tokens are never recorded in application audit entries.",
+      sources: [
+        "src/app/auth/set-password/actions.ts",
+        "src/app/auth/forgot-password/actions.ts",
+      ],
+    },
+  ),
+  guide(
     "welcome",
     roles,
     "Getting Started",
@@ -911,6 +936,7 @@ export const manualGuides: Guide[] = [
     [
       "Open Team access from the sidebar. Search/filter users and inspect their current role and active state.",
       "Use Invite user and provide the fields required by the existing invitation form. Check any invitation-service configuration message before retrying.",
+      "To help an active user recover access, open Manage access → Send password-reset email, enter a reset reason, confirm, then send. The email goes to their registered address; only the user chooses the password. A request is audited even if delivery later fails. Wait one minute between requests.",
       "To change an existing user, open its access editor, choose the intended role/active state and provide the required reason.",
       "Save and verify the updated directory entry and access history. Self-deactivation or removing your own administrator access is blocked.",
     ],

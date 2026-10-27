@@ -181,6 +181,13 @@ export function LiveShell({
             <BookOpen size={17} aria-hidden="true" />
             User Manual
           </Link>
+          <Link
+            className="nav-item"
+            href="/auth/set-password"
+            onClick={() => setOpen(false)}
+          >
+            Change password
+          </Link>
         </details>
       </div>
     </aside>

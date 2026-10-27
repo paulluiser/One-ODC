@@ -95,7 +95,9 @@ export function AccessTools({
                     <strong>
                       {event.action === "user.invitation_requested"
                         ? "Invitation requested"
-                        : "Account access updated"}
+                        : event.action === "user.password_reset_requested"
+                          ? "Password-reset email requested"
+                          : "Account access updated"}
                     </strong>
                     <time dateTime={event.occurred_at}>
                       {formatTime(event.occurred_at)}

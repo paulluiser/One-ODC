@@ -11,7 +11,11 @@ export async function loadAccessHistory(requestedPage: number) {
     .from("audit_events")
     .select("id,entity_id,action,actor_id,occurred_at", { count: "exact" })
     .eq("entity_type", "profile")
-    .in("action", ["user.access_changed", "user.invitation_requested"])
+    .in("action", [
+      "user.access_changed",
+      "user.invitation_requested",
+      "user.password_reset_requested",
+    ])
     .order("occurred_at", { ascending: false })
     .order("id", { ascending: false })
     .range((page - 1) * 10, page * 10 - 1);

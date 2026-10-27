@@ -1,4 +1,5 @@
 "use client";
+import { PasswordResetForm } from "./password-reset-form";
 import { OperationSummary } from "./ui-r4/primitives";
 import styles from "./lead-request.module.css";
 import { OperationFeedback } from "./operation-feedback";
@@ -439,73 +440,76 @@ export function UserAccessForm({
   const [name, setName] = useState(profile.display_name);
   const [reason, setReason] = useState("");
   return (
-    <form action={action} className="surface live-form" aria-busy={pending}>
-      <input type="hidden" name="id" value={profile.id} />
-      <h2>{profile.display_name}</h2>
-      {rebuild ? (
-        <details>
-          <OperationSummary>Account reference</OperationSummary>
-          <p>{profile.id}</p>
-        </details>
-      ) : (
-        <p className="field-hint">{profile.id}</p>
-      )}
-      <div className="live-form-grid">
-        <div className="live-field">
-          <label htmlFor={`name-${profile.id}`}>Display name</label>
+    <>
+      <form action={action} className="surface live-form" aria-busy={pending}>
+        <input type="hidden" name="id" value={profile.id} />
+        <h2>{profile.display_name}</h2>
+        {rebuild ? (
+          <details>
+            <OperationSummary>Account reference</OperationSummary>
+            <p>{profile.id}</p>
+          </details>
+        ) : (
+          <p className="field-hint">{profile.id}</p>
+        )}
+        <div className="live-form-grid">
+          <div className="live-field">
+            <label htmlFor={`name-${profile.id}`}>Display name</label>
+            <input
+              id={`name-${profile.id}`}
+              name="display_name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              disabled={pending}
+            />
+          </div>
+          <div className="live-field">
+            <label htmlFor={`role-${profile.id}`}>Role</label>
+            <select
+              id={`role-${profile.id}`}
+              name="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as Profile["role"])}
+              disabled={pending}
+            >
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {roleLabels[r]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <label className="checkbox-label">
           <input
-            id={`name-${profile.id}`}
-            name="display_name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            type="checkbox"
+            checked={active}
+            onChange={(e) => setActive(e.target.checked)}
+            disabled={pending}
+          />
+          Active account
+        </label>
+        <input name="active" type="hidden" value={String(active)} />
+        <div className="live-field">
+          <label htmlFor={`reason-${profile.id}`}>Change reason *</label>
+          <input
+            id={`reason-${profile.id}`}
+            name="reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
             required
             disabled={pending}
           />
         </div>
-        <div className="live-field">
-          <label htmlFor={`role-${profile.id}`}>Role</label>
-          <select
-            id={`role-${profile.id}`}
-            name="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as Profile["role"])}
-            disabled={pending}
-          >
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {roleLabels[r]}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={active}
-          onChange={(e) => setActive(e.target.checked)}
-          disabled={pending}
-        />
-        Active account
-      </label>
-      <input name="active" type="hidden" value={String(active)} />
-      <div className="live-field">
-        <label htmlFor={`reason-${profile.id}`}>Change reason *</label>
-        <input
-          id={`reason-${profile.id}`}
-          name="reason"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          required
-          disabled={pending}
-        />
-      </div>
-      <ActionStatus state={state} />
-      <Button type="submit" disabled={pending}>
-        <Pending pending={pending} label="Update access" />
-      </Button>
-      <FormPending />
-    </form>
+        <ActionStatus state={state} />
+        <Button type="submit" disabled={pending}>
+          <Pending pending={pending} label="Update access" />
+        </Button>
+        <FormPending />
+      </form>
+      <PasswordResetForm profile={profile} />
+    </>
   );
 }
 export function InvitationForm({

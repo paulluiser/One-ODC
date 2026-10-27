@@ -6073,3 +6073,69 @@ describe("post-closure readiness revision", () => {
     expect(result.length).toBeGreaterThan(0);
   });
 });
+
+describe("administrator password recovery audit", () => {
+  it("logs the actual admin and target, validates active accounts and throttles duplicate requests", async () => {
+    await actor(ids.admin);
+    await db.query(
+      "select public.record_password_reset_request($1,'User requested recovery')",
+      [ids.designer],
+    );
+    const rows = (
+      await db.query(
+        "select actor_id,entity_id,new_value from public.audit_events where action='user.password_reset_requested'",
+      )
+    ).rows;
+    expect(rows).toEqual([
+      {
+        actor_id: ids.admin,
+        entity_id: ids.designer,
+        new_value: { reason: "User requested recovery" },
+      },
+    ]);
+    await denied(
+      () =>
+        db.query("select public.record_password_reset_request($1,'Again')", [
+          ids.designer,
+        ]),
+      "RESET_RATE_LIMIT",
+    );
+    await db.exec("reset role");
+    await db.query("update public.profiles set active=false where id=$1", [
+      ids.ops,
+    ]);
+    await actor(ids.admin);
+    await denied(
+      () =>
+        db.query("select public.record_password_reset_request($1,'Recovery')", [
+          ids.ops,
+        ]),
+      "ACTIVE_ACCOUNT_REQUIRED",
+    );
+  });
+  it("denies ordinary roles and inactive administrators without creating audit entries", async () => {
+    for (const who of [ids.bdm, ids.designer, ids.lead, ids.ops]) {
+      await actor(who);
+      await denied(
+        () =>
+          db.query(
+            "select public.record_password_reset_request($1,'Recovery')",
+            [ids.designer],
+          ),
+        "ACCESS_DENIED",
+      );
+    }
+    await db.exec("reset role");
+    await db.query("update public.profiles set active=false where id=$1", [
+      ids.admin,
+    ]);
+    await actor(ids.admin);
+    await denied(
+      () =>
+        db.query("select public.record_password_reset_request($1,'Recovery')", [
+          ids.designer,
+        ]),
+      "ACCESS_DENIED",
+    );
+  });
+});

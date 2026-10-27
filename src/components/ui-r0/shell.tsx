@@ -34,6 +34,7 @@ import {
   ArrowUpRight,
   Users,
   BookOpen,
+  KeyRound,
 } from "lucide-react";
 import { roleLabels, type Profile } from "@/lib/phase1";
 import { signOut } from "@/app/login/actions";
@@ -348,6 +349,14 @@ export function RebuildShell({
                     >
                       <BookOpen size={17} aria-hidden="true" />
                       User Manual
+                    </Link>
+                    <Link
+                      href="/auth/set-password"
+                      className={styles.menuItem}
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      <KeyRound size={17} aria-hidden="true" />
+                      Change password
                     </Link>
                     <button
                       className={styles.menuItem}
